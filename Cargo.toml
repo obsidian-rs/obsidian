@@ -1,0 +1,8 @@
+[package]
+name = "obsidian"
+version = "0.1.0"
+authors = ["Gan Jun Kai <kuhn96@gmail.com>", "Wai Pai Lee <pailee.wai@gmail.com>"]
+edition = "2018"
+license = "MIT"
+
+[dependencies]
