@@ -1,6 +1,7 @@
 use std::collections::HashMap;
+use hyper::Method;
 
-use super::route::{Route, Method};
+use super::route::Route;
 
 pub struct Resource {
     route_map: HashMap<Method, Route>,

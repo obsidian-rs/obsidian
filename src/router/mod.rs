@@ -4,10 +4,9 @@ mod resource;
 mod end_point_type;
 
 use std::collections::BTreeMap;
-use hyper::{Request, Response};
+use hyper::Method;
 
 use self::route::Route;
-use self::route::Method;
 use self::injection::Injection;
 use self::resource::Resource;
 use self::end_point_type::EndPointHandler;
@@ -42,11 +41,11 @@ impl Router {
     fn inject(&mut self, method: Method, path: &str, handler: impl EndPointHandler) {
         // Use existing hashmap
         if let Some(route) = self.routes.get_mut(&path.to_string()) {
-            route.add_route(method, Route::new(path.to_string(), method, Box::new(handler)));
+            route.add_route(method.clone(), Route::new(path.to_string(), method.clone(), Box::new(handler)));
         }
         else {
             let mut resource = Resource::default();
-            resource.add_route(method, Route::new(path.to_string(), method, Box::new(handler)));
+            resource.add_route(method.clone(), Route::new(path.to_string(), method.clone(), Box::new(handler)));
 
             self.routes.insert(path.to_string(), resource);
         }
