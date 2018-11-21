@@ -1,6 +1,8 @@
 use std::fmt::Display;
 use std::fmt;
 
+use super::EndPointHandler;
+
 #[derive(PartialEq, Hash, Copy, Clone)]
 pub enum Method {
     GET,
@@ -34,11 +36,11 @@ impl Display for Method {
 pub struct Route {
     pub path: String,
     pub method: Method,
-    pub handler: Box<Fn() + Send + 'static>,
+    pub handler: Box<EndPointHandler>,
 }
 
 impl Route {
-    pub fn new(path: String, method: Method, handler: Box<Fn() + Send + 'static>) -> Self {
+    pub fn new(path: String, method: Method, handler: Box<EndPointHandler>) -> Self {
         Route {path, method, handler}
     }
 }
