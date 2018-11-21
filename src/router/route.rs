@@ -1,20 +1,44 @@
-#[derive(PartialEq, Hash)]
+use std::fmt::Display;
+use std::fmt;
+
+#[derive(PartialEq, Hash, Copy, Clone)]
 pub enum Method {
-  GET,
-  POST,
-  PUT,
-  DELETE
+    GET,
+    POST,
+    PUT,
+    DELETE
 }
 
 impl Eq for Method {}
+impl Display for Method {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let method = match self {
+            Method::GET => {
+                "GET"
+            },
+            Method::POST => {
+                "POST"
+            },
+            Method::PUT => {
+                "PUT"
+            },
+            Method::DELETE => {
+                "DELETE"
+            },
+        };
 
-pub struct Route<'a> {
-  pub path: String,
-  pub handler: Box<Fn() + 'a>,
+        write!(f, "{}", method)
+    }
 }
 
-impl <'a> Route<'a> {
-  pub fn new(path: String, handler: Box<Fn() + 'a>) -> Self {
-    Route {path, handler}
-  }
+pub struct Route {
+    pub path: String,
+    pub method: Method,
+    pub handler: Box<Fn() + Send + 'static>,
+}
+
+impl Route {
+    pub fn new(path: String, method: Method, handler: Box<Fn() + Send + 'static>) -> Self {
+        Route {path, method, handler}
+    }
 }

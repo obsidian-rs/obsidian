@@ -8,3 +8,4 @@ edition = "2018"
 license = "MIT"
 
 [dependencies]
+hyper = "0.12.15"

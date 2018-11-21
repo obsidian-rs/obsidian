@@ -1,5 +1,6 @@
 mod route;
 mod injection;
+mod resource;
 
 use std::collections::BTreeMap;
 use std::collections::HashMap;
@@ -7,50 +8,45 @@ use std::collections::HashMap;
 use self::route::Route;
 use self::route::Method;
 use self::injection::Injection;
+use self::resource::Resource;
 
-pub struct Router<'a> {
-    pub routes: BTreeMap<String, HashMap<Method, Route<'a>>>,
+pub struct Router {
+    pub routes: BTreeMap<String, Resource>,
 } 
 
-impl <'a> Injection<'a> for Router<'a> {
-    fn new() -> Self {
-        Router {routes: BTreeMap::new()}
-    }
-
-    fn get(&mut self, path: &str, handler: impl Fn() + 'a) {
+impl Injection for Router {
+    fn get(&mut self, path: &str, handler: impl Fn() + Send + 'static) {
         self.inject(Method::GET, path, handler);
     }
 
-    fn post(&mut self, path: &str, handler: impl Fn() + 'a) {
+    fn post(&mut self, path: &str, handler: impl Fn() + Send + 'static) {
         self.inject(Method::POST, path, handler);
     }
 
-    fn put(&mut self, path: &str, handler: impl Fn() + 'a) {
+    fn put(&mut self, path: &str, handler: impl Fn() + Send + 'static) {
         self.inject(Method::PUT, path, handler);
     }
 
-    fn delete(&mut self, path: &str, handler: impl Fn() + 'a) {
+    fn delete(&mut self, path: &str, handler: impl Fn() + Send + 'static) {
         self.inject(Method::DELETE, path, handler);
     }
 }
 
-impl <'a> Router <'a> {
-    fn inject(&mut self, method: Method, path: &str, handler: impl Fn() + 'a) {
-        if !self.routes.contains_key(&path.to_string()) {
-            // Construct new hashmap
-            let mut new_routes_map: HashMap<Method, Route<'a>> = HashMap::new();
-            new_routes_map.insert(method, Route::new(path.to_string(), Box::new(handler)));
+impl Router {
+    fn new() -> Self {
+        Router {routes: BTreeMap::new()}
+    }
 
-            self.routes.insert(path.to_string(), new_routes_map);
+    fn inject(&mut self, method: Method, path: &str, handler: impl Fn() + Send + 'static) {
+        // Use existing hashmap
+        if let Some(route) = self.routes.get_mut(&path.to_string()) {
+            route.add_route(method, Route::new(path.to_string(), method, Box::new(handler)));
         }
         else {
-            // Use existing hashmap
-            if let Some(route) = self.routes.get_mut(&path.to_string()) {
-                route.insert(method, Route::new(path.to_string(), Box::new(handler)));
-            }
-            else {
-                panic!("Hash Map condition error");
-            }
+            let mut resource = Resource::default();
+            resource.add_route(method, Route::new(path.to_string(), method, Box::new(handler)));
+
+            self.routes.insert(path.to_string(), resource);
         }
     }
 }
@@ -67,7 +63,7 @@ mod tests {
 
         let route = router.routes
             .get_mut("/").unwrap()
-            .get(&Method::GET).unwrap();
+            .get_route(&Method::GET).unwrap();
 
         assert_eq!(route.path, "/");
     }
@@ -80,7 +76,7 @@ mod tests {
 
         let route = router.routes
             .get_mut("/").unwrap()
-            .get(&Method::POST).unwrap();
+            .get_route(&Method::POST).unwrap();
 
         assert_eq!(route.path, "/");
     }
@@ -93,7 +89,7 @@ mod tests {
 
         let route = router.routes
             .get_mut("/").unwrap()
-            .get(&Method::PUT).unwrap();
+            .get_route(&Method::PUT).unwrap();
 
         assert_eq!(route.path, "/");
     }
@@ -106,7 +102,7 @@ mod tests {
 
         let route = router.routes
             .get_mut("/").unwrap()
-            .get(&Method::DELETE).unwrap();
+            .get_route(&Method::DELETE).unwrap();
 
         assert_eq!(route.path, "/");
     }

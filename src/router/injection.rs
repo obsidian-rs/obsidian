@@ -1,8 +1,6 @@
-pub trait Injection <'a> {
-    fn new() -> Self;
-
-    fn get(&mut self, path: &str, handler: impl Fn() + 'a);
-    fn post(&mut self, path: &str, handler: impl Fn() + 'a);
-    fn put(&mut self, path: &str, handler: impl Fn() + 'a);
-    fn delete(&mut self, path: &str, handler: impl Fn() + 'a);
+pub trait Injection{
+    fn get(&mut self, path: &str, handler: impl Fn() + Send + 'static);
+    fn post(&mut self, path: &str, handler: impl Fn() + Send + 'static);
+    fn put(&mut self, path: &str, handler: impl Fn() + Send + 'static);
+    fn delete(&mut self, path: &str, handler: impl Fn() + Send + 'static);
 }
