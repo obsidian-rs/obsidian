@@ -9,7 +9,7 @@ use self::route::Method;
 use self::injection::Injection;
 
 pub struct Router<'a> {
-    routes: BTreeMap<String, HashMap<Method, Route<'a>>>,
+    pub routes: BTreeMap<String, HashMap<Method, Route<'a>>>,
 } 
 
 impl <'a> Injection<'a> for Router<'a> {
@@ -36,7 +36,7 @@ impl <'a> Injection<'a> for Router<'a> {
 
 impl <'a> Router <'a> {
     fn inject(&mut self, method: Method, path: &str, handler: impl Fn() + 'a) {
-        if self.routes.contains_key(&path.to_string()) {
+        if !self.routes.contains_key(&path.to_string()) {
             // Construct new hashmap
             let mut new_routes_map: HashMap<Method, Route<'a>> = HashMap::new();
             new_routes_map.insert(method, Route::new(path.to_string(), Box::new(handler)));
@@ -55,3 +55,59 @@ impl <'a> Router <'a> {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_router_get() {
+        let mut router = Router::new();
+
+        router.get("/", || {});
+
+        let route = router.routes
+            .get_mut("/").unwrap()
+            .get(&Method::GET).unwrap();
+
+        assert_eq!(route.path, "/");
+    }
+
+    #[test]
+    fn test_router_post() {
+        let mut router = Router::new();
+
+        router.post("/", || {});
+
+        let route = router.routes
+            .get_mut("/").unwrap()
+            .get(&Method::POST).unwrap();
+
+        assert_eq!(route.path, "/");
+    }
+
+    #[test]
+    fn test_router_put() {
+        let mut router = Router::new();
+
+        router.put("/", || {});
+
+        let route = router.routes
+            .get_mut("/").unwrap()
+            .get(&Method::PUT).unwrap();
+
+        assert_eq!(route.path, "/");
+    }
+
+    #[test]
+    fn test_router_delete() {
+        let mut router = Router::new();
+
+        router.delete("/", || {});
+
+        let route = router.routes
+            .get_mut("/").unwrap()
+            .get(&Method::DELETE).unwrap();
+
+        assert_eq!(route.path, "/");
+    }
+}
