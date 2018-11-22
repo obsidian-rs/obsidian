@@ -1,5 +1,3 @@
-use std::fmt::Display;
-use std::fmt;
 use hyper::Method;
 
 use super::EndPointHandler;
