@@ -40,15 +40,9 @@ impl Router {
 
     fn inject(&mut self, method: Method, path: &str, handler: impl EndPointHandler) {
         // Use existing hashmap
-        if let Some(route) = self.routes.get_mut(&path.to_string()) {
-            route.add_route(method.clone(), Route::new(path.to_string(), method.clone(), Box::new(handler)));
-        }
-        else {
-            let mut resource = Resource::default();
-            resource.add_route(method.clone(), Route::new(path.to_string(), method.clone(), Box::new(handler)));
-
-            self.routes.insert(path.to_string(), resource);
-        }
+        (*self.routes.entry(path.to_string())
+            .or_insert(Resource::default()))
+            .add_route(method.clone(), Route::new(path.to_string(), method.clone(), handler));
     }
 }
 
@@ -60,7 +54,7 @@ mod tests {
     fn test_router_get() {
         let mut router = Router::new();
 
-        router.get("/", |req, res| {});
+        router.get("/", |_req, res| {res});
 
         let route = router.routes
             .get_mut("/").unwrap()
@@ -73,7 +67,7 @@ mod tests {
     fn test_router_post() {
         let mut router = Router::new();
 
-        router.post("/", |req, res| {});
+        router.post("/", |_req, res| {res});
 
         let route = router.routes
             .get_mut("/").unwrap()
@@ -86,7 +80,7 @@ mod tests {
     fn test_router_put() {
         let mut router = Router::new();
 
-        router.put("/", |req, res| {});
+        router.put("/", |_req, res| {res});
 
         let route = router.routes
             .get_mut("/").unwrap()
@@ -99,7 +93,7 @@ mod tests {
     fn test_router_delete() {
         let mut router = Router::new();
 
-        router.delete("/", |req, res| {});
+        router.delete("/", |_req, res| {res});
 
         let route = router.routes
             .get_mut("/").unwrap()
