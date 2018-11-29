@@ -1,4 +1,12 @@
-use hyper::{Request, Response};
+use http::response::Builder;
+use hyper::{Body, Request, Response};
 
-pub trait EndPointHandler: Fn(Request<()>, Response<()>) -> Response<()> + Send + 'static {}
-impl<T> EndPointHandler for T where T: Fn(Request<()>, Response<()>) -> Response<()> + Send + 'static {}
+pub trait EndPointHandler:
+    Fn(Request<Body>, &mut Builder) -> Response<Body> + Send + Sync + 'static
+{
+}
+
+impl<T> EndPointHandler for T where
+    T: Fn(Request<Body>, &mut Builder) -> Response<Body> + Send + Sync + 'static
+{
+}

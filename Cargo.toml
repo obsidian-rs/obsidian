@@ -10,3 +10,5 @@ license = "MIT"
 
 [dependencies]
 hyper = "0.12.15"
+futures = "0.1"
+http = "0.1.14"

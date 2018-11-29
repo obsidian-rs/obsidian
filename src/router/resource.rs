@@ -1,8 +1,9 @@
-use std::collections::HashMap;
 use hyper::Method;
+use std::collections::HashMap;
 
 use super::route::Route;
 
+#[derive(Clone)]
 pub struct Resource {
     route_map: HashMap<Method, Route>,
 }
@@ -25,7 +26,7 @@ impl Resource {
         self.route_map.insert(method, route);
     }
 
-    pub fn get_route(&mut self, method: &Method) -> Option<&Route> {
+    pub fn get_route(&self, method: &Method) -> Option<&Route> {
         self.route_map.get(&method)
     }
 }
