@@ -23,11 +23,9 @@ fn main() {
     app.get("/json", |_req, res: ObsidianResponse| {
         let point = Point { x: 1, y: 2 };
 
-        let serialized = serde_json::to_string(&point).unwrap();
-
         res.header(header::CONTENT_TYPE, "application/json")
             .status(StatusCode::OK)
-            .body(serialized)
+            .json(point)
     });
 
     app.get("/empty-body", |_req, res: ObsidianResponse| {

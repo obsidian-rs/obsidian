@@ -81,7 +81,7 @@ impl ObsidianResponse {
         self
     }
 
-    pub fn body(mut self, body: impl ResponseBody + Serialize) -> Self {
+    pub fn body(mut self, body: impl ResponseBody) -> Self {
         match body.into_body() {
             Ok(body) => self.body = body,
             Err(status) => {
@@ -89,6 +89,20 @@ impl ObsidianResponse {
                 self.body = Body::from("Internal Server Error");
             }
         }
+        self
+    }
+
+    pub fn json(mut self, body: impl Serialize) -> Self {
+        let serialized = serde_json::to_string(&body).unwrap();
+
+        match serialized.into_body() {
+            Ok(body) => self.body = body,
+            Err(status) => {
+                self.response_builder.status(status);
+                self.body = Body::from("Internal Server Error");
+            }
+        }
+
         self
     }
 }
