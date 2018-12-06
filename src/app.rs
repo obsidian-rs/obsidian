@@ -4,7 +4,7 @@ use std::net::SocketAddr;
 
 use hyper::rt::Future;
 use hyper::service::service_fn;
-use hyper::{Body, Response, Server, StatusCode};
+use hyper::{Body, Response, Server};
 
 use super::router::{EndPointHandler, ObsidianResponse, Router};
 
@@ -21,7 +21,7 @@ impl App {
         };
 
         app.get("/favicon.ico", |_req, res: ObsidianResponse| {
-            res.status(StatusCode::OK)
+            res.send("./favicon.ico")
         });
 
         app
@@ -63,9 +63,9 @@ impl App {
                             (path.get_route(&req.method()).unwrap().handler)(req, res);
 
                         // Convert into response
-                        let server_response = route_response.into();
+                        let future_response = route_response.into();
 
-                        Box::new(future::ok(server_response))
+                        future_response
                     } else {
                         let server_response = Response::new(Body::from("404 Not Found"));
 
