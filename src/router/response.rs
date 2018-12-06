@@ -5,33 +5,43 @@ use http::{
     StatusCode,
 };
 use hyper::Body;
+use serde::ser::Serialize;
+use serde_json;
 use std::any::Any;
 
 pub trait ResponseBody {
-    fn into_body(self) -> Body;
+    fn into_body(self) -> Result<Body, StatusCode>;
 }
 
 impl ResponseBody for () {
-    fn into_body(self) -> Body {
-        Body::empty()
+    fn into_body(self) -> Result<Body, StatusCode> {
+        Ok(Body::empty())
     }
 }
 
 impl ResponseBody for &'static str {
-    fn into_body(self) -> Body {
-        Body::from(self)
+    fn into_body(self) -> Result<Body, StatusCode> {
+        Ok(Body::from(self))
     }
 }
 
 impl ResponseBody for String {
-    fn into_body(self) -> Body {
-        Body::from(self)
+    fn into_body(self) -> Result<Body, StatusCode> {
+        Ok(Body::from(self))
     }
 }
 
 impl ResponseBody for Vec<u8> {
-    fn into_body(self) -> Body {
-        Body::from(self)
+    fn into_body(self) -> Result<Body, StatusCode> {
+        let result = match serde_json::to_string(&self) {
+            Ok(json) => Ok(Body::from(json)),
+            Err(e) => {
+                eprintln!("serializing failed: {}", e);
+                Err(StatusCode::INTERNAL_SERVER_ERROR)
+            }
+        };
+
+        result
     }
 }
 
@@ -71,8 +81,14 @@ impl ObsidianResponse {
         self
     }
 
-    pub fn body(mut self, body: impl ResponseBody) -> Self {
-        self.body = body.into_body();
+    pub fn body(mut self, body: impl ResponseBody + Serialize) -> Self {
+        match body.into_body() {
+            Ok(body) => self.body = body,
+            Err(status) => {
+                self.response_builder.status(status);
+                self.body = Body::from("Internal Server Error");
+            }
+        }
         self
     }
 }
