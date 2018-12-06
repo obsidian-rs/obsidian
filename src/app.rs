@@ -4,47 +4,43 @@ use std::net::SocketAddr;
 
 use hyper::rt::Future;
 use hyper::service::service_fn;
-use hyper::{Body, Method, Request, Response, Server};
+use hyper::{Body, Response, Server, StatusCode};
 
-use super::router::{EndPointHandler, Injection, Router};
-
-fn send_response(
-    req: Request<Body>,
-) -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send> {
-    Box::new(future::ok(
-        Response::builder().body(Body::from("hello")).unwrap(),
-    ))
-}
+use super::router::{EndPointHandler, ObsidianResponse, Router};
 
 pub struct App {
     sub_services: BTreeMap<String, Router>,
     main_router: Router,
 }
 
-impl Injection for App {
-    fn get(&mut self, path: &str, handler: impl EndPointHandler) {
+impl App {
+    pub fn new() -> Self {
+        let mut app = App {
+            sub_services: BTreeMap::new(),
+            main_router: Router::new(),
+        };
+
+        app.get("/favicon.ico", |_req, res: ObsidianResponse| {
+            res.status(StatusCode::OK)
+        });
+
+        app
+    }
+
+    pub fn get(&mut self, path: &str, handler: impl EndPointHandler) {
         self.main_router.get(path, handler);
     }
 
-    fn post(&mut self, path: &str, handler: impl EndPointHandler) {
+    pub fn post(&mut self, path: &str, handler: impl EndPointHandler) {
         self.main_router.post(path, handler);
     }
 
-    fn put(&mut self, path: &str, handler: impl EndPointHandler) {
+    pub fn put(&mut self, path: &str, handler: impl EndPointHandler) {
         self.main_router.put(path, handler);
     }
 
-    fn delete(&mut self, path: &str, handler: impl EndPointHandler) {
+    pub fn delete(&mut self, path: &str, handler: impl EndPointHandler) {
         self.main_router.delete(path, handler);
-    }
-}
-
-impl App {
-    pub fn new() -> Self {
-        App {
-            sub_services: BTreeMap::new(),
-            main_router: Router::new(),
-        }
     }
 
     pub fn listen(self, addr: &SocketAddr) {
@@ -54,18 +50,27 @@ impl App {
         };
 
         let service = move || {
-            let ser = server.clone();
+            let server_clone = server.clone();
 
             service_fn(
                 move |req| -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send> {
                     // Find the route
-                    // send_response(req)
-                    let mut res = Response::builder();
-                    let path = ser.main_router.routes.get("/").unwrap();
+                    let res = ObsidianResponse::new();
 
-                    Box::new(future::ok((path.get_route(&Method::GET).unwrap().handler)(
-                        req, &mut res,
-                    )))
+                    if let Some(path) = server_clone.main_router.routes.get(req.uri().path()) {
+                        // Get response
+                        let route_response =
+                            (path.get_route(&req.method()).unwrap().handler)(req, res);
+
+                        // Convert into response
+                        let server_response = route_response.into();
+
+                        Box::new(future::ok(server_response))
+                    } else {
+                        let server_response = Response::new(Body::from("404 Not Found"));
+
+                        Box::new(future::ok(server_response))
+                    }
                 },
             )
         };
@@ -75,11 +80,6 @@ impl App {
             .map_err(|e| eprintln!("server error: {}", e));
 
         hyper::rt::run(server);
-    }
-
-    fn use_service(&mut self) {
-        // middleware
-        unimplemented!()
     }
 }
 
