@@ -41,5 +41,7 @@ fn main() {
             .body("<h1>This is a String</h1>".to_string())
     });
 
-    app.listen(&addr);
+    app.listen(&addr, || {
+        println!("server is listening to {}", &addr);
+    });
 }

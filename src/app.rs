@@ -21,7 +21,7 @@ impl App {
         };
 
         app.get("/favicon.ico", |_req, res: ObsidianResponse| {
-            res.send("./favicon.ico")
+            res.send_file("./favicon.ico")
         });
 
         app
@@ -43,7 +43,7 @@ impl App {
         self.main_router.delete(path, handler);
     }
 
-    pub fn listen(self, addr: &SocketAddr) {
+    pub fn listen(self, addr: &SocketAddr, callback: impl Fn()) {
         let server = AppServer {
             sub_services: self.sub_services,
             main_router: self.main_router,
@@ -78,6 +78,8 @@ impl App {
         let server = Server::bind(&addr)
             .serve(service)
             .map_err(|e| eprintln!("server error: {}", e));
+
+        callback();
 
         hyper::rt::run(server);
     }

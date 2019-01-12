@@ -115,7 +115,7 @@ impl ObsidianResponse {
         self
     }
 
-    pub fn send(mut self, file_path: &str) -> Self {
+    pub fn send_file(mut self, file_path: &str) -> Self {
         self.file_path = Some(file_path.to_string());
 
         self
