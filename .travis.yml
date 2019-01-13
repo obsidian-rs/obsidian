@@ -3,6 +3,10 @@ rust:
   - stable
   - beta
   - nightly
+branches:
+  only:
+  - master
+  - develop
 matrix:
   allow_failures:
     - rust: nightly
