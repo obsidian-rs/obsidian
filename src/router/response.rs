@@ -52,15 +52,15 @@ impl ResponseBody for Vec<u8> {
     }
 }
 
-pub struct ObsidianResponse {
+pub struct ResponseBuilder {
     response_builder: Builder,
     body: Body,
     pub file_path: Option<String>,
 }
 
-impl ObsidianResponse {
+impl ResponseBuilder {
     pub fn new() -> Self {
-        ObsidianResponse {
+        ResponseBuilder {
             response_builder: Response::builder(),
             body: Body::empty(),
             file_path: None,
@@ -122,13 +122,13 @@ impl ObsidianResponse {
     }
 }
 
-impl Into<Response<Body>> for ObsidianResponse {
+impl Into<Response<Body>> for ResponseBuilder {
     fn into(mut self) -> Response<Body> {
         self.response_builder.body(self.body).unwrap()
     }
 }
 
-impl Into<Box<Future<Item = Response<Body>, Error = hyper::Error> + Send>> for ObsidianResponse {
+impl Into<Box<Future<Item = Response<Body>, Error = hyper::Error> + Send>> for ResponseBuilder {
     fn into(self) -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send> {
         if let Some(path) = self.file_path {
             Box::new(
@@ -159,9 +159,9 @@ impl Into<Box<Future<Item = Response<Body>, Error = hyper::Error> + Send>> for O
     }
 }
 
-impl Default for ObsidianResponse {
+impl Default for ResponseBuilder {
     fn default() -> Self {
-        ObsidianResponse {
+        ResponseBuilder {
             response_builder: Response::builder(),
             body: Body::empty(),
             file_path: None,

@@ -1,4 +1,4 @@
-use super::ObsidianResponse;
+use super::ResponseBuilder;
 use hyper::Method;
 
 use super::EndPointHandler;
@@ -7,7 +7,7 @@ use std::sync::Arc;
 pub struct Route {
     pub path: String,
     pub method: Method,
-    pub handler: Arc<dyn EndPointHandler<Output = ObsidianResponse>>,
+    pub handler: Arc<dyn EndPointHandler<Output = ResponseBuilder>>,
 }
 
 impl Clone for Route {

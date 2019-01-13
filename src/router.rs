@@ -5,20 +5,25 @@ mod route;
 
 use hyper::Method;
 use std::collections::BTreeMap;
+use std::sync::Arc;
+
+pub use super::middleware::Middleware;
 
 pub use self::end_point_type::EndPointHandler;
 pub use self::resource::Resource;
-pub use self::response::ObsidianResponse;
+pub use self::response::ResponseBuilder;
 pub use self::route::Route;
 
 pub struct Router {
     pub routes: BTreeMap<String, Resource>,
+    pub middlewares: Vec<Arc<dyn Middleware>>,
 }
 
 impl Clone for Router {
     fn clone(&self) -> Self {
         Router {
             routes: self.routes.clone(),
+            middlewares: self.middlewares.clone(),
         }
     }
 }
@@ -27,6 +32,7 @@ impl Router {
     pub fn new() -> Self {
         Router {
             routes: BTreeMap::new(),
+            middlewares: Vec::new(),
         }
     }
 
@@ -44,6 +50,10 @@ impl Router {
 
     pub fn delete(&mut self, path: &str, handler: impl EndPointHandler) {
         self.inject(Method::DELETE, path, handler);
+    }
+
+    pub fn add_service(&mut self, middleware: impl Middleware) {
+        self.middlewares.push(Arc::new(middleware));
     }
 
     pub fn inject(&mut self, method: Method, path: &str, handler: impl EndPointHandler) {
@@ -69,7 +79,7 @@ mod tests {
     fn test_router_get() {
         let mut router = Router::new();
 
-        router.get("/", |_req, res: ObsidianResponse| {
+        router.get("/", |_req, res: ResponseBuilder| {
             res.status(StatusCode::OK).body("test_get")
         });
 
@@ -80,7 +90,7 @@ mod tests {
             .get_route(&Method::GET)
             .unwrap();
 
-        let res = ObsidianResponse::new();
+        let res = ResponseBuilder::new();
         let req = Request::new(Body::from(""));
 
         let mut expected_response = Response::new(Body::from("test_get"));
@@ -97,7 +107,7 @@ mod tests {
     fn test_router_post() {
         let mut router = Router::new();
 
-        router.post("/", |_req, res: ObsidianResponse| {
+        router.post("/", |_req, res: ResponseBuilder| {
             res.status(StatusCode::OK).body("test_post")
         });
 
@@ -108,7 +118,7 @@ mod tests {
             .get_route(&Method::POST)
             .unwrap();
 
-        let res = ObsidianResponse::new();
+        let res = ResponseBuilder::new();
         let req = Request::new(Body::from(""));
 
         let mut expected_response = Response::new(Body::from("test_post"));
@@ -125,7 +135,7 @@ mod tests {
     fn test_router_put() {
         let mut router = Router::new();
 
-        router.put("/", |_req, res: ObsidianResponse| {
+        router.put("/", |_req, res: ResponseBuilder| {
             res.status(StatusCode::OK).body("test_put")
         });
 
@@ -136,7 +146,7 @@ mod tests {
             .get_route(&Method::PUT)
             .unwrap();
 
-        let res = ObsidianResponse::new();
+        let res = ResponseBuilder::new();
         let req = Request::new(Body::from(""));
 
         let mut expected_response = Response::new(Body::from("test_put"));
@@ -153,7 +163,7 @@ mod tests {
     fn test_router_delete() {
         let mut router = Router::new();
 
-        router.delete("/", |_req, res: ObsidianResponse| {
+        router.delete("/", |_req, res: ResponseBuilder| {
             res.status(StatusCode::OK).body("test_delete")
         });
 
@@ -164,7 +174,7 @@ mod tests {
             .get_route(&Method::DELETE)
             .unwrap();
 
-        let res = ObsidianResponse::new();
+        let res = ResponseBuilder::new();
         let req = Request::new(Body::from(""));
 
         let mut expected_response = Response::new(Body::from("test_delete"));

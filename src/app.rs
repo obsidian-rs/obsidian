@@ -6,21 +6,22 @@ use hyper::rt::Future;
 use hyper::service::service_fn;
 use hyper::{Body, Response, Server};
 
-use super::router::{EndPointHandler, ObsidianResponse, Router};
+use super::middleware::Middleware;
+use super::router::{EndPointHandler, ResponseBuilder, Router};
 
 pub struct App {
-    sub_services: BTreeMap<String, Router>,
+    sub_router: BTreeMap<String, Router>,
     main_router: Router,
 }
 
 impl App {
     pub fn new() -> Self {
         let mut app = App {
-            sub_services: BTreeMap::new(),
+            sub_router: BTreeMap::new(),
             main_router: Router::new(),
         };
 
-        app.get("/favicon.ico", |_req, res: ObsidianResponse| {
+        app.get("/favicon.ico", |_req, res: ResponseBuilder| {
             res.send_file("./favicon.ico")
         });
 
@@ -43,19 +44,26 @@ impl App {
         self.main_router.delete(path, handler);
     }
 
+    pub fn use_service(&mut self, middleware: impl Middleware) {
+        self.main_router.add_service(middleware);
+    }
+
     pub fn listen(self, addr: &SocketAddr, callback: impl Fn()) {
-        let server = AppServer {
-            sub_services: self.sub_services,
+        let app_server = AppServer {
+            sub_router: self.sub_router,
             main_router: self.main_router,
         };
 
         let service = move || {
-            let server_clone = server.clone();
+            let server_clone = app_server.clone();
 
             service_fn(
                 move |req| -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send> {
                     // Find the route
-                    let res = ObsidianResponse::new();
+                    let res = ResponseBuilder::new();
+
+                    // Run middleware
+                    //server_clone.run_middleware(req);
 
                     if let Some(path) = server_clone.main_router.routes.get(req.uri().path()) {
                         // Get response
@@ -87,6 +95,16 @@ impl App {
 
 #[derive(Clone)]
 pub struct AppServer {
-    sub_services: BTreeMap<String, Router>,
+    sub_router: BTreeMap<String, Router>,
     main_router: Router,
+}
+
+impl AppServer {
+    /*pub fn resolve_endpoint(
+        &self,
+        req: Request<Body>,
+        route: Route,
+    ) -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send> {
+        let context = Context.new(req, route.handler, main_router);
+    }*/
 }
