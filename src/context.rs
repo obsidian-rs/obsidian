@@ -10,7 +10,7 @@ pub struct Context<'a> {
     request: Request<Body>,
     response: Response<Body>,
     middleware: &'a mut Vec<Arc<Middleware>>,
-    route_endpoint: Arc<dyn EndPointHandler<Output = ResponseBuilder>>,
+    route_endpoint: &'a Arc<dyn EndPointHandler<Output = ResponseBuilder>>,
     current_index: usize,
     // params
 }
@@ -18,7 +18,7 @@ pub struct Context<'a> {
 impl<'a> Context<'a> {
     pub fn new(
         request: Request<Body>,
-        route_endpoint: Arc<dyn EndPointHandler<Output = ResponseBuilder>>,
+        route_endpoint: &'a Arc<dyn EndPointHandler<Output = ResponseBuilder>>,
         middleware: &'a mut Vec<Arc<Middleware>>,
     ) -> Self {
         Context {

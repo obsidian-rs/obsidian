@@ -4,8 +4,9 @@ use std::net::SocketAddr;
 
 use hyper::rt::Future;
 use hyper::service::service_fn;
-use hyper::{Body, Response, Server};
+use hyper::{Body, Request, Response, Server};
 
+use super::context::Context;
 use super::middleware::Middleware;
 use super::router::{EndPointHandler, ResponseBuilder, Router};
 
@@ -60,25 +61,7 @@ impl App {
             service_fn(
                 move |req| -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send> {
                     // Find the route
-                    let res = ResponseBuilder::new();
-
-                    // Run middleware
-                    //server_clone.run_middleware(req);
-
-                    if let Some(path) = server_clone.main_router.routes.get(req.uri().path()) {
-                        // Get response
-                        let route_response =
-                            (path.get_route(&req.method()).unwrap().handler)(req, res);
-
-                        // Convert into response
-                        let future_response = route_response.into();
-
-                        future_response
-                    } else {
-                        let server_response = Response::new(Body::from("404 Not Found"));
-
-                        Box::new(future::ok(server_response))
-                    }
+                    server_clone.resolve_endpoint(req)
                 },
             )
         };
@@ -100,11 +83,22 @@ pub struct AppServer {
 }
 
 impl AppServer {
-    /*pub fn resolve_endpoint(
+    pub fn resolve_endpoint(
         &self,
         req: Request<Body>,
-        route: Route,
     ) -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send> {
-        let context = Context.new(req, route.handler, main_router);
-    }*/
+        if let Some(path) = self.main_router.routes.get(req.uri().path()) {
+            let route = path.get_route(&req.method()).unwrap();
+            let middlewares = &mut self.main_router.middlewares.clone();
+            let context = Context::new(req, &route.handler, middlewares);
+
+            let res = context.next();
+
+            res
+        } else {
+            let server_response = Response::new(Body::from("404 Not Found"));
+
+            Box::new(future::ok(server_response))
+        }
+    }
 }

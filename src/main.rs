@@ -2,7 +2,6 @@ extern crate obsidian;
 
 use obsidian::{header, router::ResponseBuilder, App, StatusCode};
 use serde_derive::*;
-use serde_json;
 
 // Testing example
 
