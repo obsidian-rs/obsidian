@@ -8,10 +8,8 @@ use super::router::{EndPointHandler, ResponseBuilder};
 
 pub struct Context<'a> {
     request: Request<Body>,
-    response: Response<Body>,
-    middleware: &'a mut Vec<Arc<Middleware>>,
+    middleware: &'a [Arc<Middleware>],
     route_endpoint: &'a Arc<dyn EndPointHandler<Output = ResponseBuilder>>,
-    current_index: usize,
     // params
 }
 
@@ -19,20 +17,19 @@ impl<'a> Context<'a> {
     pub fn new(
         request: Request<Body>,
         route_endpoint: &'a Arc<dyn EndPointHandler<Output = ResponseBuilder>>,
-        middleware: &'a mut Vec<Arc<Middleware>>,
+        middleware: &'a [Arc<Middleware>],
     ) -> Self {
         Context {
             request,
             middleware,
-            response: Response::new(Body::empty()),
             route_endpoint,
-            current_index: 0,
         }
     }
 
-    pub fn next(self) -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send> {
-        if let Some(current) = self.middleware.get(self.current_index) {
-            current.run(&self)
+    pub fn next(mut self) -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send> {
+        if let Some((current, all_next)) = self.middleware.split_first() {
+            self.middleware = all_next;
+            current.run(self)
         } else {
             let res = ResponseBuilder::new();
             let route_response = (*self.route_endpoint)(self.request, res);

@@ -6,6 +6,6 @@ use super::context::Context;
 pub trait Middleware: Send + Sync + 'static {
     fn run<'a>(
         &'a self,
-        context: &Context<'a>,
+        context: Context<'a>,
     ) -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send>;
 }
