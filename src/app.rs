@@ -1,8 +1,9 @@
-use futures::future;
+use futures::{future, Future, Stream};
 use std::collections::BTreeMap;
+use std::collections::HashMap;
 use std::net::SocketAddr;
+use url::form_urlencoded;
 
-use hyper::rt::Future;
 use hyper::service::service_fn;
 use hyper::{Body, Request, Response, Server};
 
@@ -61,6 +62,8 @@ impl App {
             service_fn(
                 move |req| -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send> {
                     // Find the route
+                    //let (parts, body) = req.into_parts();
+                    //server_clone.resolve_endpoint(parts, body)
                     server_clone.resolve_endpoint(req)
                 },
             )
@@ -87,14 +90,26 @@ impl AppServer {
         &self,
         req: Request<Body>,
     ) -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send> {
-        if let Some(path) = self.main_router.routes.get(req.uri().path()) {
-            let route = path.get_route(&req.method()).unwrap();
-            let middlewares = &mut self.main_router.middlewares.clone();
-            let context = Context::new(req, &route.handler, middlewares);
+        let (parts, body) = req.into_parts();
+        if let Some(path) = self.main_router.routes.clone().get(parts.uri.path()) {
+            let route = path.get_route(&parts.method).unwrap().clone();
+            let middlewares = self.main_router.middlewares.clone();
 
-            let res = context.next();
+            Box::new(body.concat2().and_then(move |b| {
+                let params = form_urlencoded::parse(b.as_ref())
+                    .into_owned()
+                    .collect::<HashMap<String, String>>();
 
-            res
+                for (key, value) in &params {
+                    println!("{} / {}", key, value);
+                }
+
+                let req = Request::from_parts(parts, Body::from(b));
+
+                let context = Context::new(req, &route.handler, &middlewares, &params);
+
+                context.next()
+            }))
         } else {
             let server_response = Response::new(Body::from("404 Not Found"));
 

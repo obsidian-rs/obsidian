@@ -1,7 +1,4 @@
 //#[deny(missing_docs)]
-#![feature(await_macro)]
-#![feature(pin)]
-#![feature(futures_api)]
 
 pub mod app;
 pub mod context;

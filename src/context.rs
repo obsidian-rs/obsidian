@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use futures::future::Future;
@@ -7,10 +8,10 @@ use super::middleware::Middleware;
 use super::router::{EndPointHandler, ResponseBuilder};
 
 pub struct Context<'a> {
-    request: Request<Body>,
-    middleware: &'a [Arc<Middleware>],
-    route_endpoint: &'a Arc<dyn EndPointHandler<Output = ResponseBuilder>>,
-    // params
+    pub request: Request<Body>,
+    pub middleware: &'a [Arc<Middleware>],
+    pub route_endpoint: &'a Arc<dyn EndPointHandler<Output = ResponseBuilder>>,
+    pub params: &'a HashMap<String, String>,
 }
 
 impl<'a> Context<'a> {
@@ -18,11 +19,13 @@ impl<'a> Context<'a> {
         request: Request<Body>,
         route_endpoint: &'a Arc<dyn EndPointHandler<Output = ResponseBuilder>>,
         middleware: &'a [Arc<Middleware>],
+        params: &'a HashMap<String, String>,
     ) -> Self {
         Context {
             request,
             middleware,
             route_endpoint,
+            params,
         }
     }
 
