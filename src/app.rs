@@ -61,9 +61,7 @@ impl App {
 
             service_fn(
                 move |req| -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send> {
-                    // Find the route
-                    //let (parts, body) = req.into_parts();
-                    //server_clone.resolve_endpoint(parts, body)
+                    // Resolve the route endpoint
                     server_clone.resolve_endpoint(req)
                 },
             )
@@ -95,6 +93,7 @@ impl AppServer {
             let route = path.get_route(&parts.method).unwrap().clone();
             let middlewares = self.main_router.middlewares.clone();
 
+            // Get forms params from body
             Box::new(body.concat2().and_then(move |b| {
                 let params = form_urlencoded::parse(b.as_ref())
                     .into_owned()

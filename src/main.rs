@@ -1,12 +1,9 @@
 extern crate obsidian;
 
 use futures::future::Future;
-use futures::Stream;
-use hyper::{Body, Request, Response};
+use hyper::{Body, Response};
 use obsidian::{header, router::ResponseBuilder, App, Context, Middleware, StatusCode};
 use serde_derive::*;
-use std::collections::HashMap;
-use url::form_urlencoded;
 
 // Testing example
 
