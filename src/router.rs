@@ -1,4 +1,5 @@
 mod end_point_type;
+mod request;
 mod resource;
 mod response;
 mod route;
@@ -10,6 +11,7 @@ use std::sync::Arc;
 pub use super::middleware::Middleware;
 
 pub use self::end_point_type::EndPointHandler;
+pub use self::request::RequestData;
 pub use self::resource::Resource;
 pub use self::response::ResponseBuilder;
 pub use self::route::Route;
@@ -74,6 +76,7 @@ mod tests {
     use super::*;
     use http::StatusCode;
     use hyper::{Body, Request, Response};
+    use std::collections::HashMap;
 
     #[test]
     fn test_router_get() {
@@ -92,11 +95,13 @@ mod tests {
 
         let res = ResponseBuilder::new();
         let req = Request::new(Body::from(""));
+        let params = HashMap::new();
+        let request_data = RequestData::new(req, params);
 
         let mut expected_response = Response::new(Body::from("test_get"));
         *expected_response.status_mut() = StatusCode::OK;
 
-        let actual_response = (route.handler)(req, res);
+        let actual_response = (route.handler)(request_data, res);
         let actual_response: Response<Body> = actual_response.into();
 
         assert_eq!(route.path, "/");
@@ -120,11 +125,13 @@ mod tests {
 
         let res = ResponseBuilder::new();
         let req = Request::new(Body::from(""));
+        let params = HashMap::new();
+        let request_data = RequestData::new(req, params);
 
         let mut expected_response = Response::new(Body::from("test_post"));
         *expected_response.status_mut() = StatusCode::OK;
 
-        let actual_response = (route.handler)(req, res);
+        let actual_response = (route.handler)(request_data, res);
         let actual_response: Response<Body> = actual_response.into();
 
         assert_eq!(route.path, "/");
@@ -148,11 +155,13 @@ mod tests {
 
         let res = ResponseBuilder::new();
         let req = Request::new(Body::from(""));
+        let params = HashMap::new();
+        let request_data = RequestData::new(req, params);
 
         let mut expected_response = Response::new(Body::from("test_put"));
         *expected_response.status_mut() = StatusCode::OK;
 
-        let actual_response = (route.handler)(req, res);
+        let actual_response = (route.handler)(request_data, res);
         let actual_response: Response<Body> = actual_response.into();
 
         assert_eq!(route.path, "/");
@@ -176,11 +185,13 @@ mod tests {
 
         let res = ResponseBuilder::new();
         let req = Request::new(Body::from(""));
+        let params = HashMap::new();
+        let request_data = RequestData::new(req, params);
 
         let mut expected_response = Response::new(Body::from("test_delete"));
         *expected_response.status_mut() = StatusCode::OK;
 
-        let actual_response = (route.handler)(req, res);
+        let actual_response = (route.handler)(request_data, res);
         let actual_response: Response<Body> = actual_response.into();
 
         assert_eq!(route.path, "/");

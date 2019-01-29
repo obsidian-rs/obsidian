@@ -5,7 +5,7 @@ use futures::future::Future;
 use hyper::{Body, Request, Response};
 
 use super::middleware::Middleware;
-use super::router::{EndPointHandler, ResponseBuilder};
+use super::router::{EndPointHandler, RequestData, ResponseBuilder};
 
 pub struct Context<'a> {
     pub request: Request<Body>,
@@ -35,7 +35,8 @@ impl<'a> Context<'a> {
             current.run(self)
         } else {
             let res = ResponseBuilder::new();
-            let route_response = (*self.route_endpoint)(self.request, res);
+            let request_data = RequestData::new(self.request, self.params.clone());
+            let route_response = (*self.route_endpoint)(request_data, res);
             route_response.into()
         }
     }

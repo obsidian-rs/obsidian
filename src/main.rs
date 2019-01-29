@@ -2,7 +2,11 @@ extern crate obsidian;
 
 use futures::future::Future;
 use hyper::{Body, Response};
-use obsidian::{header, router::ResponseBuilder, App, Context, Middleware, StatusCode};
+use obsidian::{
+    header,
+    router::{RequestData, ResponseBuilder},
+    App, Context, Middleware, StatusCode,
+};
 use serde_derive::*;
 
 // Testing example
@@ -66,8 +70,10 @@ fn main() {
         res.status(StatusCode::OK).send_file("./test.html")
     });
 
-    app.post("/paramtest2", |_req, res: ResponseBuilder| {
-        println!("test");
+    app.post("/paramtest2", |_req: RequestData, res: ResponseBuilder| {
+        for (key, value) in &_req.params {
+            println!("{} / {}", key, value);
+        }
         res.status(StatusCode::OK).body("params result")
     });
 
