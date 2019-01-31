@@ -95,12 +95,18 @@ impl AppServer {
 
             // Get forms params from body
             Box::new(body.concat2().and_then(move |b| {
-                let params = form_urlencoded::parse(b.as_ref())
-                    .into_owned()
-                    .collect::<HashMap<String, String>>();
+                let params_iter = form_urlencoded::parse(b.as_ref()).into_owned();
 
-                for (key, value) in &params {
-                    println!("{} / {}", key, value);
+                let mut params: HashMap<String, Vec<String>> = HashMap::new();
+
+                for (key, value) in params_iter {
+                    (*params.entry(key).or_insert(Vec::new())).push(value);
+                }
+
+                for (key, values) in &params {
+                    for val in values {
+                        println!("{} / {}", key, val);
+                    }
                 }
 
                 let req = Request::from_parts(parts, Body::from(b));

@@ -71,9 +71,12 @@ fn main() {
     });
 
     app.post("/paramtest2", |_req: RequestData, res: ResponseBuilder| {
-        for (key, value) in &_req.params {
-            println!("{} / {}", key, value);
+        for (key, values) in &_req.params {
+            for val in values {
+                println!("{} / {}", key, val);
+            }
         }
+
         res.status(StatusCode::OK).body("params result")
     });
 

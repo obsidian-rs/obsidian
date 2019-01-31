@@ -11,7 +11,7 @@ pub struct Context<'a> {
     pub request: Request<Body>,
     pub middleware: &'a [Arc<Middleware>],
     pub route_endpoint: &'a Arc<dyn EndPointHandler<Output = ResponseBuilder>>,
-    pub params: &'a HashMap<String, String>,
+    pub params: &'a HashMap<String, Vec<String>>,
 }
 
 impl<'a> Context<'a> {
@@ -19,7 +19,7 @@ impl<'a> Context<'a> {
         request: Request<Body>,
         route_endpoint: &'a Arc<dyn EndPointHandler<Output = ResponseBuilder>>,
         middleware: &'a [Arc<Middleware>],
-        params: &'a HashMap<String, String>,
+        params: &'a HashMap<String, Vec<String>>,
     ) -> Self {
         Context {
             request,
