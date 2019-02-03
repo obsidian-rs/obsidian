@@ -9,7 +9,7 @@ use hyper::{Body, Request, Response, Server};
 
 use super::context::Context;
 use super::middleware::Middleware;
-use super::router::{EndPointHandler, ResponseBuilder, Router};
+use super::router::{EndPointHandler, ResponseBuilder, RouteData, Router};
 
 pub struct App {
     sub_router: BTreeMap<String, Router>,
@@ -110,8 +110,9 @@ impl AppServer {
                 }
 
                 let req = Request::from_parts(parts, Body::from(b));
+                let route_data = &RouteData::from(params);
 
-                let context = Context::new(req, &route.handler, &middlewares, &params);
+                let context = Context::new(req, &route.handler, &middlewares, &route_data);
 
                 context.next()
             }))

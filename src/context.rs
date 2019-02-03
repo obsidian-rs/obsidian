@@ -1,17 +1,16 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use futures::future::Future;
 use hyper::{Body, Request, Response};
 
 use super::middleware::Middleware;
-use super::router::{EndPointHandler, RequestData, ResponseBuilder};
+use super::router::{EndPointHandler, RequestData, ResponseBuilder, RouteData};
 
 pub struct Context<'a> {
     pub request: Request<Body>,
     pub middleware: &'a [Arc<Middleware>],
     pub route_endpoint: &'a Arc<dyn EndPointHandler<Output = ResponseBuilder>>,
-    pub params: &'a HashMap<String, Vec<String>>,
+    pub params: &'a RouteData,
 }
 
 impl<'a> Context<'a> {
@@ -19,7 +18,7 @@ impl<'a> Context<'a> {
         request: Request<Body>,
         route_endpoint: &'a Arc<dyn EndPointHandler<Output = ResponseBuilder>>,
         middleware: &'a [Arc<Middleware>],
-        params: &'a HashMap<String, Vec<String>>,
+        params: &'a RouteData,
     ) -> Self {
         Context {
             request,

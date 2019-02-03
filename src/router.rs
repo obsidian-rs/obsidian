@@ -3,6 +3,7 @@ mod request;
 mod resource;
 mod response;
 mod route;
+mod route_data;
 
 use hyper::Method;
 use std::collections::BTreeMap;
@@ -15,6 +16,7 @@ pub use self::request::RequestData;
 pub use self::resource::Resource;
 pub use self::response::ResponseBuilder;
 pub use self::route::Route;
+pub use self::route_data::RouteData;
 
 pub struct Router {
     pub routes: BTreeMap<String, Resource>,
@@ -96,7 +98,7 @@ mod tests {
         let res = ResponseBuilder::new();
         let req = Request::new(Body::from(""));
         let params = HashMap::new();
-        let request_data = RequestData::new(req, params);
+        let request_data = RequestData::new(req, RouteData::from(params));
 
         let mut expected_response = Response::new(Body::from("test_get"));
         *expected_response.status_mut() = StatusCode::OK;
@@ -126,7 +128,7 @@ mod tests {
         let res = ResponseBuilder::new();
         let req = Request::new(Body::from(""));
         let params = HashMap::new();
-        let request_data = RequestData::new(req, params);
+        let request_data = RequestData::new(req, RouteData::from(params));
 
         let mut expected_response = Response::new(Body::from("test_post"));
         *expected_response.status_mut() = StatusCode::OK;
@@ -156,7 +158,7 @@ mod tests {
         let res = ResponseBuilder::new();
         let req = Request::new(Body::from(""));
         let params = HashMap::new();
-        let request_data = RequestData::new(req, params);
+        let request_data = RequestData::new(req, RouteData::from(params));
 
         let mut expected_response = Response::new(Body::from("test_put"));
         *expected_response.status_mut() = StatusCode::OK;
@@ -186,7 +188,7 @@ mod tests {
         let res = ResponseBuilder::new();
         let req = Request::new(Body::from(""));
         let params = HashMap::new();
-        let request_data = RequestData::new(req, params);
+        let request_data = RequestData::new(req, RouteData::from(params));
 
         let mut expected_response = Response::new(Body::from("test_delete"));
         *expected_response.status_mut() = StatusCode::OK;

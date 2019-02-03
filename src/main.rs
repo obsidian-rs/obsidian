@@ -71,11 +71,14 @@ fn main() {
     });
 
     app.post("/paramtest2", |_req: RequestData, res: ResponseBuilder| {
-        for (key, values) in &_req.params {
-            for val in values {
-                println!("{} / {}", key, val);
-            }
+        let multi_test: Vec<String> = _req.params("test").into();
+        let unique_test: String = _req.params("test2").into();
+
+        for value in multi_test {
+            println!("test / {}", value);
         }
+
+        println!("test2 / {}", unique_test);
 
         res.status(StatusCode::OK).body("params result")
     });
