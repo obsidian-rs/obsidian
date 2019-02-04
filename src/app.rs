@@ -89,6 +89,7 @@ impl AppServer {
         req: Request<Body>,
     ) -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send> {
         let (parts, body) = req.into_parts();
+
         if let Some(path) = self.main_router.routes.clone().get(parts.uri.path()) {
             let route = path.get_route(&parts.method).unwrap().clone();
             let middlewares = self.main_router.middlewares.clone();

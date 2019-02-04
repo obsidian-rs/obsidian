@@ -1,5 +1,7 @@
 use super::route_data::RouteData;
 use hyper::{Body, Request};
+use serde_json::Value;
+use std::collections::HashMap;
 
 pub struct ParamsBox {
     params: Vec<String>,
@@ -25,14 +27,18 @@ impl Into<Vec<String>> for ParamsBox {
 
 pub struct RequestData {
     pub request: Request<Body>,
-    pub params_data: RouteData,
+    pub params_data: HashMap<String, Vec<String>>,
+    pub json: Value,
 }
 
 impl RequestData {
-    pub fn new(request: Request<Body>, params_data: RouteData) -> Self {
+    pub fn new(request: Request<Body>, route_data: RouteData) -> Self {
+        let (params_data, json) = route_data.get_route_data();
+
         RequestData {
             request,
             params_data,
+            json,
         }
     }
 

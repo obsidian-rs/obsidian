@@ -10,7 +10,7 @@ pub struct Context<'a> {
     pub request: Request<Body>,
     pub middleware: &'a [Arc<Middleware>],
     pub route_endpoint: &'a Arc<dyn EndPointHandler<Output = ResponseBuilder>>,
-    pub params: &'a RouteData,
+    pub route_data: &'a RouteData,
 }
 
 impl<'a> Context<'a> {
@@ -18,13 +18,13 @@ impl<'a> Context<'a> {
         request: Request<Body>,
         route_endpoint: &'a Arc<dyn EndPointHandler<Output = ResponseBuilder>>,
         middleware: &'a [Arc<Middleware>],
-        params: &'a RouteData,
+        route_data: &'a RouteData,
     ) -> Self {
         Context {
             request,
             middleware,
             route_endpoint,
-            params,
+            route_data,
         }
     }
 
@@ -34,7 +34,7 @@ impl<'a> Context<'a> {
             current.run(self)
         } else {
             let res = ResponseBuilder::new();
-            let request_data = RequestData::new(self.request, self.params.clone());
+            let request_data = RequestData::new(self.request, self.route_data.clone());
             let route_response = (*self.route_endpoint)(request_data, res);
             route_response.into()
         }
