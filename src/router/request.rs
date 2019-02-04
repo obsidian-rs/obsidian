@@ -37,8 +37,10 @@ impl RequestData {
     }
 
     pub fn params(&self, key: &str) -> ParamsBox {
-        let params_collection = self.params_data.get(key).clone();
-
-        ParamsBox::new(params_collection)
+        if let Some(params_collection) = self.params_data.get(key) {
+            ParamsBox::new(params_collection.clone())
+        } else {
+            ParamsBox::new(vec!["".to_string()])
+        }
     }
 }

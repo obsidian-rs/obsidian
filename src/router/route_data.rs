@@ -16,8 +16,8 @@ impl RouteData {
         (*self.params.entry(key).or_insert(Vec::new())).push(value);
     }
 
-    pub fn get(&self, key: &str) -> &Vec<String> {
-        self.params.get(key).unwrap()
+    pub fn get(&self, key: &str) -> Option<&Vec<String>> {
+        self.params.get(key)
     }
 
     pub fn get_params(self) -> HashMap<String, Vec<String>> {
