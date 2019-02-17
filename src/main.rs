@@ -9,6 +9,7 @@ use obsidian::{
 };
 use serde_derive::*;
 use serde_json::Value;
+use url::form_urlencoded;
 
 // Testing example
 
@@ -19,6 +20,8 @@ struct Point {
 }
 
 pub struct BodyParser {}
+pub struct UrlEncodedParser {}
+pub struct Logger {}
 
 impl BodyParser {
     pub fn new() -> Self {
@@ -27,38 +30,69 @@ impl BodyParser {
 }
 
 impl Middleware for BodyParser {
-    fn run<'a>(
+    fn handle<'a>(
         &'a self,
         context: Context<'a>,
     ) -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send> {
+        let mut context = context;
         let (parts, body) = context.request.into_parts();
-        let route_endpoint = context.route_endpoint;
-        let middleware = context.middleware;
-        let mut route_data = context.route_data.clone();
 
-        Box::new(
-            body.concat2()
-                .map(|b| {
-                    let json_result: serde_json::Result<Value> = serde_json::from_slice(&b);
+        let b = match body.concat2().wait() {
+            Ok(chunk) => chunk,
+            Err(e) => { 
+                println!("{}", e); 
+                hyper::Chunk::default()
+            },
+        };
 
-                    match json_result {
-                        Ok(body) => route_data.add_json(body),
-                        Err(e) => println!("{}", e),
-                    }
+        let json_result: serde_json::Result<Value> = serde_json::from_slice(&b);
 
-                    let req = Request::from_parts(parts, Body::from(b));
+        match json_result {
+            Ok(json_body) => context.route_data.add_json(json_body),
+            Err(e) => println!("{}", e),
+        }
 
-                    let context = Context::new(req, &route_endpoint, &middleware, &route_data);
+        let req = Request::from_parts(parts, Body::from(b));
 
-                    context.next()
-                })
-                .wait()
-                .unwrap(),
-        )
+        context.request = req;
+        context.next()
     }
 }
 
-pub struct Logger {}
+impl UrlEncodedParser {
+    pub fn new() -> Self {
+        UrlEncodedParser {}
+    }
+}
+
+impl Middleware for UrlEncodedParser {
+    fn handle<'a>(
+        &'a self,
+        context: Context<'a>,
+    ) -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send> {
+        let mut context = context;
+        let (parts, body) = context.request.into_parts();
+
+        let b = match body.concat2().wait() {
+            Ok(chunk) => chunk,
+            Err(e) => { 
+                println!("{}", e); 
+                hyper::Chunk::default()
+            },
+        };
+
+        let params_iter = form_urlencoded::parse(b.as_ref()).into_owned();
+
+        for (key, value) in params_iter {
+            context.route_data.add_param(key, value);
+        }
+
+        let req = Request::from_parts(parts, Body::from(b));
+
+        context.request = req;
+        context.next()
+    }
+}
 
 impl Logger {
     pub fn new() -> Self {
@@ -67,7 +101,7 @@ impl Logger {
 }
 
 impl Middleware for Logger {
-    fn run<'a>(
+    fn handle<'a>(
         &'a self,
         context: Context<'a>,
     ) -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send> {
@@ -137,11 +171,11 @@ fn main() {
 
     let body_parser = BodyParser::new();
     let logger = Logger::new();
-    let logger2 = Logger::new();
+    let url_parser = UrlEncodedParser::new();
 
     app.use_service(logger);
+    app.use_service(url_parser);
     app.use_service(body_parser);
-    app.use_service(logger2);
 
     app.listen(&addr, || {
         println!("server is listening to {}", &addr);

@@ -1,8 +1,6 @@
 use futures::{future, Future, Stream};
 use std::collections::BTreeMap;
-use std::collections::HashMap;
 use std::net::SocketAddr;
-use url::form_urlencoded;
 
 use hyper::service::service_fn;
 use hyper::{Body, Request, Response, Server};
@@ -90,30 +88,17 @@ impl AppServer {
     ) -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send> {
         let (parts, body) = req.into_parts();
 
+        // Currently support only one router until radix tree complete.
         if let Some(path) = self.main_router.routes.clone().get(parts.uri.path()) {
             let route = path.get_route(&parts.method).unwrap().clone();
             let middlewares = self.main_router.middlewares.clone();
 
-            // Get forms params from body
+            // Temporary used as the hyper stream thread block. async will be used soon
             Box::new(body.concat2().and_then(move |b| {
-                let params_iter = form_urlencoded::parse(b.as_ref()).into_owned();
-
-                let mut params: HashMap<String, Vec<String>> = HashMap::new();
-
-                for (key, value) in params_iter {
-                    (*params.entry(key).or_insert(Vec::new())).push(value);
-                }
-
-                for (key, values) in &params {
-                    for val in values {
-                        println!("{} / {}", key, val);
-                    }
-                }
-
                 let req = Request::from_parts(parts, Body::from(b));
-                let route_data = &RouteData::from(params);
+                let route_data = &mut RouteData::new();
 
-                let context = Context::new(req, &route.handler, &middlewares, &route_data);
+                let context = Context::new(req, &route.handler, &middlewares, route_data);
 
                 context.next()
             }))
