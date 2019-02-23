@@ -1,12 +1,11 @@
-use super::ObsidianResponse;
-use hyper::{Body, Request};
+use super::{RequestData, ResponseBuilder};
 
 pub trait EndPointHandler:
-    Fn(Request<Body>, ObsidianResponse) -> ObsidianResponse + Send + Sync + 'static
+    Fn(RequestData, ResponseBuilder) -> ResponseBuilder + Send + Sync + 'static
 {
 }
 
 impl<T> EndPointHandler for T where
-    T: Fn(Request<Body>, ObsidianResponse) -> ObsidianResponse + Send + Sync + 'static
+    T: Fn(RequestData, ResponseBuilder) -> ResponseBuilder + Send + Sync + 'static
 {
 }
