@@ -1,18 +1,17 @@
-extern crate obsidian;
-
 use futures::{Future, Stream};
-use hyper::{Body, Request, Response};
-use obsidian::{
-    header,
-    router::{RequestData, ResponseBuilder},
-    App, Context, Middleware, StatusCode,
-};
 use serde_derive::*;
 use serde_json::Value;
 use url::form_urlencoded;
 
-// Testing example
+use obsidian::{
+    context::Context,
+    header,
+    middleware::Middleware,
+    router::{RequestData, ResponseBuilder},
+    App, Body, Request, Response, StatusCode,
+};
 
+// Testing example
 #[derive(Serialize, Deserialize, Debug)]
 struct Point {
     x: i32,
@@ -39,10 +38,10 @@ impl Middleware for BodyParser {
 
         let b = match body.concat2().wait() {
             Ok(chunk) => chunk,
-            Err(e) => { 
-                println!("{}", e); 
+            Err(e) => {
+                println!("{}", e);
                 hyper::Chunk::default()
-            },
+            }
         };
 
         let json_result: serde_json::Result<Value> = serde_json::from_slice(&b);
@@ -75,10 +74,10 @@ impl Middleware for UrlEncodedParser {
 
         let b = match body.concat2().wait() {
             Ok(chunk) => chunk,
-            Err(e) => { 
-                println!("{}", e); 
+            Err(e) => {
+                println!("{}", e);
                 hyper::Chunk::default()
-            },
+            }
         };
 
         let params_iter = form_urlencoded::parse(b.as_ref()).into_owned();

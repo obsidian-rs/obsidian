@@ -9,7 +9,7 @@ use hyper::Method;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-pub use super::middleware::Middleware;
+use crate::middleware::Middleware;
 
 pub use self::end_point_type::EndPointHandler;
 pub use self::request::RequestData;

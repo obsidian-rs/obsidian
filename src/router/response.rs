@@ -1,15 +1,9 @@
-use http::{
-    header::HeaderName,
-    response::{Builder, Response},
-    version::Version,
-    StatusCode,
-};
-use hyper::Body;
+use futures::{future, future::Future};
+use http::response::Builder;
+use hyper::{header::HeaderName, Body, Response, StatusCode, Version};
 use serde::ser::Serialize;
 use serde_json;
 use std::any::Any;
-
-use futures::{future, future::Future};
 
 use tokio_fs;
 use tokio_io;
@@ -52,6 +46,8 @@ impl ResponseBody for Vec<u8> {
     }
 }
 
+/// ResponseBuilder use builder style let developer build http response.
+/// This struct will be passed into every endpoint handle.
 pub struct ResponseBuilder {
     response_builder: Builder,
     body: Body,

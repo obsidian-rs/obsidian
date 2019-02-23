@@ -1,7 +1,8 @@
-use super::route_data::RouteData;
 use hyper::{Body, Request};
 use serde_json::Value;
 use std::collections::HashMap;
+
+use super::RouteData;
 
 pub struct ParamsBox {
     params: Vec<String>,

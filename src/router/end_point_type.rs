@@ -1,5 +1,4 @@
-use super::RequestData;
-use super::ResponseBuilder;
+use super::{RequestData, ResponseBuilder};
 
 pub trait EndPointHandler:
     Fn(RequestData, ResponseBuilder) -> ResponseBuilder + Send + Sync + 'static

@@ -3,8 +3,8 @@ use std::sync::Arc;
 use futures::future::Future;
 use hyper::{Body, Request, Response};
 
-use super::middleware::Middleware;
-use super::router::{EndPointHandler, RequestData, ResponseBuilder, RouteData};
+use crate::middleware::Middleware;
+use crate::router::{EndPointHandler, RequestData, ResponseBuilder, RouteData};
 
 pub struct Context<'a> {
     pub request: Request<Body>,
@@ -33,9 +33,9 @@ impl<'a> Context<'a> {
             self.middleware = all_next;
             current.handle(self)
         } else {
-            let res = ResponseBuilder::new();
+            let response_builder = ResponseBuilder::new();
             let request_data = RequestData::new(self.request, self.route_data.clone());
-            let route_response = (*self.route_endpoint)(request_data, res);
+            let route_response = (*self.route_endpoint)(request_data, response_builder);
             route_response.into()
         }
     }

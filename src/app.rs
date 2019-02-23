@@ -1,14 +1,15 @@
 use futures::{future, Future, Stream};
+use hyper::{service::service_fn, Body, Request, Response, Server};
 use std::collections::BTreeMap;
 use std::net::SocketAddr;
 
-use hyper::service::service_fn;
-use hyper::{Body, Request, Response, Server};
+use crate::context::Context;
+use crate::middleware::Middleware;
+use crate::router::{EndPointHandler, ResponseBuilder, RouteData, Router};
 
-use super::context::Context;
-use super::middleware::Middleware;
-use super::router::{EndPointHandler, ResponseBuilder, RouteData, Router};
-
+/// There are two level of router
+/// - App level -> main_router, middleware for this level will be run for all endpoint
+/// - Router level -> sub_router, smaller group of endpoint
 pub struct App {
     sub_router: BTreeMap<String, Router>,
     main_router: Router,
@@ -76,7 +77,7 @@ impl App {
 }
 
 #[derive(Clone)]
-pub struct AppServer {
+struct AppServer {
     sub_router: BTreeMap<String, Router>,
     main_router: Router,
 }
@@ -89,9 +90,10 @@ impl AppServer {
         let (parts, body) = req.into_parts();
 
         // Currently support only one router until radix tree complete.
-        if let Some(path) = self.main_router.routes.clone().get(parts.uri.path()) {
-            let route = path.get_route(&parts.method).unwrap().clone();
-            let middlewares = self.main_router.middlewares.clone();
+        if let Some(ref path) = self.main_router.routes.get(parts.uri.path()) {
+            // Temporary used to owned to move the variables for lifetime in and_then
+            let route = path.get_route(&parts.method).unwrap().to_owned();
+            let middlewares = self.main_router.middlewares.to_owned();
 
             // Temporary used as the hyper stream thread block. async will be used soon
             Box::new(body.concat2().and_then(move |b| {

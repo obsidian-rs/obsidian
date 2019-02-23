@@ -1,7 +1,7 @@
 use futures::future::Future;
 use hyper::{Body, Response};
 
-use super::context::Context;
+use crate::context::Context;
 
 pub trait Middleware: Send + Sync + 'static {
     fn handle<'a>(

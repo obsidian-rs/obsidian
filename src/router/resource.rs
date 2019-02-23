@@ -1,8 +1,9 @@
 use hyper::Method;
 use std::collections::HashMap;
 
-use super::route::Route;
+use super::Route;
 
+/// Resource acts as the intermidiate interface for interaction of routing data structure
 #[derive(Clone)]
 pub struct Resource {
     route_map: HashMap<Method, Route>,
@@ -18,7 +19,6 @@ impl Default for Resource {
 
 impl Resource {
     pub fn add_route(&mut self, method: Method, route: Route) {
-        // Check duplicate
         if self.route_map.contains_key(&method) {
             panic!("Route: {} Method: {} error", route.path, route.method);
         }
