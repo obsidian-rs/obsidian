@@ -18,3 +18,7 @@ serde = "1.0.80"
 tokio-fs = "0.1.4"
 tokio-io = "0.1.10"
 url = "1.7.2"
+
+[[example]]
+name = "example"
+path = "example/main.rs"
