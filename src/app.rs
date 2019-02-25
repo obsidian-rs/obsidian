@@ -111,3 +111,73 @@ impl AppServer {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::router::RequestData;
+    use hyper::StatusCode;
+
+    #[test]
+    fn test_app_server_resolve_endpoint() {
+        let mut main_router = Router::new();
+
+        main_router.get("/", |req: RequestData, res: ResponseBuilder| {
+            let (parts, body) = req.request.into_parts();
+
+            let request_body = body
+                .map_err(|_| ())
+                .fold(vec![], |mut acc, chunk| {
+                    acc.extend_from_slice(&chunk);
+                    Ok(acc)
+                })
+                .and_then(|v| String::from_utf8(v).map_err(|_| ()));
+
+            assert_eq!(parts.uri.path(), "/");
+            assert_eq!(request_body.wait().unwrap(), "test_app_server");
+            res.status(StatusCode::OK).body("test_app_server")
+        });
+
+        let app_server = AppServer {
+            sub_router: BTreeMap::new(),
+            main_router,
+        };
+
+        let mut req_builder = Request::builder();
+
+        let req = req_builder
+            .uri("/")
+            .body(Body::from("test_app_server"))
+            .unwrap();
+
+        let actual_response = app_server.resolve_endpoint(req).wait().unwrap();
+
+        let mut expected_response = Response::new(Body::from("test_app_server"));
+        *expected_response.status_mut() = StatusCode::OK;
+
+        assert_eq!(actual_response.status(), expected_response.status());
+
+        let actual_res_body = actual_response
+            .into_body()
+            .map_err(|_| ())
+            .fold(vec![], |mut acc, chunk| {
+                acc.extend_from_slice(&chunk);
+                Ok(acc)
+            })
+            .and_then(|v| String::from_utf8(v).map_err(|_| ()));
+
+        let expected_res_body = expected_response
+            .into_body()
+            .map_err(|_| ())
+            .fold(vec![], |mut acc, chunk| {
+                acc.extend_from_slice(&chunk);
+                Ok(acc)
+            })
+            .and_then(|v| String::from_utf8(v).map_err(|_| ()));
+
+        assert_eq!(
+            actual_res_body.wait().unwrap(),
+            expected_res_body.wait().unwrap()
+        );
+    }
+}
