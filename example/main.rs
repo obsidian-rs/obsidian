@@ -1,9 +1,10 @@
 use serde_derive::*;
 
 use obsidian::{
+    context::Context,
     header,
     middleware::{BodyParser, Logger, UrlEncodedParser},
-    router::{RequestData, ResponseBuilder},
+    router::ResponseBuilder,
     App, StatusCode,
 };
 
@@ -18,11 +19,11 @@ fn main() {
     let mut app = App::new();
     let addr = ([127, 0, 0, 1], 3000).into();
 
-    app.get("/", |_req, res: ResponseBuilder| {
+    app.get("/", |_ctx, res: ResponseBuilder| {
         res.status(StatusCode::OK).body("<!DOCTYPE html><html><head><link rel=\"shotcut icon\" href=\"favicon.ico\" type=\"image/x-icon\" sizes=\"32x32\" /></head> <h1>Hello Obsidian</h1></html>")
     });
 
-    app.get("/json", |_req, res: ResponseBuilder| {
+    app.get("/json", |_ctx, res: ResponseBuilder| {
         let point = Point { x: 1, y: 2 };
 
         res.header(header::CONTENT_TYPE, "application/json")
@@ -30,27 +31,27 @@ fn main() {
             .json(point)
     });
 
-    app.get("/empty-body", |_req, res: ResponseBuilder| {
+    app.get("/empty-body", |_ctx, res: ResponseBuilder| {
         res.status(StatusCode::OK)
     });
 
-    app.get("/vec", |_req, res: ResponseBuilder| {
+    app.get("/vec", |_ctx, res: ResponseBuilder| {
         res.status(StatusCode::OK).body(vec![1, 2, 3])
     });
 
-    app.get("/String", |_req, res: ResponseBuilder| {
+    app.get("/String", |_ctx, res: ResponseBuilder| {
         res.status(StatusCode::OK)
             .body("<h1>This is a String</h1>".to_string())
     });
 
-    app.get("/paramtest", |_req, res: ResponseBuilder| {
+    app.get("/paramtest", |_ctx, res: ResponseBuilder| {
         res.status(StatusCode::OK).send_file("./test.html")
     });
 
-    app.post("/paramtest2", |_req: RequestData, res: ResponseBuilder| {
-        let multi_test: Vec<String> = _req.params("test").into();
-        let unique_test: String = _req.params("test2").into();
-        let json_test = &_req.json["test_json"];
+    app.post("/paramtest2", |ctx: Context, res: ResponseBuilder| {
+        let multi_test: Vec<String> = ctx.params("test").into();
+        let unique_test: String = ctx.params("test2").into();
+        let json_test = &ctx.json["test_json"];
 
         for value in multi_test {
             println!("test / {}", value);

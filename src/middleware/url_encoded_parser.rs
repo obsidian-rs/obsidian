@@ -3,8 +3,9 @@ use hyper::{Body, Request, Response};
 use url::form_urlencoded;
 
 use super::Middleware;
-use crate::context::Context;
 
+use crate::app::EndpointExecutor;
+use crate::context::Context;
 pub struct UrlEncodedParser {}
 
 impl UrlEncodedParser {
@@ -16,7 +17,8 @@ impl UrlEncodedParser {
 impl Middleware for UrlEncodedParser {
     fn handle<'a>(
         &'a self,
-        context: Context<'a>,
+        context: Context,
+        ep_executor: EndpointExecutor<'a>,
     ) -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send> {
         let mut context = context;
         let (parts, body) = context.request.into_parts();
@@ -32,12 +34,12 @@ impl Middleware for UrlEncodedParser {
         let params_iter = form_urlencoded::parse(b.as_ref()).into_owned();
 
         for (key, value) in params_iter {
-            context.route_data.add_param(key, value);
+            (*context.params_data.entry(key).or_insert(Vec::new())).push(value);
         }
 
         let req = Request::from_parts(parts, Body::from(b));
-
         context.request = req;
-        context.next()
+
+        ep_executor.next(context)
     }
 }

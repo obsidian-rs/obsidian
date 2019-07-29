@@ -1,11 +1,12 @@
-use super::{RequestData, ResponseBuilder};
+use crate::context::Context;
+use super::{ResponseBuilder};
 
 pub trait EndPointHandler:
-    Fn(RequestData, ResponseBuilder) -> ResponseBuilder + Send + Sync + 'static
+    Fn(Context, ResponseBuilder) -> ResponseBuilder + Send + Sync + 'static
 {
 }
 
 impl<T> EndPointHandler for T where
-    T: Fn(RequestData, ResponseBuilder) -> ResponseBuilder + Send + Sync + 'static
+    T: Fn(Context, ResponseBuilder) -> ResponseBuilder + Send + Sync + 'static
 {
 }

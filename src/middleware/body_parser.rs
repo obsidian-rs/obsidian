@@ -3,8 +3,9 @@ use hyper::{Body, Request, Response};
 use serde_json::Value;
 
 use super::Middleware;
-use crate::context::Context;
 
+use crate::app::EndpointExecutor;
+use crate::context::Context;
 pub struct BodyParser {}
 
 impl BodyParser {
@@ -16,7 +17,8 @@ impl BodyParser {
 impl Middleware for BodyParser {
     fn handle<'a>(
         &'a self,
-        context: Context<'a>,
+        context: Context,
+        ep_executor: EndpointExecutor<'a>,
     ) -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send> {
         let mut context = context;
         let (parts, body) = context.request.into_parts();
@@ -37,8 +39,8 @@ impl Middleware for BodyParser {
         }
 
         let req = Request::from_parts(parts, Body::from(b));
-
         context.request = req;
-        context.next()
+
+        ep_executor.next(context)
     }
 }

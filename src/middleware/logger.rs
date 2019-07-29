@@ -2,8 +2,9 @@ use futures::Future;
 use hyper::{Body, Response};
 
 use super::Middleware;
-use crate::context::Context;
 
+use crate::app::EndpointExecutor;
+use crate::context::Context;
 pub struct Logger {}
 
 impl Logger {
@@ -15,7 +16,8 @@ impl Logger {
 impl Middleware for Logger {
     fn handle<'a>(
         &'a self,
-        context: Context<'a>,
+        context: Context,
+        ep_executor: EndpointExecutor<'a>,
     ) -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send> {
         println!(
             "{} {} \n{}",
@@ -29,6 +31,7 @@ impl Middleware for Logger {
                 .to_str()
                 .unwrap()
         );
-        context.next()
+
+        ep_executor.next(context)
     }
 }
