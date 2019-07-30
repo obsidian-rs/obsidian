@@ -1,15 +1,9 @@
-use http::{
-    header::HeaderName,
-    response::{Builder, Response},
-    version::Version,
-    StatusCode,
-};
-use hyper::Body;
+use futures::{future, future::Future};
+use http::response::Builder;
+use hyper::{header::HeaderName, Body, Response, StatusCode, Version};
 use serde::ser::Serialize;
 use serde_json;
 use std::any::Any;
-
-use futures::{future, future::Future};
 
 use tokio_fs;
 use tokio_io;
@@ -52,15 +46,17 @@ impl ResponseBody for Vec<u8> {
     }
 }
 
-pub struct ObsidianResponse {
+/// ResponseBuilder use builder style let developer build http response.
+/// This struct will be passed into every endpoint handle.
+pub struct ResponseBuilder {
     response_builder: Builder,
     body: Body,
     pub file_path: Option<String>,
 }
 
-impl ObsidianResponse {
+impl ResponseBuilder {
     pub fn new() -> Self {
-        ObsidianResponse {
+        ResponseBuilder {
             response_builder: Response::builder(),
             body: Body::empty(),
             file_path: None,
@@ -115,20 +111,20 @@ impl ObsidianResponse {
         self
     }
 
-    pub fn send(mut self, file_path: &str) -> Self {
+    pub fn send_file(mut self, file_path: &str) -> Self {
         self.file_path = Some(file_path.to_string());
 
         self
     }
 }
 
-impl Into<Response<Body>> for ObsidianResponse {
+impl Into<Response<Body>> for ResponseBuilder {
     fn into(mut self) -> Response<Body> {
         self.response_builder.body(self.body).unwrap()
     }
 }
 
-impl Into<Box<Future<Item = Response<Body>, Error = hyper::Error> + Send>> for ObsidianResponse {
+impl Into<Box<Future<Item = Response<Body>, Error = hyper::Error> + Send>> for ResponseBuilder {
     fn into(self) -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send> {
         if let Some(path) = self.file_path {
             Box::new(
@@ -159,9 +155,9 @@ impl Into<Box<Future<Item = Response<Body>, Error = hyper::Error> + Send>> for O
     }
 }
 
-impl Default for ObsidianResponse {
+impl Default for ResponseBuilder {
     fn default() -> Self {
-        ObsidianResponse {
+        ResponseBuilder {
             response_builder: Response::builder(),
             body: Body::empty(),
             file_path: None,
