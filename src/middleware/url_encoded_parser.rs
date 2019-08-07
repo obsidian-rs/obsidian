@@ -34,7 +34,7 @@ impl Middleware for UrlEncodedParser {
         let params_iter = form_urlencoded::parse(b.as_ref()).into_owned();
 
         for (key, value) in params_iter {
-            (*context.params_data.entry(key).or_insert(Vec::new())).push(value);
+            context.params_data.add_params(key, value);
         }
 
         let req = Request::from_parts(parts, Body::from(b));

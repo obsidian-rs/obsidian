@@ -1,53 +1,65 @@
-use hyper::{Body, Request};
-use serde_json::Value;
 use std::collections::HashMap;
+use std::num::*;
+use std::str::FromStr;
 
-use super::RouteData;
-
-pub struct ParamsBox {
-    params: Vec<String>,
+#[derive(Default)]
+pub struct Params {
+    pub params_map: HashMap<String, Vec<String>>,
 }
 
-impl ParamsBox {
-    pub fn new(params: Vec<String>) -> Self {
-        ParamsBox { params }
-    }
-}
-
-impl Into<String> for ParamsBox {
-    fn into(self) -> String {
-        self.params.first().unwrap().clone()
-    }
-}
-
-impl Into<Vec<String>> for ParamsBox {
-    fn into(self) -> Vec<String> {
-        self.params
-    }
-}
-
-pub struct RequestData {
-    pub request: Request<Body>,
-    pub params_data: HashMap<String, Vec<String>>,
-    pub json: Value,
-}
-
-impl RequestData {
-    pub fn new(request: Request<Body>, route_data: RouteData) -> Self {
-        let (params_data, json) = route_data.get_route_data();
-
-        RequestData {
-            request,
-            params_data,
-            json,
-        }
+impl Params {
+    pub fn new(params_map: HashMap<String, Vec<String>>) -> Self {
+        Params { params_map }
     }
 
-    pub fn params(&self, key: &str) -> ParamsBox {
-        if let Some(params_collection) = self.params_data.get(key) {
-            ParamsBox::new(params_collection.clone())
+    pub fn get_param(&self, key: &str) -> Option<&String> {
+        if let Some(param) = self.params_map.get(key) {
+            param.first()
         } else {
-            ParamsBox::new(vec!["".to_string()])
+            None
         }
     }
+
+    pub fn get_params(&self, key: &str) -> Option<&Vec<String>> {
+        self.params_map.get(key)
+    }
+
+    pub fn add_params(&mut self, key: String, val: String) {
+        self.params_map.entry(key).or_insert(Vec::new()).push(val)
+    }
+}
+
+
+pub trait FromParam: Sized {
+    type Err;
+
+    fn from_params(src: &Params, key: &str) -> Result<Self, Self::Err>;
+}
+
+impl FromParam for Vec<String> {
+    type Err = ();
+    fn from_params(src: &Params, key: &str) -> Result<Self, Self::Err> {
+        match src.get_params(key) {
+            Some(params) => Ok(params.clone()),
+            _ => Err(()),
+        }
+    }
+}
+
+macro_rules! from_params_radix_int_impl {
+    ($($t:ty)*) => {$(
+        impl FromParam for $t {
+            type Err = <$t as FromStr>::Err;
+            fn from_params(src: &Params, key: &str) -> Result<Self, Self::Err> {
+                src.get_param(key).unwrap().parse()
+            }
+        }
+    )*}
+}
+
+from_params_radix_int_impl! {
+    isize i8 i16 i32 i64 i128 usize u8 u16 u32 u64 u128
+    NonZeroU8 NonZeroU16 NonZeroU32 NonZeroU64 NonZeroU128 NonZeroUsize
+    NonZeroI8 NonZeroI16 NonZeroI32 NonZeroI64 NonZeroI128 NonZeroIsize
+    f32 f64 bool char String
 }

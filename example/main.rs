@@ -49,8 +49,8 @@ fn main() {
     });
 
     app.post("/paramtest2", |ctx: Context, res: ResponseBuilder| {
-        let multi_test: Vec<String> = ctx.params("test").into();
-        let unique_test: String = ctx.params("test2").into();
+        let multi_test: Vec<String> = ctx.param("test").unwrap();
+        let unique_test: i32 = ctx.param("test").unwrap();
         let json_test = &ctx.json["test_json"];
 
         for value in multi_test {

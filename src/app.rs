@@ -1,9 +1,9 @@
-use crate::context::Context;
+use crate::context::{Context};
 use crate::middleware::Middleware;
-use crate::router::{EndPointHandler, ResponseBuilder, RouteData, Router};
+use crate::router::{EndPointHandler, ResponseBuilder, Router, Params};
 use futures::{future, Future, Stream};
 use hyper::{service::service_fn, Body, Request, Response, Server};
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap};
 use std::net::SocketAddr;
 use std::sync::Arc;
 
@@ -102,8 +102,7 @@ impl AppServer {
             // Temporary used as the hyper stream thread block. async will be used soon
             Box::new(body.concat2().and_then(move |b| {
                 let req = Request::from_parts(parts, Body::from(b));
-                let route_data = RouteData::new();
-                let context = Context::new(req, route_data, HashMap::new());
+                let context = Context::new(req, Params::default());
                 let executor = EndpointExecutor::new(&route.handler, &middlewares);
 
                 executor.next(context)

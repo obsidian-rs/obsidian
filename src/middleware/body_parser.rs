@@ -33,10 +33,10 @@ impl Middleware for BodyParser {
 
         let json_result: serde_json::Result<Value> = serde_json::from_slice(&b);
 
-        match json_result {
-            Ok(json_body) => context.route_data.add_json(json_body),
+        /* match json_result {
+            Ok(json_body) => context.json.add_json(json_body),
             Err(e) => println!("{}", e),
-        }
+        } */
 
         let req = Request::from_parts(parts, Body::from(b));
         context.request = req;
