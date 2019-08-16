@@ -4,7 +4,7 @@ use std::str::FromStr;
 
 #[derive(Default)]
 pub struct Params {
-    pub params_map: HashMap<String, Vec<String>>,
+    params_map: HashMap<String, Vec<String>>,
 }
 
 impl Params {
@@ -26,6 +26,10 @@ impl Params {
 
     pub fn add_params(&mut self, key: String, val: String) {
         self.params_map.entry(key).or_insert(Vec::new()).push(val)
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.params_map.is_empty()
     }
 }
 

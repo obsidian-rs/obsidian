@@ -1,11 +1,7 @@
 use serde_derive::*;
 
 use obsidian::{
-    context::Context,
-    header,
-    middleware::{BodyParser, Logger, UrlEncodedParser},
-    router::ResponseBuilder,
-    App, StatusCode,
+    context::Context, header, middleware::Logger, router::ResponseBuilder, App, StatusCode,
 };
 
 // Testing example
@@ -48,7 +44,7 @@ fn main() {
         res.status(StatusCode::OK).send_file("./test.html")
     });
 
-    app.post("/paramtest2", |ctx: Context, res: ResponseBuilder| {
+    app.post("/paramtest2", |mut ctx: Context, res: ResponseBuilder| {
         let multi_test: Vec<String> = ctx.param("test").unwrap();
         let unique_test: i32 = ctx.param("test").unwrap();
         let json_test = &ctx.json["test_json"];
@@ -63,13 +59,9 @@ fn main() {
         res.status(StatusCode::OK).body("params result")
     });
 
-    let body_parser = BodyParser::new();
     let logger = Logger::new();
-    let url_parser = UrlEncodedParser::new();
 
     app.use_service(logger);
-    app.use_service(url_parser);
-    app.use_service(body_parser);
 
     app.listen(&addr, || {
         println!("server is listening to {}", &addr);

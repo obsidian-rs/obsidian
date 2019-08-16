@@ -1,9 +1,9 @@
-use crate::context::{Context};
+use crate::context::Context;
 use crate::middleware::Middleware;
-use crate::router::{EndPointHandler, ResponseBuilder, Router, Params};
+use crate::router::{EndPointHandler, Params, ResponseBuilder, Router};
 use futures::{future, Future, Stream};
 use hyper::{service::service_fn, Body, Request, Response, Server};
-use std::collections::{BTreeMap};
+use std::collections::BTreeMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
@@ -159,8 +159,8 @@ mod test {
     fn test_app_server_resolve_endpoint() {
         let mut main_router = Router::new();
 
-        main_router.get("/", |context: Context, res: ResponseBuilder| {
-            let (parts, body) = context.request.into_parts();
+        main_router.get("/", |mut context: Context, res: ResponseBuilder| {
+            let body = context.take_body();
 
             let request_body = body
                 .map_err(|_| ())
@@ -170,7 +170,7 @@ mod test {
                 })
                 .and_then(|v| String::from_utf8(v).map_err(|_| ()));
 
-            assert_eq!(parts.uri.path(), "/");
+            assert_eq!(context.uri().path(), "/");
             assert_eq!(request_body.wait().unwrap(), "test_app_server");
             res.status(StatusCode::OK).body("test_app_server")
         });

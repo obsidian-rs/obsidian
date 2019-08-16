@@ -21,10 +21,9 @@ impl Middleware for Logger {
     ) -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send> {
         println!(
             "{} {} \n{}",
-            context.request.method(),
-            context.request.uri(),
+            context.method(),
+            context.uri(),
             context
-                .request
                 .headers()
                 .get("host")
                 .unwrap()

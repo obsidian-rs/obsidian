@@ -20,7 +20,7 @@ impl Middleware for UrlEncodedParser {
         context: Context,
         ep_executor: EndpointExecutor<'a>,
     ) -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send> {
-        let mut context = context;
+        /* let mut context = context;
         let (parts, body) = context.request.into_parts();
 
         let b = match body.concat2().wait() {
@@ -38,7 +38,7 @@ impl Middleware for UrlEncodedParser {
         }
 
         let req = Request::from_parts(parts, Body::from(b));
-        context.request = req;
+        context.request = req; */
 
         ep_executor.next(context)
     }
