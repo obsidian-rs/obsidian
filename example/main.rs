@@ -1,4 +1,5 @@
 use serde_derive::*;
+use std::{fmt, fmt::Display};
 
 use obsidian::{
     context::Context, header, middleware::Logger, router::ResponseBuilder, App, StatusCode,
@@ -9,6 +10,18 @@ use obsidian::{
 struct Point {
     x: i32,
     y: i32,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct JsonTest {
+    title: String,
+    content: String,
+}
+
+impl Display for JsonTest {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{{title: {}, content: {}}}", self.title, self.content)
+    }
 }
 
 fn main() {
@@ -44,17 +57,38 @@ fn main() {
         res.status(StatusCode::OK).send_file("./test.html")
     });
 
+    app.get("/jsontest", |_ctx: Context, res: ResponseBuilder| {
+        res.status(StatusCode::OK).send_file("./testjson.html")
+    });
+
+    app.post("/jsontestapi", |mut ctx: Context, res: ResponseBuilder| {
+        let json: serde_json::Value = ctx.json().unwrap();
+
+        println!("{}", json);
+
+        res.status(StatusCode::OK).json(json)
+    });
+
+    app.post(
+        "/jsonteststructapi",
+        |mut ctx: Context, res: ResponseBuilder| {
+            let json: JsonTest = ctx.json().unwrap();
+
+            println!("{}", json);
+
+            res.status(StatusCode::OK).json(json)
+        },
+    );
+
     app.post("/paramtest2", |mut ctx: Context, res: ResponseBuilder| {
         let multi_test: Vec<String> = ctx.param("test").unwrap();
         let unique_test: i32 = ctx.param("test").unwrap();
-        let json_test = &ctx.json["test_json"];
 
         for value in multi_test {
             println!("test / {}", value);
         }
 
         println!("test2 / {}", unique_test);
-        println!("test_json / {}", json_test);
 
         res.status(StatusCode::OK).body("params result")
     });

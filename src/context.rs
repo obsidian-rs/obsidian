@@ -1,12 +1,11 @@
 use futures::{Future, Stream};
 use hyper::{header::HeaderValue, Body, HeaderMap, Method, Request, Uri};
-use serde_json::{json, Value};
+use serde::de::DeserializeOwned;
 use url::form_urlencoded;
 
 use crate::router::{FromParam, Params};
 
 pub struct Context {
-    pub json: Value,
     request: Request<Body>,
     params_data: Params,
 }
@@ -16,7 +15,6 @@ impl Context {
         Context {
             request,
             params_data,
-            json: json!(null),
         }
     }
 
@@ -42,6 +40,20 @@ impl Context {
         }
 
         FromParam::from_params(&self.params_data, key)
+    }
+
+    pub fn json<T: DeserializeOwned>(&mut self) -> Result<T, serde_json::error::Error> {
+        let body = self.take_body();
+
+        let chunks = match body.concat2().wait() {
+            Ok(chunk) => chunk,
+            Err(e) => {
+                println!("{}", e);
+                hyper::Chunk::default()
+            }
+        };
+
+        Ok(serde_json::from_slice(&chunks)?)
     }
 
     pub fn take_body(&mut self) -> Body {

@@ -7,7 +7,6 @@ use std::collections::BTreeMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-
 /// There are two level of router
 /// - App level -> main_router, middleware for this level will be run for all endpoint
 /// - Router level -> sub_router, smaller group of endpoint
@@ -60,7 +59,7 @@ impl App {
             let server_clone = app_server.clone();
 
             service_fn(
-                move |req| -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send> {
+                move |req| -> Box<dyn Future<Item = Response<Body>, Error = hyper::Error> + Send> {
                     // Resolve the route endpoint
                     server_clone.resolve_endpoint(req)
                 },
@@ -87,7 +86,7 @@ impl AppServer {
     pub fn resolve_endpoint(
         &self,
         req: Request<Body>,
-    ) -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send> {
+    ) -> Box<dyn Future<Item = Response<Body>, Error = hyper::Error> + Send> {
         let (parts, body) = req.into_parts();
 
         // Currently support only one router until radix tree complete.
@@ -113,7 +112,7 @@ impl AppServer {
     }
 }
 
-pub fn page_not_found() -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send> {
+pub fn page_not_found() -> Box<dyn Future<Item = Response<Body>, Error = hyper::Error> + Send> {
     let server_response = Response::new(Body::from("404 Not Found"));
 
     Box::new(future::ok(server_response))
@@ -121,13 +120,13 @@ pub fn page_not_found() -> Box<Future<Item = Response<Body>, Error = hyper::Erro
 
 pub struct EndpointExecutor<'a> {
     pub route_endpoint: &'a Arc<dyn EndPointHandler<Output = ResponseBuilder>>,
-    pub middleware: &'a [Arc<Middleware>],
+    pub middleware: &'a [Arc<dyn Middleware>],
 }
 
 impl<'a> EndpointExecutor<'a> {
     pub fn new(
         route_endpoint: &'a Arc<dyn EndPointHandler<Output = ResponseBuilder>>,
-        middleware: &'a [Arc<Middleware>],
+        middleware: &'a [Arc<dyn Middleware>],
     ) -> Self {
         EndpointExecutor {
             route_endpoint,
@@ -138,7 +137,7 @@ impl<'a> EndpointExecutor<'a> {
     pub fn next(
         mut self,
         context: Context,
-    ) -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send> {
+    ) -> Box<dyn Future<Item = Response<Body>, Error = hyper::Error> + Send> {
         if let Some((current, all_next)) = self.middleware.split_first() {
             self.middleware = all_next;
             current.handle(context, self)
@@ -218,4 +217,3 @@ mod test {
         );
     }
 }
-
