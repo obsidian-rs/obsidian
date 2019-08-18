@@ -18,6 +18,12 @@ struct JsonTest {
     content: String,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+struct ParamTest {
+    test: Vec<String>,
+    test2: String,
+}
+
 impl Display for JsonTest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{{title: {}, content: {}}}", self.title, self.content)
@@ -81,16 +87,11 @@ fn main() {
     );
 
     app.post("/paramtest2", |mut ctx: Context, res: ResponseBuilder| {
-        let multi_test: Vec<String> = ctx.param("test").unwrap();
-        let unique_test: i32 = ctx.param("test").unwrap();
+        let param_test: ParamTest = ctx.form().unwrap();
 
-        for value in multi_test {
-            println!("test / {}", value);
-        }
+        dbg!(&param_test);
 
-        println!("test2 / {}", unique_test);
-
-        res.status(StatusCode::OK).body("params result")
+        res.status(StatusCode::OK).json(param_test)
     });
 
     let logger = Logger::new();

@@ -12,11 +12,11 @@ use std::sync::Arc;
 use crate::middleware::Middleware;
 
 pub use self::end_point_type::EndPointHandler;
+pub use self::request::Params;
 pub use self::resource::Resource;
 pub use self::response::ResponseBuilder;
 pub use self::route::Route;
 pub use self::route_data::RouteData;
-pub use self::request::{Params, FromParam};
 
 pub struct Router {
     pub routes: BTreeMap<String, Resource>,
@@ -72,7 +72,7 @@ impl Router {
         );
     }
 }
-/* 
+/*
 #[cfg(test)]
 mod tests {
     use super::*;
