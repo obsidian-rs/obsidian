@@ -7,7 +7,6 @@ use std::collections::{BTreeMap, HashMap};
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-
 /// There are two level of router
 /// - App level -> main_router, middleware for this level will be run for all endpoint
 /// - Router level -> sub_router, smaller group of endpoint
@@ -219,4 +218,3 @@ mod test {
         );
     }
 }
-
