@@ -1,4 +1,5 @@
 mod end_point_type;
+mod req_deserializer;
 mod request;
 mod resource;
 mod response;
@@ -12,6 +13,7 @@ use std::sync::Arc;
 use crate::middleware::Middleware;
 
 pub use self::end_point_type::EndPointHandler;
+pub use self::req_deserializer::from_cow_form;
 pub use self::request::Params;
 pub use self::resource::Resource;
 pub use self::response::ResponseBuilder;

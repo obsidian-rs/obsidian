@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use url::form_urlencoded;
 
+use crate::router::from_cow_form;
 use crate::router::Params;
 
 pub struct Context {
@@ -40,7 +41,7 @@ impl Context {
         self.params_data.get_params(key).unwrap().parse()
     }
 
-    pub fn form<T: DeserializeOwned>(&mut self) -> Result<T, serde_json::error::Error> {
+    pub fn form<T: DeserializeOwned>(&mut self) -> Result<T, ()> {
         let body = self.take_body();
 
         let chunks = match body.concat2().wait() {
@@ -51,33 +52,29 @@ impl Context {
             }
         };
 
-        // Temporary use serde_json for deserialization as serde_urlencoded does not support same name field yet.
-        // For type other than collection string and string, deserialize_with need to be implement
-        let mut temp_map: HashMap<String, Vec<serde_json::Value>> = HashMap::default();
-        let mut json_map: HashMap<String, serde_json::Value> = HashMap::default();
+        let mut parsed_form_map: HashMap<String, Vec<String>> = HashMap::default();
+        let mut cow_form_map = HashMap::default();
 
+        // Parse and merge chunks with same name key
         form_urlencoded::parse(&chunks)
             .into_owned()
             .for_each(|(key, val)| {
-                temp_map
-                    .entry(key)
-                    .or_insert(vec![])
-                    .push(serde_json::Value::String(val));
+                parsed_form_map.entry(key).or_insert(vec![]).push(val);
             });
 
-        temp_map.iter().for_each(|(key, val)| {
-            match val.len() > 1 {
-                true => json_map.insert(key.to_string(), serde_json::Value::Array(val.to_owned())),
-                false => json_map.insert(
-                    key.to_string(),
-                    serde_json::Value::String(val.first().unwrap().to_string()),
-                ),
-            };
+        // Wrap vec with cow pointer
+        parsed_form_map.iter().for_each(|(key, val)| {
+            cow_form_map
+                .entry(std::borrow::Cow::from(key))
+                .or_insert(std::borrow::Cow::from(val));
         });
 
-        let json_string = serde_json::to_string(&json_map)?;
+        Ok(from_cow_form(&cow_form_map).unwrap())
+    }
 
-        Ok(serde_json::from_str(&json_string)?)
+    // Form value with Params
+    pub fn form_wparam<T: DeserializeOwned>(&mut self) -> Result<T, ()> {
+        unimplemented!()
     }
 
     pub fn json<T: DeserializeOwned>(&mut self) -> Result<T, serde_json::error::Error> {
@@ -92,6 +89,11 @@ impl Context {
         };
 
         Ok(serde_json::from_slice(&chunks)?)
+    }
+
+    // Json value with Params
+    pub fn json_wparam<T: DeserializeOwned>(&mut self) -> Result<T, serde_json::error::Error> {
+        unimplemented!()
     }
 
     pub fn take_body(&mut self) -> Body {
