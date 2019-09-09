@@ -4,7 +4,6 @@ mod request;
 mod resource;
 mod response;
 mod route;
-mod route_data;
 
 use hyper::Method;
 use std::collections::BTreeMap;
@@ -13,12 +12,11 @@ use std::sync::Arc;
 use crate::middleware::Middleware;
 
 pub use self::end_point_type::EndPointHandler;
-pub use self::req_deserializer::from_cow_form;
+pub use self::req_deserializer::{from_cow_map, Error as FormError};
 pub use self::request::Params;
 pub use self::resource::Resource;
 pub use self::response::ResponseBuilder;
 pub use self::route::Route;
-pub use self::route_data::RouteData;
 
 pub struct Router {
     pub routes: BTreeMap<String, Resource>,
@@ -63,7 +61,6 @@ impl Router {
     }
 
     pub fn inject(&mut self, method: Method, path: &str, handler: impl EndPointHandler) {
-        // Use existing hashmap
         (*self
             .routes
             .entry(path.to_string())
@@ -75,6 +72,7 @@ impl Router {
     }
 }
 /*
+comment till router complete
 #[cfg(test)]
 mod tests {
     use super::*;
