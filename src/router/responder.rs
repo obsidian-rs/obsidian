@@ -43,14 +43,25 @@ impl Responder for String {
 
 impl Responder for ResponseBuilder {
     fn respond_to(self) -> ResponseBuilder {
-        ResponseBuilder::new().status(StatusCode::OK).body(self)
+        self
     }
 }
 
-impl Responder for Result<(), ()> {
+impl Responder for Result<String, ()> {
     fn respond_to(self) -> ResponseBuilder {
         match self {
-
+            Ok(resp_body) => {
+                ResponseBuilder::new().status(StatusCode::OK).body(resp_body)
+            },
+            Err(error) => {
+                ResponseBuilder::new().status(StatusCode::INTERNAL_SERVER_ERROR).body(error)
+            }
         }
+    }
+}
+
+impl Responder for (StatusCode, String) {
+    fn respond_to(self) -> ResponseBuilder {
+        ResponseBuilder::new().status(self.0).body(self.1)
     }
 }
