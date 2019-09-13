@@ -1,12 +1,14 @@
 use hyper::Method;
 use std::sync::Arc;
 
-use super::{EndPointHandler, ResponseBuilder};
+use super::{EndPointHandler, ResponseBody, ResponseResult};
+
+use hyper::{Body, Response};
 
 pub struct Route {
     pub path: String,
     pub method: Method,
-    pub handler: Arc<dyn EndPointHandler<Output = ResponseBuilder>>,
+    pub handler: Arc<dyn EndPointHandler>,
 }
 
 impl Clone for Route {

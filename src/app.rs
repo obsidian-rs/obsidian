@@ -1,8 +1,10 @@
 use crate::context::Context;
 use crate::middleware::Middleware;
-use crate::router::{EndPointHandler, ResponseBuilder, RouteData, Router};
+use crate::router::{
+    response, EndPointHandler, ResponseBuilder, ResponseResult, RouteData, Router,
+};
 use futures::{future, Future, Stream};
-use hyper::{service::service_fn, Body, Request, Response, Server};
+use hyper::{service::service_fn, Body, Request, Response, Server, StatusCode};
 use std::collections::{BTreeMap, HashMap};
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -22,9 +24,10 @@ impl App {
             main_router: Router::new(),
         };
 
-        app.get("/favicon.ico", |_req, res: ResponseBuilder| {
-            res.send_file("./favicon.ico")
-        });
+        app.get(
+            "/favicon.ico",
+            |_req, res: ResponseBuilder| -> ResponseResult { response::send_file("./favicon.ico") },
+        );
 
         app
     }
@@ -120,13 +123,13 @@ pub fn page_not_found() -> Box<Future<Item = Response<Body>, Error = hyper::Erro
 }
 
 pub struct EndpointExecutor<'a> {
-    pub route_endpoint: &'a Arc<dyn EndPointHandler<Output = ResponseBuilder>>,
+    pub route_endpoint: &'a Arc<dyn EndPointHandler>,
     pub middleware: &'a [Arc<Middleware>],
 }
 
 impl<'a> EndpointExecutor<'a> {
     pub fn new(
-        route_endpoint: &'a Arc<dyn EndPointHandler<Output = ResponseBuilder>>,
+        route_endpoint: &'a Arc<dyn EndPointHandler>,
         middleware: &'a [Arc<Middleware>],
     ) -> Self {
         EndpointExecutor {
@@ -144,8 +147,20 @@ impl<'a> EndpointExecutor<'a> {
             current.handle(context, self)
         } else {
             let response_builder = ResponseBuilder::new();
-            let route_response = (*self.route_endpoint)(context, response_builder);
-            route_response.into()
+            let route_response = self.route_endpoint.call_handler(context);
+
+            match route_response {
+                Ok(res) => Box::new(future::ok(res)),
+                Err(err) => {
+                    let body = Body::from(std::error::Error::description(&err).to_string());
+                    let response = Response::builder()
+                        .status(StatusCode::INTERNAL_SERVER_ERROR)
+                        .body(body)
+                        .unwrap();
+
+                    Box::new(future::ok(response))
+                }
+            }
         }
     }
 }
@@ -172,7 +187,7 @@ mod test {
 
             assert_eq!(parts.uri.path(), "/");
             assert_eq!(request_body.wait().unwrap(), "test_app_server");
-            res.status(StatusCode::OK).body("test_app_server")
+            response::body("test_app_server")
         });
 
         let app_server = AppServer {

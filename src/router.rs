@@ -1,10 +1,11 @@
 mod end_point_type;
 mod request;
 mod resource;
-mod response;
+mod responder;
 mod route;
 mod route_data;
-mod responder;
+
+pub mod response;
 
 use hyper::Method;
 use std::collections::BTreeMap;
@@ -15,8 +16,8 @@ use crate::middleware::Middleware;
 pub use self::end_point_type::EndPointHandler;
 pub use self::request::RequestData;
 pub use self::resource::Resource;
-pub use self::responder::Responder;
-pub use self::response::ResponseBuilder;
+pub use self::responder::{Responder, ResponseResult};
+pub use self::response::{ResponseBody, ResponseBuilder};
 pub use self::route::Route;
 pub use self::route_data::RouteData;
 

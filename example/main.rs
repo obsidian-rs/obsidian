@@ -4,7 +4,7 @@ use obsidian::{
     context::Context,
     header,
     middleware::{BodyParser, Logger, UrlEncodedParser},
-    router::ResponseBuilder,
+    router::{response, ResponseBuilder, ResponseResult},
     App, StatusCode,
 };
 
@@ -20,48 +20,49 @@ fn main() {
     let addr = ([127, 0, 0, 1], 3000).into();
 
     app.get("/", |_ctx, res: ResponseBuilder| {
-        res.status(StatusCode::OK).body("<!DOCTYPE html><html><head><link rel=\"shotcut icon\" href=\"favicon.ico\" type=\"image/x-icon\" sizes=\"32x32\" /></head> <h1>Hello Obsidian</h1></html>")
+        response::body("<!DOCTYPE html><html><head><link rel=\"shotcut icon\" href=\"favicon.ico\" type=\"image/x-icon\" sizes=\"32x32\" /></head> <h1>Hello Obsidian</h1></html>")
     });
 
     app.get("/json", |_ctx, res: ResponseBuilder| {
         let point = Point { x: 1, y: 2 };
 
-        res.header(header::CONTENT_TYPE, "application/json")
-            .status(StatusCode::OK)
-            .json(point)
+        response::json(point)
     });
 
-    app.get("/empty-body", |_ctx, res: ResponseBuilder| {
-        res.status(StatusCode::OK)
-    });
+    app.get(
+        "/empty-body",
+        |_ctx, res: ResponseBuilder| -> ResponseResult<()> { Ok(()) },
+    );
 
     app.get("/vec", |_ctx, res: ResponseBuilder| {
-        res.status(StatusCode::OK).body(vec![1, 2, 3])
+        response::body(vec![1, 2, 3])
     });
 
     app.get("/String", |_ctx, res: ResponseBuilder| {
-        res.status(StatusCode::OK)
-            .body("<h1>This is a String</h1>".to_string())
+        response::body("<h1>This is a String</h1>".to_string())
     });
 
     app.get("/paramtest", |_ctx, res: ResponseBuilder| {
-        res.status(StatusCode::OK).send_file("./test.html")
+        response::send_file("./test.html")
     });
 
-    app.post("/paramtest2", |ctx: Context, res: ResponseBuilder| {
-        let multi_test: Vec<String> = ctx.params("test").into();
-        let unique_test: String = ctx.params("test2").into();
-        let json_test = &ctx.json["test_json"];
+    app.post(
+        "/paramtest2",
+        |ctx: Context, res: ResponseBuilder| -> ResponseResult<&str> {
+            let multi_test: Vec<String> = ctx.params("test").into();
+            let unique_test: String = ctx.params("test2").into();
+            let json_test = &ctx.json["test_json"];
 
-        for value in multi_test {
-            println!("test / {}", value);
-        }
+            for value in multi_test {
+                println!("test / {}", value);
+            }
 
-        println!("test2 / {}", unique_test);
-        println!("test_json / {}", json_test);
+            println!("test2 / {}", unique_test);
+            println!("test_json / {}", json_test);
 
-        res.status(StatusCode::OK).body("params result")
-    });
+            Ok("params result")
+        },
+    );
 
     let body_parser = BodyParser::new();
     let logger = Logger::new();

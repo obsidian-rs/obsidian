@@ -1,5 +1,6 @@
 use futures::{future, future::Future};
 use http::response::Builder;
+use http::Error;
 use hyper::{header::HeaderName, Body, Response, StatusCode, Version};
 use serde::ser::Serialize;
 use serde_json;
@@ -10,35 +11,75 @@ use tokio_io;
 
 static NOTFOUND: &[u8] = b"Not Found";
 
+pub fn body(body: impl ResponseBody) -> Result<Response<Body>, Error> {
+    let body = body.into_body();
+    Response::builder().status(StatusCode::OK).body(body)
+}
+
+pub fn json(body: impl Serialize) -> Result<Response<Body>, Error> {
+    let serialized_obj = match serde_json::to_string(&body) {
+        Ok(val) => val,
+        Err(e) => std::error::Error::description(&e).to_string(),
+    };
+
+    let body = serialized_obj.into_body();
+
+    Response::builder().status(StatusCode::OK).body(body)
+}
+
+pub fn send_file(file_path: &str) -> Result<Response<Body>, Error> {
+    let response = tokio_fs::file::File::open(file_path.to_string())
+        .and_then(|file| {
+            let buf: Vec<u8> = Vec::new();
+            tokio_io::io::read_to_end(file, buf)
+                .and_then(|item| Ok(Response::new(item.1.into())))
+                .or_else(|_| {
+                    Ok(Response::builder()
+                        .status(StatusCode::INTERNAL_SERVER_ERROR)
+                        .body(Body::empty())
+                        .unwrap())
+                })
+        })
+        .or_else(|_| {
+            Ok(Response::builder()
+                .status(StatusCode::NOT_FOUND)
+                .body(NOTFOUND.into())
+                .unwrap())
+        })
+        .wait();
+
+    response
+}
+
 pub trait ResponseBody {
-    fn into_body(self) -> Result<Body, StatusCode>;
+    fn into_body(self) -> Body;
 }
 
 impl ResponseBody for () {
-    fn into_body(self) -> Result<Body, StatusCode> {
-        Ok(Body::empty())
+    fn into_body(self) -> Body {
+        Body::empty()
     }
 }
 
 impl ResponseBody for &'static str {
-    fn into_body(self) -> Result<Body, StatusCode> {
-        Ok(Body::from(self))
+    fn into_body(self) -> Body {
+        Body::from(self)
     }
 }
 
 impl ResponseBody for String {
-    fn into_body(self) -> Result<Body, StatusCode> {
-        Ok(Body::from(self))
+    fn into_body(self) -> Body {
+        Body::from(self)
     }
 }
 
 impl ResponseBody for Vec<u8> {
-    fn into_body(self) -> Result<Body, StatusCode> {
+    fn into_body(self) -> Body {
         let result = match serde_json::to_string(&self) {
-            Ok(json) => Ok(Body::from(json)),
+            Ok(json) => Body::from(json),
             Err(e) => {
                 eprintln!("serializing failed: {}", e);
-                Err(StatusCode::INTERNAL_SERVER_ERROR)
+                Body::from(std::error::Error::description(&e).to_string())
             }
         };
 
@@ -86,7 +127,7 @@ impl ResponseBuilder {
         self
     }
 
-    pub fn body(mut self, body: impl ResponseBody) -> Self {
+    /* pub fn body(mut self, body: impl ResponseBody) -> Self {
         match body.into_body() {
             Ok(body) => self.body = body,
             Err(status) => {
@@ -115,7 +156,7 @@ impl ResponseBuilder {
         self.file_path = Some(file_path.to_string());
 
         self
-    }
+    } */
 }
 
 impl Into<Response<Body>> for ResponseBuilder {
