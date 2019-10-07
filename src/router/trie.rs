@@ -15,10 +15,7 @@ pub struct RouteValue {
 
 impl RouteValue {
     pub fn new(middleware: Vec<Arc<dyn Middleware>>, route: Resource) -> Self {
-        RouteValue {
-            middleware,
-            route,
-        }
+        RouteValue { middleware, route }
     }
 }
 
@@ -167,10 +164,8 @@ impl Trie {
                     curr_node = next_node;
 
                     match &curr_node.value {
-                        Some(val) => {
-                            middleware.append(&mut val.middleware.clone())
-                        },
-                        None => {},
+                        Some(val) => middleware.append(&mut val.middleware.clone()),
+                        None => {}
                     }
                 }
                 None => {
@@ -193,6 +188,35 @@ impl Trie {
             }
             None => {
                 return Err(ObsidianError::NoneError);
+            }
+        }
+    }
+
+    pub fn insert_sub_trie(&mut self, key: &str, sub_trie: Trie) {
+        // Split key and drop additional '/'
+        let split_key = key.split('/');
+        let mut split_key = split_key.filter(|key| !key.is_empty()).peekable();
+
+        let mut curr_node = &mut self.head;
+
+        if split_key.peek().is_none() {
+            self.head = sub_trie.head;
+            return;
+        }
+
+        while let Some(k) = split_key.next() {
+            match *curr_node.process_insertion(k) {
+                Some(next_node) => {
+                    if split_key.peek().is_none() {
+                        next_node.value = sub_trie.head.value;
+                        next_node.child_nodes = sub_trie.head.child_nodes;
+                        break;
+                    }
+                    curr_node = next_node;
+                }
+                None => {
+                    break;
+                }
             }
         }
     }

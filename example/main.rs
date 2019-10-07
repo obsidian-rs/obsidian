@@ -2,7 +2,8 @@ use serde_derive::*;
 use std::{fmt, fmt::Display};
 
 use obsidian::{
-    context::Context, header, middleware::Logger, router::ResponseBuilder, App, StatusCode,
+    context::Context, header, middleware::Logger, router::ResponseBuilder, router::Router, App,
+    StatusCode,
 };
 
 // Testing example
@@ -109,17 +110,18 @@ fn main() {
         res.status(StatusCode::OK).json(param_test)
     });
 
-    app.get("/paramtest/:id", |ctx: Context, res: ResponseBuilder| {
+    let mut param_router = Router::new();
+    let logger = Logger::new();
+    param_router.use_service(logger);
+
+    param_router.get("/paramtest/:id", |ctx: Context, res: ResponseBuilder| {
         let param_test: i32 = ctx.param("id").unwrap();
 
         dbg!(&param_test);
 
         res.status(StatusCode::OK).json(param_test)
     });
-
-    let logger = Logger::new();
-
-    app.use_service(logger);
+    app.use_router("/params/", param_router);
 
     app.listen(&addr, || {
         println!("server is listening to {}", &addr);

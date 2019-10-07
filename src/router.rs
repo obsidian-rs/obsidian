@@ -8,8 +8,9 @@ mod trie;
 
 use hyper::Method;
 
-use self::trie::Trie;
+use self::trie::{Trie, RouteValueResult};
 use crate::middleware::Middleware;
+use crate::context::ObsidianError;
 
 pub use self::end_point_type::EndPointHandler;
 pub use self::req_deserializer::{from_cow_map, Error as FormError};
@@ -19,7 +20,7 @@ pub use self::response::ResponseBuilder;
 pub use self::route::Route;
 
 pub struct Router {
-    pub routes: Trie,
+    routes: Trie,
 }
 
 impl Clone for Router {
@@ -53,15 +54,23 @@ impl Router {
         self.inject(Method::DELETE, path, handler);
     }
 
-    pub fn add_service(&mut self, middleware: impl Middleware) {
+    pub fn use_service(&mut self, middleware: impl Middleware) {
         self.routes.insert_default_middleware(middleware);
     }
 
-    pub fn add_service_to(&mut self, path: &str, middleware: impl Middleware) {
+    pub fn use_service_to(&mut self, path: &str, middleware: impl Middleware) {
         self.routes.insert_middleware(path, middleware);
     }
 
-    pub fn inject(&mut self, method: Method, path: &str, handler: impl EndPointHandler) {
+    pub fn search_route(&self, path: &str) -> Result<RouteValueResult, ObsidianError> {
+        self.routes.search_route(path)
+    }
+
+    pub fn merge_router(&mut self, path: &str, other: Router) {
+        self.routes.insert_sub_trie(path, other.routes);
+    }
+
+    fn inject(&mut self, method: Method, path: &str, handler: impl EndPointHandler) {
         let route = Route::new(path.to_string(), method.clone(), handler);
 
         self.routes.insert_route(path, route);
