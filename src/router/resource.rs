@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use super::Route;
 
 /// Resource acts as the intermidiate interface for interaction of routing data structure
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Resource {
     route_map: HashMap<Method, Route>,
 }

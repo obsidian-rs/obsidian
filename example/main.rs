@@ -75,10 +75,6 @@ fn main() {
             .body("<h1>Test radix2</h1>".to_string())
     });
 
-    app.get("/formtest", |_ctx, res: ResponseBuilder| {
-        res.status(StatusCode::OK).send_file("./test.html")
-    });
-
     app.get("/jsontest", |_ctx: Context, res: ResponseBuilder| {
         res.status(StatusCode::OK).send_file("./testjson.html")
     });
@@ -102,7 +98,13 @@ fn main() {
         },
     );
 
-    app.post("/formtest", |mut ctx: Context, res: ResponseBuilder| {
+    let mut form_router = Router::new();
+
+    form_router.get("/formtest", |_ctx, res: ResponseBuilder| {
+        res.status(StatusCode::OK).send_file("./test.html")
+    });
+
+    form_router.post("/formtest", |mut ctx: Context, res: ResponseBuilder| {
         let param_test: ParamTest = ctx.form().unwrap();
 
         dbg!(&param_test);
@@ -112,7 +114,7 @@ fn main() {
 
     let mut param_router = Router::new();
     let logger = Logger::new();
-    param_router.use_service(logger);
+    app.use_service(logger);
 
     param_router.get("/paramtest/:id", |ctx: Context, res: ResponseBuilder| {
         let param_test: i32 = ctx.param("id").unwrap();
@@ -121,7 +123,19 @@ fn main() {
 
         res.status(StatusCode::OK).json(param_test)
     });
+    param_router.get(
+        "/paramtest/:id/test",
+        |ctx: Context, res: ResponseBuilder| {
+            let mut param_test: i32 = ctx.param("id").unwrap();
+            param_test = param_test * 10;
+
+            dbg!(&param_test);
+
+            res.status(StatusCode::OK).json(param_test)
+        },
+    );
     app.use_router("/params/", param_router);
+    app.use_router("/forms/", form_router);
 
     app.listen(&addr, || {
         println!("server is listening to {}", &addr);

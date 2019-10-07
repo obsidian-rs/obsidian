@@ -13,6 +13,12 @@ pub struct RouteValue {
     route: Resource,
 }
 
+impl std::fmt::Debug for RouteValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "")
+    }
+}
+
 impl RouteValue {
     pub fn new(middleware: Vec<Arc<dyn Middleware>>, route: Resource) -> Self {
         RouteValue { middleware, route }
@@ -45,7 +51,7 @@ impl RouteValueResult {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Trie {
     head: Node,
 }
@@ -169,11 +175,8 @@ impl Trie {
                     }
                 }
                 None => {
-                    if split_key.peek().is_some() {
-                        // Path is not registered
-                        return Err(ObsidianError::NoneError);
-                    }
-                    break;
+                    // Path is not registered
+                    return Err(ObsidianError::NoneError);
                 }
             }
         }
@@ -236,7 +239,7 @@ impl Trie {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct Node {
     key: String,
     value: Option<RouteValue>,
