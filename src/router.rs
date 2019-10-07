@@ -4,9 +4,11 @@ mod request;
 mod resource;
 mod response;
 mod route;
+mod trie;
 
 use hyper::Method;
 
+use self::trie::Trie;
 use crate::middleware::Middleware;
 
 pub use self::end_point_type::EndPointHandler;
@@ -15,7 +17,6 @@ pub use self::request::Params;
 pub use self::resource::Resource;
 pub use self::response::ResponseBuilder;
 pub use self::route::Route;
-use crate::trie::Trie;
 
 pub struct Router {
     pub routes: Trie,

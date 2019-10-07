@@ -74,7 +74,7 @@ fn main() {
             .body("<h1>Test radix2</h1>".to_string())
     });
 
-    app.get("/paramtest", |_ctx, res: ResponseBuilder| {
+    app.get("/formtest", |_ctx, res: ResponseBuilder| {
         res.status(StatusCode::OK).send_file("./test.html")
     });
 
@@ -101,8 +101,16 @@ fn main() {
         },
     );
 
-    app.post("/paramtest2", |mut ctx: Context, res: ResponseBuilder| {
+    app.post("/formtest", |mut ctx: Context, res: ResponseBuilder| {
         let param_test: ParamTest = ctx.form().unwrap();
+
+        dbg!(&param_test);
+
+        res.status(StatusCode::OK).json(param_test)
+    });
+
+    app.get("/paramtest/:id", |ctx: Context, res: ResponseBuilder| {
+        let param_test: i32 = ctx.param("id").unwrap();
 
         dbg!(&param_test);
 

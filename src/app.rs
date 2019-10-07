@@ -3,7 +3,6 @@ use crate::middleware::Middleware;
 use crate::router::{EndPointHandler, Params, ResponseBuilder, Router};
 use futures::{future, Future, Stream};
 use hyper::{service::service_fn, Body, Request, Response, Server};
-use std::collections::BTreeMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
@@ -88,19 +87,20 @@ impl AppServer {
         // Currently support only one router until radix tree complete.
         if let Ok(path) = self.router.routes.search_route(parts.uri.path()) {
             // Temporary used as the hyper stream thread block. async will be used soon
-            //Box::new(body.concat2().and_then(move |b| {
-            let route = match path.get_route(&parts.method) {
-                Some(r) => r,
-                None => return page_not_found(),
-            };
-            let middlewares = path.get_middleware();
-            let req = Request::from_parts(parts, body);
-            let context = Context::new(req, Params::default());
+            Box::new(body.concat2().and_then(move |b| {
+                let route = match path.get_route(&parts.method) {
+                    Some(r) => r,
+                    None => return page_not_found(),
+                };
+                let middlewares = path.get_middleware();
+                let params = path.get_params();
+                let req = Request::from_parts(parts, Body::from(b));
+                let context = Context::new(req, Params::new(params));
 
-            let executor = EndpointExecutor::new(&route.handler, middlewares);
+                let executor = EndpointExecutor::new(&route.handler, middlewares);
 
-            executor.next(context)
-        //}))
+                executor.next(context)
+            }))
         } else {
             page_not_found()
         }
@@ -147,6 +147,7 @@ impl<'a> EndpointExecutor<'a> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use futures::Stream;
     use hyper::StatusCode;
 
     #[test]

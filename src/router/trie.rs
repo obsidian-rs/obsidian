@@ -42,6 +42,10 @@ impl RouteValueResult {
     pub fn get_middleware(&self) -> &Vec<Arc<dyn Middleware>> {
         &self.route_value.middleware
     }
+
+    pub fn get_params(&self) -> HashMap<String, String> {
+        self.params.clone()
+    }
 }
 
 #[derive(Clone)]
