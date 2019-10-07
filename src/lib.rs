@@ -1,6 +1,7 @@
 //#[deny(missing_docs)]
 
 mod app;
+mod trie;
 
 pub mod context;
 pub mod middleware;

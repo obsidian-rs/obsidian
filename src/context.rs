@@ -221,6 +221,7 @@ pub enum ObsidianError {
     ParamError(String),
     JsonError(JsonError),
     FormError(FormError),
+    GeneralError(String),
     NoneError,
 }
 
@@ -236,6 +237,7 @@ impl std::error::Error for ObsidianError {
             ObsidianError::ParamError(ref msg) => msg,
             ObsidianError::JsonError(ref err) => std::error::Error::description(err),
             ObsidianError::FormError(ref err) => std::error::Error::description(err),
+            ObsidianError::GeneralError(ref msg) => msg,
             ObsidianError::NoneError => "Input should not be None",
         }
     }

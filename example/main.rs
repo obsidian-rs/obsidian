@@ -59,6 +59,21 @@ fn main() {
             .body("<h1>This is a String</h1>".to_string())
     });
 
+    app.get("/test/radix", |_ctx, res: ResponseBuilder| {
+        res.status(StatusCode::OK)
+            .body("<h1>Test radix</h1>".to_string())
+    });
+
+    app.get("/team/radix", |_ctx, res: ResponseBuilder| {
+        res.status(StatusCode::OK)
+            .body("<h1>Team radix</h1>".to_string())
+    });
+
+    app.get("/test/radix2", |_ctx, res: ResponseBuilder| {
+        res.status(StatusCode::OK)
+            .body("<h1>Test radix2</h1>".to_string())
+    });
+
     app.get("/paramtest", |_ctx, res: ResponseBuilder| {
         res.status(StatusCode::OK).send_file("./test.html")
     });

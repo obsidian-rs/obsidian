@@ -11,15 +11,13 @@ use std::sync::Arc;
 /// - App level -> main_router, middleware for this level will be run for all endpoint
 /// - Router level -> sub_router, smaller group of endpoint
 pub struct App {
-    sub_router: BTreeMap<String, Router>,
-    main_router: Router,
+    router: Router,
 }
 
 impl App {
     pub fn new() -> Self {
         let mut app = App {
-            sub_router: BTreeMap::new(),
-            main_router: Router::new(),
+            router: Router::new(),
         };
 
         app.get("/favicon.ico", |_req, res: ResponseBuilder| {
@@ -30,29 +28,28 @@ impl App {
     }
 
     pub fn get(&mut self, path: &str, handler: impl EndPointHandler) {
-        self.main_router.get(path, handler);
+        self.router.get(path, handler);
     }
 
     pub fn post(&mut self, path: &str, handler: impl EndPointHandler) {
-        self.main_router.post(path, handler);
+        self.router.post(path, handler);
     }
 
     pub fn put(&mut self, path: &str, handler: impl EndPointHandler) {
-        self.main_router.put(path, handler);
+        self.router.put(path, handler);
     }
 
     pub fn delete(&mut self, path: &str, handler: impl EndPointHandler) {
-        self.main_router.delete(path, handler);
+        self.router.delete(path, handler);
     }
 
     pub fn use_service(&mut self, middleware: impl Middleware) {
-        self.main_router.add_service(middleware);
+        self.router.add_service(middleware);
     }
 
     pub fn listen(self, addr: &SocketAddr, callback: impl Fn()) {
         let app_server = AppServer {
-            sub_router: self.sub_router,
-            main_router: self.main_router,
+            router: self.router,
         };
 
         let service = move || {
@@ -78,8 +75,7 @@ impl App {
 
 #[derive(Clone)]
 struct AppServer {
-    sub_router: BTreeMap<String, Router>,
-    main_router: Router,
+    router: Router,
 }
 
 impl AppServer {
@@ -90,22 +86,21 @@ impl AppServer {
         let (parts, body) = req.into_parts();
 
         // Currently support only one router until radix tree complete.
-        if let Some(ref path) = self.main_router.routes.get(parts.uri.path()) {
-            // Temporary used to owned to move the variables for lifetime in and_then
+        if let Ok(path) = self.router.routes.search_route(parts.uri.path()) {
+            // Temporary used as the hyper stream thread block. async will be used soon
+            //Box::new(body.concat2().and_then(move |b| {
             let route = match path.get_route(&parts.method) {
-                Some(r) => r.to_owned(),
+                Some(r) => r,
                 None => return page_not_found(),
             };
-            let middlewares = self.main_router.middlewares.to_owned();
+            let middlewares = path.get_middleware();
+            let req = Request::from_parts(parts, body);
+            let context = Context::new(req, Params::default());
 
-            // Temporary used as the hyper stream thread block. async will be used soon
-            Box::new(body.concat2().and_then(move |b| {
-                let req = Request::from_parts(parts, Body::from(b));
-                let context = Context::new(req, Params::default());
-                let executor = EndpointExecutor::new(&route.handler, &middlewares);
+            let executor = EndpointExecutor::new(&route.handler, middlewares);
 
-                executor.next(context)
-            }))
+            executor.next(context)
+        //}))
         } else {
             page_not_found()
         }
@@ -156,9 +151,9 @@ mod test {
 
     #[test]
     fn test_app_server_resolve_endpoint() {
-        let mut main_router = Router::new();
+        let mut router = Router::new();
 
-        main_router.get("/", |mut context: Context, res: ResponseBuilder| {
+        router.get("/", |mut context: Context, res: ResponseBuilder| {
             let body = context.take_body();
 
             let request_body = body
@@ -174,10 +169,7 @@ mod test {
             res.status(StatusCode::OK).body("test_app_server")
         });
 
-        let app_server = AppServer {
-            sub_router: BTreeMap::new(),
-            main_router,
-        };
+        let app_server = AppServer { router };
 
         let mut req_builder = Request::builder();
 
