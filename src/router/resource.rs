@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use super::Route;
 
 /// Resource acts as the intermidiate interface for interaction of routing data structure
+/// Resource is binding with the path and handling all of the request method for that path
 #[derive(Clone, Debug)]
 pub struct Resource {
     route_map: HashMap<Method, Route>,
@@ -18,12 +19,8 @@ impl Default for Resource {
 }
 
 impl Resource {
-    pub fn add_route(&mut self, method: Method, route: Route) {
-        if self.route_map.contains_key(&method) {
-            panic!("Route: {} Method: {} error", route.path, route.method);
-        }
-
-        self.route_map.insert(method, route);
+    pub fn add_route(&mut self, method: Method, route: Route) -> Option<Route> {
+        self.route_map.insert(method, route)
     }
 
     pub fn get_route(&self, method: &Method) -> Option<&Route> {

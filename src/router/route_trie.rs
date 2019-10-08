@@ -1,12 +1,13 @@
-use crate::context::ObsidianError;
-use crate::middleware::Middleware;
-use crate::router::Resource;
-use crate::router::Route;
 use std::collections::HashMap;
 use std::fmt;
 use std::sync::Arc;
 
 use hyper::Method;
+
+use crate::middleware::Middleware;
+use crate::router::Resource;
+use crate::router::Route;
+use crate::ObsidianError;
 
 #[derive(Clone, Default)]
 pub struct RouteValue {
@@ -99,11 +100,25 @@ impl RouteTrie {
                     if split_key.peek().is_none() {
                         match &mut next_node.value {
                             Some(val) => {
-                                val.route.add_route(route.method.clone(), route);
+                                if let Some(duplicated) =
+                                    val.route.add_route(route.method.clone(), route)
+                                {
+                                    panic!(
+                                        "Duplicated route method '{}' at '{}' detected",
+                                        duplicated.method, key
+                                    );
+                                }
                             }
                             None => {
                                 let mut next_node_val = RouteValue::default();
-                                next_node_val.route.add_route(route.method.clone(), route);
+                                if let Some(duplicated) =
+                                    next_node_val.route.add_route(route.method.clone(), route)
+                                {
+                                    panic!(
+                                        "Duplicated route method '{}' at '{}' detected",
+                                        duplicated.method, key
+                                    );
+                                }
 
                                 next_node.value = Some(next_node_val);
                             }
@@ -221,6 +236,10 @@ impl RouteTrie {
             match *curr_node.process_insertion(k) {
                 Some(next_node) => {
                     if split_key.peek().is_none() {
+                        if next_node.value.is_some() || next_node.child_nodes.len() > 0 {
+                            panic!("There is conflict between main router and sub router at '{}'. Make sure main router does not consist any routing data in '{}'.", key, key);
+                        }
+
                         next_node.value = src.head.value;
                         next_node.child_nodes = src.head.child_nodes;
                         break;
@@ -237,11 +256,21 @@ impl RouteTrie {
     fn insert_default_route(&mut self, route: Route) {
         match &mut self.head.value {
             Some(val) => {
-                val.route.add_route(route.method.clone(), route);
+                if let Some(duplicated) = val.route.add_route(route.method.clone(), route) {
+                    panic!(
+                        "Duplicated route method '{}' at '/' detected",
+                        duplicated.method
+                    );
+                }
             }
             None => {
                 let mut val = RouteValue::default();
-                val.route.add_route(route.method.clone(), route);
+                if let Some(duplicated) = val.route.add_route(route.method.clone(), route) {
+                    panic!(
+                        "Duplicated route method '{}' at '/' detected",
+                        duplicated.method
+                    );
+                }
 
                 self.head.value = Some(val);
             }
@@ -321,7 +350,10 @@ impl Node {
             }
             ActionName::Error => match self.child_nodes.get(action.payload.node_index) {
                 Some(node) => {
-                    panic!("Ambigous definition between {} and {}", key, node.key);
+                    panic!(
+                        "ERROR: Ambigous definition between {} and {}",
+                        key, node.key
+                    );
                 }
                 None => {}
             },
@@ -457,7 +489,7 @@ mod tests {
         let handler = |_x, _y| ResponseBuilder::new().body("test");
 
         route_trie.insert_default_middleware(logger);
-        route_trie.insert_route("/", Route::new("/".to_string(), Method::GET, handler));
+        route_trie.insert_route("/", Route::new(Method::GET, handler));
 
         let result = route_trie.search_route("/");
 
@@ -469,7 +501,6 @@ mod tests {
                 let route_value = route.get_route(&Method::GET).unwrap();
 
                 assert_eq!(middleware.len(), 1);
-                assert_eq!(route_value.path, "/");
                 assert_eq!(route_value.method, Method::GET);
             }
             _ => {
@@ -485,10 +516,7 @@ mod tests {
         let handler = |_x, _y| ResponseBuilder::new().body("test");
 
         route_trie.insert_default_middleware(logger);
-        route_trie.insert_route(
-            "/normal/test/",
-            Route::new("/normal/test/".to_string(), Method::GET, handler),
-        );
+        route_trie.insert_route("/normal/test/", Route::new(Method::GET, handler));
 
         let result = route_trie.search_route("/normal/test/");
 
@@ -500,7 +528,6 @@ mod tests {
                 let route_value = route.get_route(&Method::GET).unwrap();
 
                 assert_eq!(middleware.len(), 1);
-                assert_eq!(route_value.path, "/normal/test/");
                 assert_eq!(route_value.method, Method::GET);
             }
             _ => {
@@ -516,10 +543,7 @@ mod tests {
         let handler = |_x, _y| ResponseBuilder::new().body("test");
 
         route_trie.insert_default_middleware(logger);
-        route_trie.insert_route(
-            "/normal/test/",
-            Route::new("/normal/test/".to_string(), Method::GET, handler),
-        );
+        route_trie.insert_route("/normal/test/", Route::new(Method::GET, handler));
 
         let result = route_trie.search_route("/fail/test/");
 
@@ -533,15 +557,9 @@ mod tests {
         let handler = |_x, _y| ResponseBuilder::new().body("test");
 
         route_trie.insert_default_middleware(logger);
-        route_trie.insert_route(
-            "/normal/test/",
-            Route::new("/normal/test/".to_string(), Method::GET, handler),
-        );
+        route_trie.insert_route("/normal/test/", Route::new(Method::GET, handler));
 
-        route_trie.insert_route(
-            "/noral/test/",
-            Route::new("/noral/test/".to_string(), Method::GET, handler),
-        );
+        route_trie.insert_route("/noral/test/", Route::new(Method::GET, handler));
 
         let normal_result = route_trie.search_route("/normal/test/");
         let noral_result = route_trie.search_route("/noral/test/");
@@ -555,7 +573,6 @@ mod tests {
                 let route_value = route.get_route(&Method::GET).unwrap();
 
                 assert_eq!(middleware.len(), 1);
-                assert_eq!(route_value.path, "/normal/test/");
                 assert_eq!(route_value.method, Method::GET);
             }
             _ => {
@@ -569,7 +586,6 @@ mod tests {
                 let route_value = route.get_route(&Method::GET).unwrap();
 
                 assert_eq!(middleware.len(), 1);
-                assert_eq!(route_value.path, "/noral/test/");
                 assert_eq!(route_value.method, Method::GET);
             }
             _ => {

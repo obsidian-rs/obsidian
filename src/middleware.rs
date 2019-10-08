@@ -1,11 +1,12 @@
 mod logger;
 
 use futures::future::Future;
-use hyper::{Body, Response};
 
 pub use self::logger::Logger;
+
 use crate::app::EndpointExecutor;
 use crate::context::Context;
+use crate::{Body, Response};
 
 pub trait Middleware: Send + Sync + 'static {
     fn handle<'a>(

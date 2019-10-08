@@ -1,26 +1,25 @@
 use futures::{Future, Stream};
-use hyper::{header::HeaderValue, Body, HeaderMap, Method, Request, Uri};
 use serde::de::DeserializeOwned;
-use serde_json::error::Error as JsonError;
 use url::form_urlencoded;
 
 use std::collections::HashMap;
 use std::convert::From;
-use std::fmt;
-use std::fmt::Display;
 use std::str::FromStr;
 
-use crate::router::{from_cow_map, FormError, Params};
+use crate::router::from_cow_map;
+use crate::ObsidianError;
+use crate::{header::HeaderValue, Body, HeaderMap, Method, Request, Uri};
 
-/// Context is the interface for accessing request and request data
+/// Context contains the data for current http connection context.
+/// For example, request information, params, method, and path.
 #[derive(Debug)]
 pub struct Context {
     request: Request<Body>,
-    params_data: Params,
+    params_data: HashMap<String, String>,
 }
 
 impl Context {
-    pub fn new(request: Request<Body>, params_data: Params) -> Self {
+    pub fn new(request: Request<Body>, params_data: HashMap<String, String>) -> Self {
         Context {
             request,
             params_data,
@@ -72,7 +71,7 @@ impl Context {
     ///
     pub fn param<T: FromStr>(&self, key: &str) -> Result<T, ObsidianError> {
         self.params_data
-            .get_params(key)
+            .get(key)
             .ok_or(ObsidianError::NoneError)?
             .parse()
             .map_err(|_err| ObsidianError::ParamError(format!("Failed to parse param {}", key)))
@@ -216,49 +215,9 @@ impl Context {
     }
 }
 
-#[derive(Debug)]
-pub enum ObsidianError {
-    ParamError(String),
-    JsonError(JsonError),
-    FormError(FormError),
-    GeneralError(String),
-    NoneError,
-}
-
-impl Display for ObsidianError {
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str(std::error::Error::description(self))
-    }
-}
-
-impl std::error::Error for ObsidianError {
-    fn description(&self) -> &str {
-        match *self {
-            ObsidianError::ParamError(ref msg) => msg,
-            ObsidianError::JsonError(ref err) => std::error::Error::description(err),
-            ObsidianError::FormError(ref err) => std::error::Error::description(err),
-            ObsidianError::GeneralError(ref msg) => msg,
-            ObsidianError::NoneError => "Input should not be None",
-        }
-    }
-}
-
-impl From<FormError> for ObsidianError {
-    fn from(error: FormError) -> Self {
-        ObsidianError::FormError(error)
-    }
-}
-
-impl From<JsonError> for ObsidianError {
-    fn from(error: JsonError) -> Self {
-        ObsidianError::JsonError(error)
-    }
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::router::Params;
     use hyper::{Body, Request};
     use serde_derive::*;
     use serde_json::json;
@@ -298,10 +257,9 @@ mod test {
         params_map.insert("id".to_string(), "1".to_string());
         params_map.insert("mode".to_string(), "edit".to_string());
 
-        let params = Params::new(params_map);
         let request = Request::new(Body::from(""));
 
-        let ctx = Context::new(request, params);
+        let ctx = Context::new(request, params_map);
 
         let id: i32 = ctx.param("id")?;
         let mode: String = ctx.param("mode")?;
@@ -319,10 +277,9 @@ mod test {
 
         params_map.insert("mode".to_string(), "edit".to_string());
 
-        let params = Params::new(params_map);
         let request = Request::new(Body::from(""));
 
-        let ctx = Context::new(request, params);
+        let ctx = Context::new(request, params_map);
 
         let _mode: String = ctx.param("mode").unwrap();
         let _id: i32 = ctx.param("id").unwrap();
@@ -330,7 +287,7 @@ mod test {
 
     #[test]
     fn test_form() -> Result<(), ObsidianError> {
-        let params = Params::new(HashMap::default());
+        let params = HashMap::default();
         let request = Request::new(Body::from("id=1&mode=edit"));
 
         let mut ctx = Context::new(request, params);
@@ -347,7 +304,7 @@ mod test {
 
     #[test]
     fn test_form_with_extra_body() -> Result<(), ObsidianError> {
-        let params = Params::new(HashMap::default());
+        let params = HashMap::default();
         let request = Request::new(Body::from("id=1&mode=edit&extra=true"));
 
         let mut ctx = Context::new(request, params);
@@ -364,7 +321,7 @@ mod test {
 
     #[test]
     fn test_form_with_extra_field() -> Result<(), ObsidianError> {
-        let params = Params::new(HashMap::default());
+        let params = HashMap::default();
         let request = Request::new(Body::from("id=1&mode=edit"));
 
         let mut ctx = Context::new(request, params);
@@ -382,7 +339,7 @@ mod test {
 
     #[test]
     fn test_json_struct() -> Result<(), ObsidianError> {
-        let params = Params::new(HashMap::default());
+        let params = HashMap::default();
         let request = Request::new(Body::from("{\"id\":1,\"mode\":\"edit\"}"));
 
         let mut ctx = Context::new(request, params);
@@ -399,7 +356,7 @@ mod test {
 
     #[test]
     fn test_json_value() -> Result<(), ObsidianError> {
-        let params = Params::new(HashMap::default());
+        let params = HashMap::default();
         let request = Request::new(Body::from("{\"id\":1,\"mode\":\"edit\"}"));
 
         let mut ctx = Context::new(request, params);

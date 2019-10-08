@@ -1,10 +1,12 @@
-use crate::context::Context;
-use crate::middleware::Middleware;
-use crate::router::{EndPointHandler, Params, ResponseBuilder, Router};
-use futures::{future, Future, Stream};
-use hyper::{service::service_fn, Body, Request, Response, Server};
 use std::net::SocketAddr;
 use std::sync::Arc;
+
+use futures::{future, Future, Stream};
+use hyper::{service::service_fn, Body, Request, Response, Server};
+
+use crate::context::Context;
+use crate::middleware::Middleware;
+use crate::router::{EndPointHandler, ResponseBuilder, Router};
 
 pub struct App {
     router: Router,
@@ -97,7 +99,7 @@ impl AppServer {
                 let middlewares = path.get_middleware();
                 let params = path.get_params();
                 let req = Request::from_parts(parts, Body::from(b));
-                let context = Context::new(req, Params::new(params));
+                let context = Context::new(req, params);
 
                 let executor = EndpointExecutor::new(&route.handler, middlewares);
 
@@ -109,7 +111,7 @@ impl AppServer {
     }
 }
 
-pub fn page_not_found() -> Box<dyn Future<Item = Response<Body>, Error = hyper::Error> + Send> {
+fn page_not_found() -> Box<dyn Future<Item = Response<Body>, Error = hyper::Error> + Send> {
     let server_response = Response::new(Body::from("404 Not Found"));
 
     Box::new(future::ok(server_response))
