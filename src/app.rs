@@ -6,9 +6,6 @@ use hyper::{service::service_fn, Body, Request, Response, Server};
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-/// There are two level of router
-/// - App level -> main_router, middleware for this level will be run for all endpoint
-/// - Router level -> sub_router, smaller group of endpoint
 pub struct App {
     router: Router,
 }

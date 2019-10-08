@@ -3,6 +3,7 @@ use crate::middleware::Middleware;
 use crate::router::Resource;
 use crate::router::Route;
 use std::collections::HashMap;
+use std::fmt;
 use std::sync::Arc;
 
 use hyper::Method;
@@ -13,8 +14,8 @@ pub struct RouteValue {
     route: Resource,
 }
 
-impl std::fmt::Debug for RouteValue {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Debug for RouteValue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "")
     }
 }
@@ -52,17 +53,18 @@ impl RouteValueResult {
 }
 
 #[derive(Clone, Debug)]
-pub struct Trie {
+pub struct RouteTrie {
     head: Node,
 }
 
-impl Trie {
+impl RouteTrie {
     pub fn new() -> Self {
-        Trie {
+        RouteTrie {
             head: Node::new("/".to_string(), None),
         }
     }
 
+    /// Insert middleware into root node
     pub fn insert_default_middleware(&mut self, middleware: impl Middleware) {
         match &mut self.head.value {
             Some(val) => {
@@ -77,6 +79,8 @@ impl Trie {
         }
     }
 
+    /// Insert route values into the trie
+    /// Panic if ambigous definition is detected
     pub fn insert_route(&mut self, key: &str, route: Route) {
         // Split key and drop additional '/'
         let split_key = key.split('/');
@@ -115,6 +119,7 @@ impl Trie {
         }
     }
 
+    /// Insert middleware into specific node
     pub fn insert_middleware(&mut self, key: &str, middleware: impl Middleware) {
         // Split key and drop additional '/'
         let split_key = key.split('/');
@@ -148,6 +153,8 @@ impl Trie {
         }
     }
 
+    /// Search node through the provided key
+    /// Middleware will be accumulated throughout the search path
     pub fn search_route(&self, key: &str) -> Result<RouteValueResult, ObsidianError> {
         // Split key and drop additional '/'
         let split_key = key.split('/');
@@ -183,8 +190,6 @@ impl Trie {
 
         match &curr_node.value {
             Some(val) => {
-                middleware.append(&mut val.middleware.clone());
-
                 let route_val = RouteValue::new(middleware, val.route.clone());
 
                 return Ok(RouteValueResult::new(route_val, params));
@@ -195,15 +200,20 @@ impl Trie {
         }
     }
 
-    pub fn insert_sub_trie(&mut self, key: &str, sub_trie: Trie) {
+    /// Insert src trie into the des as a child trie
+    /// src will be under the node of des with the key path
+    ///
+    /// For example, /src/ -> /des/ with 'example' key path
+    /// src will be located at /des/example/src/
+    pub fn insert_sub_route(des: &mut Self, key: &str, src: Self) {
         // Split key and drop additional '/'
         let split_key = key.split('/');
         let mut split_key = split_key.filter(|key| !key.is_empty()).peekable();
 
-        let mut curr_node = &mut self.head;
+        let mut curr_node = &mut des.head;
 
         if split_key.peek().is_none() {
-            self.head = sub_trie.head;
+            des.head = src.head;
             return;
         }
 
@@ -211,8 +221,8 @@ impl Trie {
             match *curr_node.process_insertion(k) {
                 Some(next_node) => {
                     if split_key.peek().is_none() {
-                        next_node.value = sub_trie.head.value;
-                        next_node.child_nodes = sub_trie.head.child_nodes;
+                        next_node.value = src.head.value;
+                        next_node.child_nodes = src.head.child_nodes;
                         break;
                     }
                     curr_node = next_node;
@@ -254,105 +264,6 @@ impl Node {
             child_nodes: Vec::default(),
         }
     }
-    /*
-    fn search_node(node: &Self, key: &str) -> Result<RouteValueResult, ObsidianError> {
-        // Split key and drop additional '/'
-        let split_key = key.split('/');
-        let mut split_key = split_key.filter(|key| !key.is_empty()).peekable();
-
-        let mut curr_node = node;
-        let mut params = HashMap::default();
-
-        while let Some(k) = split_key.next() {
-            match *curr_node.get_next_node(k, &mut params) {
-                Some(next_node) => {
-                    curr_node = next_node;
-                }
-                None => {
-                    if split_key.peek().is_some() {
-                        // Path is not registered
-                        return Err(ObsidianError::NoneError);
-                    }
-                    break;
-                }
-            }
-        }
-
-        match &node.value {
-            Some(val) => {
-                return Ok(RouteValueResult::new(val.clone(), params));
-            }
-            None => {
-                return Err(ObsidianError::NoneError);
-            }
-        }
-    }
-
-    fn insert_route(node: &mut Self, key: &str, route: Route) {
-        // Split key and drop additional '/'
-        let split_key = key.split('/');
-        let mut split_key = split_key.filter(|key| !key.is_empty()).peekable();
-
-        let mut curr_node = node;
-
-        while let Some(k) = split_key.next() {
-            match *curr_node.process_insertion(k) {
-                Some(next_node) => {
-                    if split_key.peek().is_none() {
-                        match &mut next_node.value {
-                            Some(val) => {
-                                val.route.add_route(route.method.clone(), route);
-                            }
-                            None => {
-                                let mut next_node_val = RouteValue::default();
-                                next_node_val.route.add_route(route.method.clone(), route);
-
-                                next_node.value = Some(next_node_val);
-                            }
-                        }
-                        break;
-                    }
-                    curr_node = next_node;
-                }
-                None => {
-                    break;
-                }
-            }
-        }
-    }
-
-    fn insert_middleware(node: &mut Self, key: &str, middleware: impl Middleware) {
-        // Split key and drop additional '/'
-        let split_key = key.split('/');
-        let mut split_key = split_key.filter(|key| !key.is_empty()).peekable();
-
-        let mut curr_node = node;
-
-        while let Some(k) = split_key.next() {
-            match *curr_node.process_insertion(k) {
-                Some(next_node) => {
-                    if split_key.peek().is_none() {
-                        match &mut next_node.value {
-                            Some(val) => {
-                                val.middleware.push(Arc::new(middleware));
-                            }
-                            None => {
-                                let mut next_node_val = RouteValue::default();
-                                next_node_val.middleware.push(Arc::new(middleware));
-
-                                next_node.value = Some(next_node_val);
-                            }
-                        }
-                        break;
-                    }
-                    curr_node = next_node;
-                }
-                None => {
-                    break;
-                }
-            }
-        }
-    } */
 
     fn process_insertion(&mut self, key: &str) -> Box<Option<&mut Self>> {
         let action = self.get_insertion_action(key);
@@ -529,6 +440,141 @@ impl ActionPayload {
         ActionPayload {
             match_count,
             node_index,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::middleware::Logger;
+    use crate::router::ResponseBuilder;
+
+    #[test]
+    fn radix_trie_head_test() {
+        let mut route_trie = RouteTrie::new();
+        let logger = Logger::new();
+        let handler = |_x, _y| ResponseBuilder::new().body("test");
+
+        route_trie.insert_default_middleware(logger);
+        route_trie.insert_route("/", Route::new("/".to_string(), Method::GET, handler));
+
+        let result = route_trie.search_route("/");
+
+        assert!(result.is_ok());
+
+        match result {
+            Ok(route) => {
+                let middleware = route.get_middleware();
+                let route_value = route.get_route(&Method::GET).unwrap();
+
+                assert_eq!(middleware.len(), 1);
+                assert_eq!(route_value.path, "/");
+                assert_eq!(route_value.method, Method::GET);
+            }
+            _ => {
+                assert!(false);
+            }
+        }
+    }
+
+    #[test]
+    fn radix_trie_normal_test() {
+        let mut route_trie = RouteTrie::new();
+        let logger = Logger::new();
+        let handler = |_x, _y| ResponseBuilder::new().body("test");
+
+        route_trie.insert_default_middleware(logger);
+        route_trie.insert_route(
+            "/normal/test/",
+            Route::new("/normal/test/".to_string(), Method::GET, handler),
+        );
+
+        let result = route_trie.search_route("/normal/test/");
+
+        assert!(result.is_ok());
+
+        match result {
+            Ok(route) => {
+                let middleware = route.get_middleware();
+                let route_value = route.get_route(&Method::GET).unwrap();
+
+                assert_eq!(middleware.len(), 1);
+                assert_eq!(route_value.path, "/normal/test/");
+                assert_eq!(route_value.method, Method::GET);
+            }
+            _ => {
+                assert!(false);
+            }
+        }
+    }
+
+    #[test]
+    fn radix_trie_not_found_test() {
+        let mut route_trie = RouteTrie::new();
+        let logger = Logger::new();
+        let handler = |_x, _y| ResponseBuilder::new().body("test");
+
+        route_trie.insert_default_middleware(logger);
+        route_trie.insert_route(
+            "/normal/test/",
+            Route::new("/normal/test/".to_string(), Method::GET, handler),
+        );
+
+        let result = route_trie.search_route("/fail/test/");
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn radix_trie_split_node_and_key_test() {
+        let mut route_trie = RouteTrie::new();
+        let logger = Logger::new();
+        let handler = |_x, _y| ResponseBuilder::new().body("test");
+
+        route_trie.insert_default_middleware(logger);
+        route_trie.insert_route(
+            "/normal/test/",
+            Route::new("/normal/test/".to_string(), Method::GET, handler),
+        );
+
+        route_trie.insert_route(
+            "/noral/test/",
+            Route::new("/noral/test/".to_string(), Method::GET, handler),
+        );
+
+        let normal_result = route_trie.search_route("/normal/test/");
+        let noral_result = route_trie.search_route("/noral/test/");
+
+        assert!(normal_result.is_ok());
+        assert!(noral_result.is_ok());
+
+        match normal_result {
+            Ok(route) => {
+                let middleware = route.get_middleware();
+                let route_value = route.get_route(&Method::GET).unwrap();
+
+                assert_eq!(middleware.len(), 1);
+                assert_eq!(route_value.path, "/normal/test/");
+                assert_eq!(route_value.method, Method::GET);
+            }
+            _ => {
+                assert!(false);
+            }
+        }
+
+        match noral_result {
+            Ok(route) => {
+                let middleware = route.get_middleware();
+                let route_value = route.get_route(&Method::GET).unwrap();
+
+                assert_eq!(middleware.len(), 1);
+                assert_eq!(route_value.path, "/noral/test/");
+                assert_eq!(route_value.method, Method::GET);
+            }
+            _ => {
+                assert!(false);
+            }
         }
     }
 }

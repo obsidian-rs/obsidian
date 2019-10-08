@@ -4,11 +4,11 @@ mod request;
 mod resource;
 mod response;
 mod route;
-mod trie;
+mod route_trie;
 
 use hyper::Method;
 
-use self::trie::{Trie, RouteValueResult};
+use self::route_trie::{RouteTrie, RouteValueResult};
 use crate::middleware::Middleware;
 use crate::context::ObsidianError;
 
@@ -20,7 +20,7 @@ pub use self::response::ResponseBuilder;
 pub use self::route::Route;
 
 pub struct Router {
-    routes: Trie,
+    routes: RouteTrie,
 }
 
 impl Clone for Router {
@@ -34,7 +34,7 @@ impl Clone for Router {
 impl Router {
     pub fn new() -> Self {
         Router {
-            routes: Trie::new(),
+            routes: RouteTrie::new(),
         }
     }
 
@@ -67,7 +67,7 @@ impl Router {
     }
 
     pub fn merge_router(&mut self, path: &str, other: Router) {
-        self.routes.insert_sub_trie(path, other.routes);
+        RouteTrie::insert_sub_route(&mut self.routes, path, other.routes);
     }
 
     fn inject(&mut self, method: Method, path: &str, handler: impl EndPointHandler) {
