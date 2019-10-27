@@ -15,16 +15,20 @@ struct Point {
     y: i32,
 }
 
-fn responsder_handler(ctx: Context) -> impl Responder {
+fn responsder_handler(_ctx: Context) -> impl Responder {
     "Testing"
 }
 
-fn responsder_result(ctx: Context) -> impl Responder {
+fn responsder_result(_ctx: Context) -> impl Responder {
     Ok("Testing for result")
 }
 
-fn responder_string(ctx: Context) -> String {
+fn responder_string(_ctx: Context) -> String {
     String::from("Testing for string")
+}
+
+fn responder_json(_ctx: Context) -> impl Responder {
+    "Wait"
 }
 
 fn main() {
@@ -35,8 +39,16 @@ fn main() {
     app.get("/responder-result", responsder_result);
     app.get("/responder-string", responder_string);
 
-    // app.get("/", |_ctx, res: ResponseBuilder| {
-    //     res.status(StatusCode::OK).body("<!DOCTYPE html><html><head><link rel=\"shotcut icon\" href=\"favicon.ico\" type=\"image/x-icon\" sizes=\"32x32\" /></head> <h1>Hello Obsidian</h1></html>")
+    app.get("/", |_ctx| {
+        "<!DOCTYPE html><html><head><link rel=\"shotcut icon\" href=\"favicon.ico\" type=\"image/x-icon\" sizes=\"32x32\" /></head> <h1>Hello Obsidian</h1></html>"
+    });
+
+    app.get("/empty-body", |_ctx| {
+        ()
+    });
+
+    // app.get("/vec", |_ctx| {
+    //     vec![1, 2, 3]
     // });
     //
     // app.get("/json", |_ctx, res: ResponseBuilder| {
@@ -45,14 +57,6 @@ fn main() {
     //     res.header(header::CONTENT_TYPE, "application/json")
     //         .status(StatusCode::OK)
     //         .json(point)
-    // });
-    //
-    // app.get("/empty-body", |_ctx, res: ResponseBuilder| {
-    //     res.status(StatusCode::OK)
-    // });
-    //
-    // app.get("/vec", |_ctx, res: ResponseBuilder| {
-    //     res.status(StatusCode::OK).body(vec![1, 2, 3])
     // });
     //
     // app.get("/String", |_ctx, res: ResponseBuilder| {

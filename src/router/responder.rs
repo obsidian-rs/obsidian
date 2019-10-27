@@ -75,6 +75,12 @@ impl Responder for Result<&'static str, ()> {
     }
 }
 
+impl Responder for () {
+    fn respond_to(self) -> ResponseResult {
+        Response::builder().status(StatusCode::OK).body(().into_body())
+    }
+}
+
 impl Responder for (StatusCode, String) {
     fn respond_to(self) -> ResponseResult {
         Response::builder().status(self.0).body(self.1.into_body())
