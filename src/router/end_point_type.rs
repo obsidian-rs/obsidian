@@ -1,23 +1,23 @@
-use super::Responder;
-use super::ResponseBuilder;
+use super::{ResponseResult, Responder};
 use crate::context::Context;
 
-pub trait EndPointHandler:
-    Fn(Context, ResponseBuilder) -> Box<dyn Responder> + Send + Sync + 'static
-{
+pub trait EndPointHandler: Send + Sync + 'static {
+  fn call_handler(&self, ctx: Context) -> ResponseResult;
 }
 
-impl<T> EndPointHandler for T where
-    T: Fn(Context, ResponseBuilder) -> Box<dyn Responder> + Send + Sync + 'static
+impl<T, R> EndPointHandler for T where
+    T: Fn(Context) -> R + Send + Sync + 'static,
+    R: Responder
 {
+    fn call_handler(&self, ctx: Context) -> ResponseResult {
+        (self)(ctx).respond_to()
+    }
 }
-
-// pub trait EndPointHandler:
-//     Fn(Context, ResponseBuilder) -> ResponseBuilder + Send + Sync + 'static
-// {
-// }
 
 // impl<T> EndPointHandler for T where
-//     T: Fn(Context, ResponseBuilder) -> ResponseBuilder + Send + Sync + 'static
+//     T: Fn(Context) -> (dyn Responder) + Send + Sync + 'static
 // {
+//     fn call_handler(ctx: Context) -> ResponseResult {
+//         (self)(ctx).respond_to()
+//     }
 // }

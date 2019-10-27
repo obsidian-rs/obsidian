@@ -11,34 +11,34 @@ use tokio_io;
 static NOTFOUND: &[u8] = b"Not Found";
 
 pub trait ResponseBody {
-    fn into_body(self) -> Result<Body, StatusCode>;
+    fn into_body(self) -> Body;
 }
 
 impl ResponseBody for () {
-    fn into_body(self) -> Result<Body, StatusCode> {
-        Ok(Body::empty())
+    fn into_body(self) -> Body {
+        Body::empty()
     }
 }
 
 impl ResponseBody for &'static str {
-    fn into_body(self) -> Result<Body, StatusCode> {
-        Ok(Body::from(self))
+    fn into_body(self) -> Body {
+        Body::from(self)
     }
 }
 
 impl ResponseBody for String {
-    fn into_body(self) -> Result<Body, StatusCode> {
-        Ok(Body::from(self))
+    fn into_body(self) -> Body {
+        Body::from(self)
     }
 }
 
 impl ResponseBody for Vec<u8> {
-    fn into_body(self) -> Result<Body, StatusCode> {
+    fn into_body(self) -> Body {
         let result = match serde_json::to_string(&self) {
-            Ok(json) => Ok(Body::from(json)),
+            Ok(json) => Body::from(json),
             Err(e) => {
                 eprintln!("serializing failed: {}", e);
-                Err(StatusCode::INTERNAL_SERVER_ERROR)
+                Body::from(std::error::Error::description(&e).to_string())
             }
         };
 
@@ -86,36 +86,36 @@ impl ResponseBuilder {
         self
     }
 
-    pub fn body(mut self, body: impl ResponseBody) -> Self {
-        match body.into_body() {
-            Ok(body) => self.body = body,
-            Err(status) => {
-                self.response_builder.status(status);
-                self.body = Body::from("Internal Server Error");
-            }
-        }
-        self
-    }
-
-    pub fn json(mut self, body: impl Serialize) -> Self {
-        let serialized = serde_json::to_string(&body).unwrap();
-
-        match serialized.into_body() {
-            Ok(body) => self.body = body,
-            Err(status) => {
-                self.response_builder.status(status);
-                self.body = Body::from("Internal Server Error");
-            }
-        }
-
-        self
-    }
-
-    pub fn send_file(mut self, file_path: &str) -> Self {
-        self.file_path = Some(file_path.to_string());
-
-        self
-    }
+    // pub fn body(mut self, body: impl ResponseBody) -> Self {
+    //     match body.into_body() {
+    //         Ok(body) => self.body = body,
+    //         Err(status) => {
+    //             self.response_builder.status(status);
+    //             self.body = Body::from("Internal Server Error");
+    //         }
+    //     }
+    //     self
+    // }
+    //
+    // pub fn json(mut self, body: impl Serialize) -> Self {
+    //     let serialized = serde_json::to_string(&body).unwrap();
+    //
+    //     match serialized.into_body() {
+    //         Ok(body) => self.body = body,
+    //         Err(status) => {
+    //             self.response_builder.status(status);
+    //             self.body = Body::from("Internal Server Error");
+    //         }
+    //     }
+    //
+    //     self
+    // }
+    //
+    // pub fn send_file(mut self, file_path: &str) -> Self {
+    //     self.file_path = Some(file_path.to_string());
+    //
+    //     self
+    // }
 }
 
 impl Into<Response<Body>> for ResponseBuilder {

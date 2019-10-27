@@ -1,8 +1,8 @@
 use crate::context::Context;
 use crate::middleware::Middleware;
-use crate::router::{EndPointHandler, ResponseBuilder, RouteData, Router};
+use crate::router::{response, EndPointHandler, ResponseBuilder, RouteData, Router, ResponseResult};
 use futures::{future, Future, Stream};
-use hyper::{service::service_fn, Body, Request, Response, Server};
+use hyper::{service::service_fn, Body, Request, Response, Server, StatusCode};
 use std::collections::{BTreeMap, HashMap};
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -22,9 +22,9 @@ impl App {
             main_router: Router::new(),
         };
 
-        app.get("/favicon.ico", |_req, res: ResponseBuilder| {
-            res.send_file("./favicon.ico")
-        });
+        // app.get("/favicon.ico", |ctx: Context| {
+        //     response.send_file("./favicon.ico")
+        // });
 
         app
     }
@@ -59,7 +59,7 @@ impl App {
             let server_clone = app_server.clone();
 
             service_fn(
-                move |req| -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send> {
+                move |req| -> Box<dyn Future<Item = Response<Body>, Error = hyper::Error> + Send> {
                     // Resolve the route endpoint
                     server_clone.resolve_endpoint(req)
                 },
@@ -120,14 +120,14 @@ pub fn page_not_found() -> Box<Future<Item = Response<Body>, Error = hyper::Erro
 }
 
 pub struct EndpointExecutor<'a> {
-    pub route_endpoint: &'a Arc<dyn EndPointHandler<Output = ResponseBuilder>>,
-    pub middleware: &'a [Arc<Middleware>],
+    pub route_endpoint: &'a Arc<dyn EndPointHandler>,
+    pub middleware: &'a [Arc<dyn Middleware>],
 }
 
 impl<'a> EndpointExecutor<'a> {
     pub fn new(
-        route_endpoint: &'a Arc<dyn EndPointHandler<Output = ResponseBuilder>>,
-        middleware: &'a [Arc<Middleware>],
+        route_endpoint: &'a Arc<dyn EndPointHandler>,
+        middleware: &'a [Arc<dyn Middleware>],
     ) -> Self {
         EndpointExecutor {
             route_endpoint,
@@ -138,14 +138,26 @@ impl<'a> EndpointExecutor<'a> {
     pub fn next(
         mut self,
         context: Context,
-    ) -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send> {
+    ) -> Box<dyn Future<Item = Response<Body>, Error = hyper::Error> + Send> {
         if let Some((current, all_next)) = self.middleware.split_first() {
             self.middleware = all_next;
             current.handle(context, self)
         } else {
             let response_builder = ResponseBuilder::new();
-            let route_response = (*self.route_endpoint)(context, response_builder);
-            route_response.into()
+            let route_response = self.route_endpoint.call_handler(context);
+
+            match route_response {
+                Ok(res) => Box::new(future::ok(res)),
+                Err(err) => {
+                    let body = Body::from(std::error::Error::description(&err).to_string());
+                    let response = Response::builder()
+                        .status(StatusCode::INTERNAL_SERVER_ERROR)
+                        .body(body)
+                        .unwrap();
+
+                    Box::new(future::ok(response))
+                }
+            }
         }
     }
 }

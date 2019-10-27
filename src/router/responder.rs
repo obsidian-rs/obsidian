@@ -1,8 +1,10 @@
-use super::ResponseBuilder;
+use super::ResponseBody;
 pub use hyper::{Body, Error, HeaderMap, Request, Response, StatusCode};
 
+pub type ResponseResult<T = Response<Body>> = Result<T, http::Error>;
+
 pub trait Responder {
-    fn respond_to(self) -> ResponseBuilder;
+    fn respond_to(self) -> ResponseResult;
     fn with_status(self, status: StatusCode) -> CustomResponder<Self>
     where
         Self: Sized,
@@ -36,32 +38,45 @@ impl<T: Responder> CustomResponder<T> {
 }
 
 impl Responder for String {
-    fn respond_to(self) -> ResponseBuilder {
-        ResponseBuilder::new().status(StatusCode::OK).body(self)
+    fn respond_to(self) -> ResponseResult {
+        Response::builder().status(StatusCode::OK).body(self.into_body())
     }
 }
 
-impl Responder for ResponseBuilder {
-    fn respond_to(self) -> ResponseBuilder {
-        self
+impl Responder for &'static str {
+    fn respond_to(self) -> ResponseResult {
+        Response::builder().status(StatusCode::OK).body(self.into_body())
     }
 }
 
 impl Responder for Result<String, ()> {
-    fn respond_to(self) -> ResponseBuilder {
+    fn respond_to(self) -> ResponseResult {
         match self {
-            Ok(resp_body) => {
-                ResponseBuilder::new().status(StatusCode::OK).body(resp_body)
-            },
-            Err(error) => {
-                ResponseBuilder::new().status(StatusCode::INTERNAL_SERVER_ERROR).body(error)
-            }
+            Ok(resp_body) => Response::builder()
+                .status(StatusCode::OK)
+                .body(resp_body.into_body()),
+            Err(error) => Response::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .body(error.into_body()),
+        }
+    }
+}
+
+impl Responder for Result<&'static str, ()> {
+    fn respond_to(self) -> ResponseResult {
+        match self {
+            Ok(resp_body) => Response::builder()
+                .status(StatusCode::OK)
+                .body(resp_body.into_body()),
+            Err(error) => Response::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .body(error.into_body()),
         }
     }
 }
 
 impl Responder for (StatusCode, String) {
-    fn respond_to(self) -> ResponseBuilder {
-        ResponseBuilder::new().status(self.0).body(self.1)
+    fn respond_to(self) -> ResponseResult {
+        Response::builder().status(self.0).body(self.1.into_body())
     }
 }
