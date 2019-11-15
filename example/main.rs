@@ -19,7 +19,7 @@ fn responsder_handler(_ctx: Context) -> impl Responder {
     "Testing"
 }
 
-fn responsder_result(_ctx: Context) -> impl Responder {
+fn responsder_result(_ctx: Context) -> Result<String, String> {
     Err(String::from("This is an error"))
 }
 
@@ -31,7 +31,7 @@ fn responder_str(_ctx: Context) -> impl Responder {
     "Testing for str"
 }
 
-fn responder_result_string_string(_ctx: Context) -> Result<String, String> {
+fn responder_result_string(_ctx: Context) -> Result<String, String> {
     // Ok(String::from("Testing for string"))
     Err(String::from("Testing for string error"))
 }
@@ -55,7 +55,7 @@ fn main() {
 
     app.get("/responder-string", responder_string);
     app.get("/responder-str", responder_str);
-    app.get("/responder-result-string", responder_result_string_string);
+    app.get("/responder-result-string", responder_result_string);
     app.get("/responder-option", responder_option);
 
     app.get("/", |_ctx| {

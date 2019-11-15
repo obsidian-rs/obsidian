@@ -37,22 +37,6 @@ impl<T: Responder> CustomResponder<T> {
     }
 }
 
-impl<T> Responder for Option<T>
-where
-    T: Responder + ResponseBody,
-{
-    fn respond_to(self) -> ResponseResult {
-        match self {
-            Some(resp) => Response::builder()
-                .status(StatusCode::OK)
-                .body(resp.into_body()),
-            None => Response::builder()
-                .status(StatusCode::NOT_FOUND)
-                .body(().into_body()),
-        }
-    }
-}
-
 impl Responder for String {
     fn respond_to(self) -> ResponseResult {
         Response::builder()
@@ -69,7 +53,27 @@ impl Responder for &'static str {
     }
 }
 
-impl Responder for Result<String, ()> {
+impl<T> Responder for Option<T>
+where
+    T: ResponseBody,
+{
+    fn respond_to(self) -> ResponseResult {
+        match self {
+            Some(resp) => Response::builder()
+                .status(StatusCode::OK)
+                .body(resp.into_body()),
+            None => Response::builder()
+                .status(StatusCode::NOT_FOUND)
+                .body(().into_body()),
+        }
+    }
+}
+
+impl<T, E> Responder for Result<T, E>
+where
+    T: ResponseBody,
+    E: ResponseBody,
+{
     fn respond_to(self) -> ResponseResult {
         match self {
             Ok(resp_body) => Response::builder()
@@ -82,31 +86,44 @@ impl Responder for Result<String, ()> {
     }
 }
 
-impl Responder for Result<String, String> {
-    fn respond_to(self) -> ResponseResult {
-        match self {
-            Ok(resp_body) => Response::builder()
-                .status(StatusCode::OK)
-                .body(resp_body.into_body()),
-            Err(error) => Response::builder()
-                .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body(error.into_body()),
-        }
-    }
-}
+// impl Responder for Result<String, ()> {
+//     fn respond_to(self) -> ResponseResult {
+//         match self {
+//             Ok(resp_body) => Response::builder()
+//                 .status(StatusCode::OK)
+//                 .body(resp_body.into_body()),
+//             Err(error) => Response::builder()
+//                 .status(StatusCode::INTERNAL_SERVER_ERROR)
+//                 .body(error.into_body()),
+//         }
+//     }
+// }
 
-impl Responder for Result<&'static str, ()> {
-    fn respond_to(self) -> ResponseResult {
-        match self {
-            Ok(resp_body) => Response::builder()
-                .status(StatusCode::OK)
-                .body(resp_body.into_body()),
-            Err(error) => Response::builder()
-                .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body(error.into_body()),
-        }
-    }
-}
+// impl Responder for Result<String, String> {
+//     fn respond_to(self) -> ResponseResult {
+//         match self {
+//             Ok(resp_body) => Response::builder()
+//                 .status(StatusCode::OK)
+//                 .body(resp_body.into_body()),
+//             Err(error) => Response::builder()
+//                 .status(StatusCode::INTERNAL_SERVER_ERROR)
+//                 .body(error.into_body()),
+//         }
+//     }
+// }
+
+// impl Responder for Result<&'static str, ()> {
+//     fn respond_to(self) -> ResponseResult {
+//         match self {
+//             Ok(resp_body) => Response::builder()
+//                 .status(StatusCode::OK)
+//                 .body(resp_body.into_body()),
+//             Err(error) => Response::builder()
+//                 .status(StatusCode::INTERNAL_SERVER_ERROR)
+//                 .body(error.into_body()),
+//         }
+//     }
+// }
 
 impl Responder for () {
     fn respond_to(self) -> ResponseResult {
