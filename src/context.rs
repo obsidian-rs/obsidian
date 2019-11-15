@@ -13,7 +13,11 @@ pub struct Context {
 }
 
 impl Context {
-    pub fn new(request: Request<Body>, route_data: RouteData, params_data: HashMap<String, Vec<String>>) -> Self {
+    pub fn new(
+        request: Request<Body>,
+        route_data: RouteData,
+        params_data: HashMap<String, Vec<String>>,
+    ) -> Self {
         Context {
             request,
             route_data,

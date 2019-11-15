@@ -1,6 +1,8 @@
 use crate::context::Context;
 use crate::middleware::Middleware;
-use crate::router::{response, EndPointHandler, ResponseBuilder, RouteData, Router, ResponseResult};
+use crate::router::{
+    response, EndPointHandler, ResponseBuilder, ResponseResult, RouteData, Router,
+};
 use futures::{future, Future, Stream};
 use hyper::{service::service_fn, Body, Request, Response, Server, StatusCode};
 use std::collections::{BTreeMap, HashMap};
@@ -17,7 +19,7 @@ pub struct App {
 
 impl App {
     pub fn new() -> Self {
-        let mut app = App {
+        let app = App {
             sub_router: BTreeMap::new(),
             main_router: Router::new(),
         };

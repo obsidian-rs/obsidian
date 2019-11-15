@@ -4,15 +4,15 @@ use obsidian::{
     context::Context,
     header,
     middleware::{BodyParser, Logger, UrlEncodedParser},
-    router::{Responder, ResponseBuilder},
+    router::{Responder, ResponseResult},
     App, StatusCode,
 };
 
 // Testing example
 #[derive(Serialize, Deserialize, Debug)]
-struct Point {
-    x: i32,
-    y: i32,
+struct User {
+    name: String,
+    age: u8,
 }
 
 fn responsder_handler(_ctx: Context) -> impl Responder {
@@ -20,32 +20,49 @@ fn responsder_handler(_ctx: Context) -> impl Responder {
 }
 
 fn responsder_result(_ctx: Context) -> impl Responder {
-    Ok("Testing for result")
+    Err(String::from("This is an error"))
 }
 
 fn responder_string(_ctx: Context) -> String {
     String::from("Testing for string")
 }
 
-fn responder_json(_ctx: Context) -> impl Responder {
-    "Wait"
+fn responder_str(_ctx: Context) -> impl Responder {
+    "Testing for str"
 }
+
+fn responder_result_string_string(_ctx: Context) -> Result<String, String> {
+    // Ok(String::from("Testing for string"))
+    Err(String::from("Testing for string error"))
+}
+
+fn responder_option(_ctx: Context) -> Option<String> {
+    None
+    // Some("Testing for option")
+}
+
+// fn responder_json(ctx: Context) -> impl Responder {
+//     let user = User {
+//         name: String::from("Jun Kai"),
+//         age: 26
+//     };
+//     ctx.json(user)
+// }
 
 fn main() {
     let mut app = App::new();
     let addr = ([127, 0, 0, 1], 3000).into();
 
-    app.get("/responder", responsder_handler);
-    app.get("/responder-result", responsder_result);
     app.get("/responder-string", responder_string);
+    app.get("/responder-str", responder_str);
+    app.get("/responder-result-string", responder_result_string_string);
+    app.get("/responder-option", responder_option);
 
     app.get("/", |_ctx| {
         "<!DOCTYPE html><html><head><link rel=\"shotcut icon\" href=\"favicon.ico\" type=\"image/x-icon\" sizes=\"32x32\" /></head> <h1>Hello Obsidian</h1></html>"
     });
 
-    app.get("/empty-body", |_ctx| {
-        ()
-    });
+    app.get("/empty-body", |_ctx| ());
 
     // app.get("/vec", |_ctx| {
     //     vec![1, 2, 3]
