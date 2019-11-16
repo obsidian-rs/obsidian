@@ -86,45 +86,6 @@ where
     }
 }
 
-// impl Responder for Result<String, ()> {
-//     fn respond_to(self) -> ResponseResult {
-//         match self {
-//             Ok(resp_body) => Response::builder()
-//                 .status(StatusCode::OK)
-//                 .body(resp_body.into_body()),
-//             Err(error) => Response::builder()
-//                 .status(StatusCode::INTERNAL_SERVER_ERROR)
-//                 .body(error.into_body()),
-//         }
-//     }
-// }
-
-// impl Responder for Result<String, String> {
-//     fn respond_to(self) -> ResponseResult {
-//         match self {
-//             Ok(resp_body) => Response::builder()
-//                 .status(StatusCode::OK)
-//                 .body(resp_body.into_body()),
-//             Err(error) => Response::builder()
-//                 .status(StatusCode::INTERNAL_SERVER_ERROR)
-//                 .body(error.into_body()),
-//         }
-//     }
-// }
-
-// impl Responder for Result<&'static str, ()> {
-//     fn respond_to(self) -> ResponseResult {
-//         match self {
-//             Ok(resp_body) => Response::builder()
-//                 .status(StatusCode::OK)
-//                 .body(resp_body.into_body()),
-//             Err(error) => Response::builder()
-//                 .status(StatusCode::INTERNAL_SERVER_ERROR)
-//                 .body(error.into_body()),
-//         }
-//     }
-// }
-
 impl Responder for () {
     fn respond_to(self) -> ResponseResult {
         Response::builder()
@@ -133,7 +94,10 @@ impl Responder for () {
     }
 }
 
-impl Responder for (StatusCode, String) {
+impl<T> Responder for (StatusCode, T)
+where
+    T: ResponseBody,
+{
     fn respond_to(self) -> ResponseResult {
         Response::builder().status(self.0).body(self.1.into_body())
     }

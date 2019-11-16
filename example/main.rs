@@ -15,12 +15,8 @@ struct User {
     age: u8,
 }
 
-fn responsder_handler(_ctx: Context) -> impl Responder {
-    "Testing"
-}
-
-fn responsder_result(_ctx: Context) -> Result<String, String> {
-    Err(String::from("This is an error"))
+fn responder_tuple(_ctx: Context) -> impl Responder {
+    (StatusCode::OK, "Testing for tuple")
 }
 
 fn responder_string(_ctx: Context) -> String {
@@ -57,6 +53,7 @@ fn main() {
     app.get("/responder-str", responder_str);
     app.get("/responder-result-string", responder_result_string);
     app.get("/responder-option", responder_option);
+    app.get("/responder-tuple", responder_tuple);
 
     app.get("/", |_ctx| {
         "<!DOCTYPE html><html><head><link rel=\"shotcut icon\" href=\"favicon.ico\" type=\"image/x-icon\" sizes=\"32x32\" /></head> <h1>Hello Obsidian</h1></html>"
