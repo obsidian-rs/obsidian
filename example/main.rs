@@ -4,7 +4,7 @@ use obsidian::{
     context::Context,
     header,
     middleware::{BodyParser, Logger, UrlEncodedParser},
-    router::{Responder, ResponseResult},
+    router::{response, Responder, ResponseResult, ResponseType},
     App, StatusCode,
 };
 
@@ -15,14 +15,23 @@ struct User {
     age: u8,
 }
 
-// fn responder_json(_ctx: Context) -> impl Responder {
-//     let user = {
-//         name: "Jun Kai",
-//         age: 26,
-//     };
+fn responder_json(_ctx: Context) -> impl Responder {
+    let user = User {
+        name: String::from("Pai Lee"),
+        age: 26,
+    };
 
-//     (StatusCode::OK, user)
-// }
+    ResponseType::JSON(user)
+}
+
+fn responder_json_with_status(_ctx: Context) -> impl Responder {
+    let user = User {
+        name: String::from("Jun Kai"),
+        age: 26,
+    };
+
+    (StatusCode::CREATED, ResponseType::JSON(user))
+}
 
 fn responder_tuple(_ctx: Context) -> impl Responder {
     (StatusCode::OK, "Testing for tuple")
@@ -50,14 +59,6 @@ fn responder_option(_ctx: Context) -> Option<String> {
     // Some("Testing for option")
 }
 
-// fn responder_json(ctx: Context) -> impl Responder {
-//     let user = User {
-//         name: String::from("Jun Kai"),
-//         age: 26
-//     };
-//     ctx.json(user)
-// }
-
 fn main() {
     let mut app = App::new();
     let addr = ([127, 0, 0, 1], 3000).into();
@@ -71,6 +72,8 @@ fn main() {
     app.get("/responder-result-string", responder_result_string);
     app.get("/responder-option", responder_option);
     app.get("/responder-tuple", responder_tuple);
+    app.get("/responder-json", responder_json);
+    app.get("/responder-json-with-status", responder_json_with_status);
 
     app.get("/", |_ctx| {
         "<!DOCTYPE html><html><head><link rel=\"shotcut icon\" href=\"favicon.ico\" type=\"image/x-icon\" sizes=\"32x32\" /></head> <h1>Hello Obsidian</h1></html>"

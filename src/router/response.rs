@@ -1,5 +1,6 @@
 use futures::{future, future::Future};
 use http::response::Builder;
+use http::Error;
 use hyper::{header::HeaderName, Body, Response, StatusCode, Version};
 use serde::ser::Serialize;
 use serde_json;
@@ -9,6 +10,36 @@ use tokio_fs;
 use tokio_io;
 
 static NOTFOUND: &[u8] = b"Not Found";
+
+pub fn body(body: impl ResponseBody) -> Result<Response<Body>, Error> {
+    let body = body.into_body();
+    Response::builder().status(StatusCode::OK).body(body)
+}
+
+pub fn json(body: impl Serialize) -> Result<Response<Body>, Error> {
+    let serialized_obj = match serde_json::to_string(&body) {
+        Ok(val) => val,
+        Err(e) => std::error::Error::description(&e).to_string(),
+    };
+
+    let body = serialized_obj.into_body();
+
+    Response::builder().status(StatusCode::OK).body(body)
+}
+
+pub fn json_with_status(
+    body: impl Serialize,
+    status_code: StatusCode,
+) -> Result<Response<Body>, Error> {
+    let serialized_obj = match serde_json::to_string(&body) {
+        Ok(val) => val,
+        Err(e) => std::error::Error::description(&e).to_string(),
+    };
+
+    let body = serialized_obj.into_body();
+
+    Response::builder().status(status_code).body(body)
+}
 
 pub trait ResponseBody {
     fn into_body(self) -> Body;

@@ -1,5 +1,7 @@
-use super::ResponseBody;
+use super::{response, ResponseBody, ResponseType};
 pub use hyper::{Body, Error, HeaderMap, Request, Response, StatusCode};
+
+use serde::ser::Serialize;
 
 pub type ResponseResult<T = Response<Body>> = Result<T, http::Error>;
 
@@ -118,5 +120,33 @@ where
 {
     fn respond_to(self) -> ResponseResult {
         Response::builder().status(self.0).body(self.1.into_body())
+    }
+}
+
+impl<T> Responder for ResponseType<T>
+where
+    T: Serialize,
+{
+    fn respond_to(self) -> ResponseResult {
+        match self {
+            ResponseType::JSON(body) => response::json(body),
+        }
+    }
+}
+
+impl<T> Responder for (StatusCode, ResponseType<T>)
+where
+    T: Serialize,
+{
+    fn respond_to(self) -> ResponseResult {
+        match self.1 {
+            ResponseType::JSON(body) => response::json_with_status(body, self.0),
+        }
+    }
+}
+
+impl Responder for ResponseResult {
+    fn respond_to(self) -> ResponseResult {
+        self
     }
 }

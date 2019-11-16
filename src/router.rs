@@ -2,6 +2,7 @@ mod end_point_type;
 mod request;
 mod resource;
 mod responder;
+mod response_type;
 mod route;
 mod route_data;
 
@@ -18,6 +19,7 @@ pub use self::request::RequestData;
 pub use self::resource::Resource;
 pub use self::responder::{Responder, ResponseResult};
 pub use self::response::{ResponseBody, ResponseBuilder};
+pub use self::response_type::ResponseType;
 pub use self::route::Route;
 pub use self::route_data::RouteData;
 
