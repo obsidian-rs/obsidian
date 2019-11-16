@@ -33,6 +33,15 @@ fn responder_json_with_status(_ctx: Context) -> impl Responder {
     (StatusCode::CREATED, ResponseType::JSON(user))
 }
 
+fn responder_json_with_int_status(_ctx: Context) -> impl Responder {
+    let user = User {
+        name: String::from("Admin"),
+        age: 30,
+    };
+
+    (200, ResponseType::JSON(user))
+}
+
 fn responder_tuple(_ctx: Context) -> impl Responder {
     (StatusCode::OK, "Testing for tuple")
 }
@@ -74,6 +83,10 @@ fn main() {
     app.get("/responder-tuple", responder_tuple);
     app.get("/responder-json", responder_json);
     app.get("/responder-json-with-status", responder_json_with_status);
+    app.get(
+        "/responder-json-with-int-status",
+        responder_json_with_int_status,
+    );
 
     app.get("/", |_ctx| {
         "<!DOCTYPE html><html><head><link rel=\"shotcut icon\" href=\"favicon.ico\" type=\"image/x-icon\" sizes=\"32x32\" /></head> <h1>Hello Obsidian</h1></html>"

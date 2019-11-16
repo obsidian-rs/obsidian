@@ -145,6 +145,26 @@ where
     }
 }
 
+impl<T> Responder for (u16, ResponseType<T>)
+where
+    T: Serialize,
+{
+    fn respond_to(self) -> ResponseResult {
+        let status_code = match StatusCode::from_u16(self.0) {
+            Ok(status_code) => status_code,
+            Err(_) => {
+                return Response::builder()
+                    .status(StatusCode::INTERNAL_SERVER_ERROR)
+                    .body("Invalid Status Code".into_body())
+            }
+        };
+
+        match self.1 {
+            ResponseType::JSON(body) => response::json_with_status(body, status_code),
+        }
+    }
+}
+
 impl Responder for ResponseResult {
     fn respond_to(self) -> ResponseResult {
         self
