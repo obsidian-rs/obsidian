@@ -7,7 +7,7 @@ pub trait Responder {
     fn respond_to(self) -> ResponseResult;
     fn with_status(self, status: StatusCode) -> CustomResponder<Self>
     where
-        Self: Sized,
+        Self: ResponseBody + Sized,
     {
         CustomResponder::new(self).with_status(status)
     }
@@ -15,25 +15,43 @@ pub trait Responder {
 
 /// Allows to override status code and headers for a responder.
 pub struct CustomResponder<T> {
-    responder: T,
+    body: T,
     status: Option<StatusCode>,
-    headers: Option<HeaderMap>,
-    error: Option<Error>,
+    // headers: Option<HeaderMap>,
+    // error: Option<Error>,
 }
 
-impl<T: Responder> CustomResponder<T> {
-    fn new(responder: T) -> Self {
+impl<T> CustomResponder<T>
+where
+    T: ResponseBody,
+{
+    fn new(body: T) -> Self {
         CustomResponder {
-            responder,
+            body,
             status: None,
-            headers: None,
-            error: None,
+            // headers: None,
+            // error: None,
         }
     }
 
     pub fn with_status(mut self, status: StatusCode) -> Self {
         self.status = Some(status);
         self
+    }
+}
+
+impl<T> Responder for CustomResponder<T>
+where
+    T: ResponseBody,
+{
+    fn respond_to(self) -> ResponseResult {
+        let status = match self.status {
+            Some(status) => status,
+            None => StatusCode::OK,
+        };
+        Response::builder()
+            .status(status)
+            .body(self.body.into_body())
     }
 }
 

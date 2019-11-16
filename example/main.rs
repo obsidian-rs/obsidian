@@ -15,12 +15,25 @@ struct User {
     age: u8,
 }
 
+// fn responder_json(_ctx: Context) -> impl Responder {
+//     let user = {
+//         name: "Jun Kai",
+//         age: 26,
+//     };
+
+//     (StatusCode::OK, user)
+// }
+
 fn responder_tuple(_ctx: Context) -> impl Responder {
     (StatusCode::OK, "Testing for tuple")
 }
 
 fn responder_string(_ctx: Context) -> String {
     String::from("Testing for string")
+}
+
+fn responder_string_with_status(_ctx: Context) -> impl Responder {
+    String::from("Testing for string with status 404").with_status(StatusCode::NOT_FOUND)
 }
 
 fn responder_str(_ctx: Context) -> impl Responder {
@@ -50,6 +63,10 @@ fn main() {
     let addr = ([127, 0, 0, 1], 3000).into();
 
     app.get("/responder-string", responder_string);
+    app.get(
+        "/responder-string-with-status",
+        responder_string_with_status,
+    );
     app.get("/responder-str", responder_str);
     app.get("/responder-result-string", responder_result_string);
     app.get("/responder-option", responder_option);
