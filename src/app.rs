@@ -116,7 +116,10 @@ impl AppServer {
 }
 
 pub fn page_not_found() -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send> {
-    let server_response = Response::new(Body::from("404 Not Found"));
+    let server_response = Response::builder()
+        .status(StatusCode::NOT_FOUND)
+        .body(Body::from("404 Not Found"))
+        .unwrap();
 
     Box::new(future::ok(server_response))
 }
