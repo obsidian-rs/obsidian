@@ -1,7 +1,7 @@
 use crate::context::Context;
 use crate::middleware::Middleware;
 use crate::router::{
-    response, EndPointHandler, ResponseBuilder, ResponseResult, RouteData, Router,
+    response, EndPointHandler, ResponseBuilder, ResponseResult, ResponseType, RouteData, Router,
 };
 use futures::{future, Future, Stream};
 use hyper::{service::service_fn, Body, Request, Response, Server, StatusCode};
@@ -19,13 +19,13 @@ pub struct App {
 
 impl App {
     pub fn new() -> Self {
-        let app = App {
+        let mut app = App {
             sub_router: BTreeMap::new(),
             main_router: Router::new(),
         };
 
         // app.get("/favicon.ico", |ctx: Context| {
-        //     response.send_file("./favicon.ico")
+        //     response::file("./favicon.ico")
         // });
 
         app

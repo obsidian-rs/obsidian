@@ -129,7 +129,7 @@ where
 {
     fn respond_to(self) -> ResponseResult {
         match self {
-            ResponseType::JSON(body) => response::json(body),
+            ResponseType::JSON(body) => response::json(body, StatusCode::OK),
         }
     }
 }
@@ -140,7 +140,7 @@ where
 {
     fn respond_to(self) -> ResponseResult {
         match self.1 {
-            ResponseType::JSON(body) => response::json_with_status(body, self.0),
+            ResponseType::JSON(body) => response::json(body, self.0),
         }
     }
 }
@@ -160,7 +160,7 @@ where
         };
 
         match self.1 {
-            ResponseType::JSON(body) => response::json_with_status(body, status_code),
+            ResponseType::JSON(body) => response::json(body, status_code),
         }
     }
 }

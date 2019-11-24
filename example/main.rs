@@ -68,6 +68,10 @@ fn responder_option(_ctx: Context) -> Option<String> {
     // Some("Testing for option")
 }
 
+fn responder_file(_ctx: Context) -> impl Responder {
+    response::file("favicon.ico", StatusCode::OK)
+}
+
 fn main() {
     let mut app = App::new();
     let addr = ([127, 0, 0, 1], 3000).into();
@@ -87,6 +91,7 @@ fn main() {
         "/responder-json-with-int-status",
         responder_json_with_int_status,
     );
+    app.get("/responder-file", responder_file);
 
     app.get("/", |_ctx| {
         "<!DOCTYPE html><html><head><link rel=\"shotcut icon\" href=\"favicon.ico\" type=\"image/x-icon\" sizes=\"32x32\" /></head> <h1>Hello Obsidian</h1></html>"
