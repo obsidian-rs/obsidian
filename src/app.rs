@@ -1,8 +1,6 @@
 use crate::context::Context;
 use crate::middleware::Middleware;
-use crate::router::{
-    response, EndPointHandler, ResponseBuilder, ResponseResult, ResponseType, RouteData, Router,
-};
+use crate::router::{EndPointHandler, RouteData, Router};
 use futures::{future, Future, Stream};
 use hyper::{service::service_fn, Body, Request, Response, Server, StatusCode};
 use std::collections::{BTreeMap, HashMap};
@@ -19,7 +17,7 @@ pub struct App {
 
 impl App {
     pub fn new() -> Self {
-        let mut app = App {
+        let app = App {
             sub_router: BTreeMap::new(),
             main_router: Router::new(),
         };
@@ -88,7 +86,7 @@ impl AppServer {
     pub fn resolve_endpoint(
         &self,
         req: Request<Body>,
-    ) -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send> {
+    ) -> Box<dyn Future<Item = Response<Body>, Error = hyper::Error> + Send> {
         let (parts, body) = req.into_parts();
 
         // Currently support only one router until radix tree complete.
@@ -115,7 +113,7 @@ impl AppServer {
     }
 }
 
-pub fn page_not_found() -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send> {
+pub fn page_not_found() -> Box<dyn Future<Item = Response<Body>, Error = hyper::Error> + Send> {
     let server_response = Response::builder()
         .status(StatusCode::NOT_FOUND)
         .body(Body::from("404 Not Found"))
@@ -148,7 +146,7 @@ impl<'a> EndpointExecutor<'a> {
             self.middleware = all_next;
             current.handle(context, self)
         } else {
-            let response_builder = ResponseBuilder::new();
+            // let response_builder = ResponseBuilder::new();
             let route_response = self.route_endpoint.call_handler(context);
 
             match route_response {

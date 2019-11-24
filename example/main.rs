@@ -2,9 +2,8 @@ use serde_derive::*;
 
 use obsidian::{
     context::Context,
-    header,
     middleware::{BodyParser, Logger, UrlEncodedParser},
-    router::{response, Responder, ResponseResult, ResponseType},
+    router::{response, Responder, ResponseType},
     App, StatusCode,
 };
 

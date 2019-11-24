@@ -1,7 +1,7 @@
 use hyper::Method;
 use std::sync::Arc;
 
-use super::{EndPointHandler, ResponseBuilder};
+use super::EndPointHandler;
 
 pub struct Route {
     pub path: String,
