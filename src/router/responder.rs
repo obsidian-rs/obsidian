@@ -1,5 +1,5 @@
 use super::{response, ResponseBody, ResponseType};
-pub use hyper::{Body, Error, HeaderMap, Request, Response, StatusCode};
+use hyper::{Body, Response, StatusCode};
 
 use serde::ser::Serialize;
 
@@ -168,5 +168,19 @@ where
 impl Responder for ResponseResult {
     fn respond_to(self) -> ResponseResult {
         self
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use hyper::StatusCode;
+
+    #[test]
+    fn test_custom_responder() {
+        let result = "Test".with_status(StatusCode::CREATED).respond_to();
+        if let Ok(response) = result {
+            assert_eq!(response.status(), StatusCode::CREATED);
+        }
     }
 }
