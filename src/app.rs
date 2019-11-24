@@ -174,7 +174,7 @@ mod test {
     fn test_app_server_resolve_endpoint() {
         let mut main_router = Router::new();
 
-        main_router.get("/", |context: Context, res: ResponseBuilder| {
+        main_router.get("/", |context: Context| {
             let (parts, body) = context.request.into_parts();
 
             let request_body = body
@@ -187,7 +187,7 @@ mod test {
 
             assert_eq!(parts.uri.path(), "/");
             assert_eq!(request_body.wait().unwrap(), "test_app_server");
-            res.status(StatusCode::OK).body("test_app_server")
+            (StatusCode::OK, "test_app_server")
         });
 
         let app_server = AppServer {
