@@ -197,6 +197,10 @@ impl RouteTrie {
                     }
                 }
                 None => {
+                    if curr_node.key == "*" {
+                        break;
+                    }
+                    
                     // Path is not registered
                     return Err(ObsidianError::NoneError);
                 }
@@ -373,6 +377,11 @@ impl Node {
                     return Action::new(ActionName::Error, ActionPayload::new(0, index));
                 }
             }
+
+            if node.key == "*" {
+                return Action::new(ActionName::Error, ActionPayload::new(0, index));
+            }
+
             // Not param
             let mut temp_key_ch = key.chars();
             let mut count = 0;
@@ -410,7 +419,12 @@ impl Node {
                 params.insert(node.key[1..].to_string(), key.to_string());
                 return Box::new(Some(node));
             }
-            // Not param
+
+            let is_wildcard = node.key == "*";
+            if is_wildcard {
+                return Box::new(Some(node));
+            }
+
             let mut temp_key_ch = key.chars();
             let mut count = 0;
 

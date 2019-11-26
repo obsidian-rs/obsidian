@@ -6,6 +6,7 @@ mod route;
 mod route_trie;
 
 use self::route_trie::{RouteTrie, RouteValueResult};
+use crate::context::Context;
 use crate::middleware::Middleware;
 use crate::Method;
 use crate::ObsidianError;
@@ -59,6 +60,20 @@ impl Router {
         self.routes.insert_middleware(path, middleware);
     }
 
+    pub fn use_static(&mut self, virtual_path: &str, dir_path: &str) {
+        let mut path = String::from(virtual_path);
+        path.push_str("/*");
+
+        self.get(&path, Self::static_virtual_file_handler(virtual_path, dir_path));
+    }
+
+    pub fn use_static_dir(&mut self, dir_path: &str) {
+        let mut path = String::from(dir_path);
+        path.push_str("/*");
+
+        self.get(&path, Self::static_dir_file_handler());
+    }
+
     pub fn search_route(&self, path: &str) -> Result<RouteValueResult, ObsidianError> {
         self.routes.search_route(path)
     }
@@ -71,6 +86,54 @@ impl Router {
         let route = Route::new(method.clone(), handler);
 
         self.routes.insert_route(path, route);
+    }
+
+    fn static_virtual_file_handler(
+        virtual_path: &str,
+        dir_path: &str,
+    ) -> impl Fn(Context, ResponseBuilder) -> ResponseBuilder {
+        let dir_path = dir_path
+            .split("/")
+            .filter(|key| !key.is_empty())
+            .map(|x| x.to_string())
+            .collect::<Vec<String>>();
+
+        let virtual_path_len = virtual_path
+            .split("/")
+            .filter(|key| !key.is_empty())
+            .collect::<Vec<&str>>()
+            .len();
+
+        move |ctx: Context, res: ResponseBuilder| {
+            let mut dir_path = dir_path.clone();
+            let mut relative_path = ctx
+                .uri()
+                .path()
+                .split("/")
+                .filter(|key| !key.is_empty())
+                .skip(virtual_path_len)
+                .map(|x| x.to_string())
+                .collect::<Vec<String>>();
+
+            dir_path.append(&mut relative_path);
+
+            res.send_file(&dir_path.join("/"))
+        }
+    }
+
+    fn static_dir_file_handler(
+    ) -> impl Fn(Context, ResponseBuilder) -> ResponseBuilder {
+        move |ctx: Context, res: ResponseBuilder| {
+            let relative_path = ctx
+                .uri()
+                .path()
+                .split("/")
+                .filter(|key| !key.is_empty())
+                .map(|x| x.to_string())
+                .collect::<Vec<String>>();
+
+            res.send_file(&relative_path.join("/"))
+        }
     }
 }
 

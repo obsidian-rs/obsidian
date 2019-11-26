@@ -2,7 +2,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 
 use futures::{future, Future, Stream};
-use hyper::{service::service_fn, Body, Request, Response, Server};
+use hyper::{service::service_fn, Body, Request, Response, Server, StatusCode};
 
 use crate::context::Context;
 use crate::middleware::Middleware;
@@ -14,15 +14,9 @@ pub struct App {
 
 impl App {
     pub fn new() -> Self {
-        let mut app = App {
+        App {
             router: Router::new(),
-        };
-
-        app.get("/favicon.ico", |_req, res: ResponseBuilder| {
-            res.send_file("./favicon.ico")
-        });
-
-        app
+        }
     }
 
     pub fn get(&mut self, path: &str, handler: impl EndPointHandler) {
@@ -41,13 +35,23 @@ impl App {
         self.router.delete(path, handler);
     }
 
+    /// Apply middleware in current relative route
     pub fn use_service(&mut self, middleware: impl Middleware) {
         self.router.use_service(middleware);
     }
 
+    /// Apply route handler in current relative route
     pub fn use_router(&mut self, path: &str, router: Router) {
-        // Merge router
         self.router.merge_router(path, router);
+    }
+
+    /// Apply static file handler in current relative route and all of its sub route
+    pub fn use_static(&mut self, virtual_path: &str, dir_path: &str) {
+        self.router.use_static(virtual_path, dir_path);
+    }
+
+    pub fn use_static_dir(&mut self, dir_path: &str) {
+        self.router.use_static_dir(dir_path);
     }
 
     pub fn listen(self, addr: &SocketAddr, callback: impl Fn()) {
@@ -112,7 +116,8 @@ impl AppServer {
 }
 
 fn page_not_found() -> Box<dyn Future<Item = Response<Body>, Error = hyper::Error> + Send> {
-    let server_response = Response::new(Body::from("404 Not Found"));
+    let mut server_response = Response::new(Body::from("404 Not Found"));
+    *server_response.status_mut() = StatusCode::NOT_FOUND;
 
     Box::new(future::ok(server_response))
 }

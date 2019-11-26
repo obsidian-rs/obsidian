@@ -98,6 +98,11 @@ fn main() {
         },
     );
 
+    app.get("/test/wildcard/*", |ctx: Context, res: ResponseBuilder| {
+        res.status(StatusCode::OK)
+            .body(format!("{}<br>{}","<h1>Test wildcard</h1>".to_string(), ctx.uri().path()))
+    });
+
     let mut form_router = Router::new();
 
     form_router.get("/formtest", |_ctx, res: ResponseBuilder| {
@@ -136,6 +141,7 @@ fn main() {
     );
     app.use_router("/params/", param_router);
     app.use_router("/forms/", form_router);
+    app.use_static("/files/", "/assets/");
 
     app.listen(&addr, || {
         println!("server is listening to {}", &addr);
