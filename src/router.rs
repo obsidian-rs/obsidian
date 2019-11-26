@@ -52,34 +52,42 @@ impl Router {
         self.insert_route(Method::DELETE, path, handler);
     }
 
-    pub fn use_service(&mut self, middleware: impl Middleware) {
-        self.routes.insert_default_middleware(middleware);
-    }
-
+    /// Apply middleware in the provided route
     pub fn use_service_to(&mut self, path: &str, middleware: impl Middleware) {
         self.routes.insert_middleware(path, middleware);
     }
 
-    pub fn use_static(&mut self, virtual_path: &str, dir_path: &str) {
+    /// Apply middleware in current relative route
+    pub fn use_service(&mut self, middleware: impl Middleware) {
+        self.routes.insert_default_middleware(middleware);
+    }
+
+    /// Serve static files by the virtual path as the route and directory path as the server file path
+    pub fn use_static_to(&mut self, virtual_path: &str, dir_path: &str) {
         let mut path = String::from(virtual_path);
         path.push_str("/*");
 
-        self.get(&path, Self::static_virtual_file_handler(virtual_path, dir_path));
+        self.get(
+            &path,
+            Self::static_virtual_file_handler(virtual_path, dir_path),
+        );
     }
 
-    pub fn use_static_dir(&mut self, dir_path: &str) {
+    /// Serve static files by the directory path as the route and server file path
+    pub fn use_static(&mut self, dir_path: &str) {
         let mut path = String::from(dir_path);
         path.push_str("/*");
 
         self.get(&path, Self::static_dir_file_handler());
     }
 
-    pub fn search_route(&self, path: &str) -> Result<RouteValueResult, ObsidianError> {
-        self.routes.search_route(path)
+    /// Apply route handler in current relative route
+    pub fn use_router(&mut self, path: &str, other: Router) {
+        RouteTrie::insert_sub_route(&mut self.routes, path, other.routes);
     }
 
-    pub fn merge_router(&mut self, path: &str, other: Router) {
-        RouteTrie::insert_sub_route(&mut self.routes, path, other.routes);
+    pub fn search_route(&self, path: &str) -> Result<RouteValueResult, ObsidianError> {
+        self.routes.search_route(path)
     }
 
     fn insert_route(&mut self, method: Method, path: &str, handler: impl EndPointHandler) {
@@ -121,8 +129,7 @@ impl Router {
         }
     }
 
-    fn static_dir_file_handler(
-    ) -> impl Fn(Context, ResponseBuilder) -> ResponseBuilder {
+    fn static_dir_file_handler() -> impl Fn(Context, ResponseBuilder) -> ResponseBuilder {
         move |ctx: Context, res: ResponseBuilder| {
             let relative_path = ctx
                 .uri()
@@ -374,7 +381,7 @@ mod tests {
 
         sub_router.use_service(logger);
 
-        main_router.merge_router("sub_router", sub_router);
+        main_router.use_router("sub_router", sub_router);
 
         let result = main_router.search_route("router/test");
         let sub_result = main_router.search_route("sub_router/router/test");
@@ -442,6 +449,6 @@ mod tests {
 
         sub_router.use_service(logger);
 
-        main_router.merge_router("sub_router", sub_router);
+        main_router.use_router("sub_router", sub_router);
     }
 }

@@ -297,6 +297,7 @@ impl Node {
         }
     }
 
+    /// Process the side effects of node insertion
     fn process_insertion(&mut self, key: &str) -> Box<Option<&mut Self>> {
         let action = self.get_insertion_action(key);
 
@@ -366,6 +367,7 @@ impl Node {
         unreachable!();
     }
 
+    /// Determine the action required to be performed for the new route path
     fn get_insertion_action(&self, key: &str) -> Action {
         for (index, node) in self.child_nodes.iter().enumerate() {
             let is_param = node.key.chars().next().unwrap_or(' ') == ':' || key.chars().next().unwrap_or(' ') == ':';
@@ -378,14 +380,15 @@ impl Node {
                 }
             }
 
+            // Only allow one wildcard
             if node.key == "*" && key != "*" {
                 return Action::new(ActionName::Error, ActionPayload::new(0, index));
             }
 
-            // Not param
             let mut temp_key_ch = key.chars();
             let mut count = 0;
 
+            // match characters
             for k in node.key.chars() {
                 let t_k = match temp_key_ch.next() {
                     Some(key) => key,
@@ -408,6 +411,7 @@ impl Node {
             }
         }
 
+        // No child node matched the key, creates new node
         Action::new(ActionName::CreateNewNode, ActionPayload::new(0, 0))
     }
 
@@ -428,6 +432,7 @@ impl Node {
             let mut temp_key_ch = key.chars();
             let mut count = 0;
 
+            // match characters 
             for k in node.key.chars() {
                 let t_k = match temp_key_ch.next() {
                     Some(key) => key,
@@ -457,6 +462,7 @@ impl Node {
     }
 }
 
+/// Action to be performed by the node
 enum ActionName {
     NextNode,
     CreateNewNode,
@@ -465,11 +471,15 @@ enum ActionName {
     Error,
 }
 
+/// Action Payload:
+/// characters matched for the node key and insert key
+/// node index in the node vector
 struct ActionPayload {
     match_count: usize,
     node_index: usize,
 }
 
+/// Container for actions will be performed in the trie
 struct Action {
     name: ActionName,
     payload: ActionPayload,
@@ -512,10 +522,10 @@ mod tests {
         match result {
             Ok(route) => {
                 let middleware = route.get_middleware();
-                let route_value = route.get_route(&Method::GET).unwrap();
+                let route_value = route.get_route(&Method::GET).is_some();
 
                 assert_eq!(middleware.len(), 1);
-                assert_eq!(route_value.method, Method::GET);
+                assert!(route_value);
             }
             _ => {
                 assert!(false);
@@ -542,10 +552,10 @@ mod tests {
         match result {
             Ok(route) => {
                 let middleware = route.get_middleware();
-                let route_value = route.get_route(&Method::GET).unwrap();
+                let route_value = route.get_route(&Method::GET).is_some();
 
                 assert_eq!(middleware.len(), 1);
-                assert_eq!(route_value.method, Method::GET);
+                assert!(route_value);
             }
             _ => {
                 assert!(false);
@@ -559,10 +569,10 @@ mod tests {
         match result {
             Ok(route) => {
                 let middleware = route.get_middleware();
-                let route_value = route.get_route(&Method::GET).unwrap();
+                let route_value = route.get_route(&Method::GET).is_some();
 
                 assert_eq!(middleware.len(), 2);
-                assert_eq!(route_value.method, Method::GET);
+                assert!(route_value);
             }
             _ => {
                 assert!(false);
@@ -589,6 +599,7 @@ mod tests {
         let mut route_trie = RouteTrie::new();
         let logger = Logger::new();
         let logger2 = Logger::new();
+        let logger3 = Logger::new();
         let handler = |_x, _y| ResponseBuilder::new().body("test");
 
         route_trie.insert_default_middleware(logger);
@@ -596,67 +607,33 @@ mod tests {
         route_trie.insert_route("/noral/test/", Route::new(Method::GET, handler));
         route_trie.insert_route("/ノーマル/テスト/", Route::new(Method::GET, handler));
         route_trie.insert_route("/ノーマル/テーブル/", Route::new(Method::GET, handler));
-        route_trie.insert_middleware("/ノーマル/テーブル/", logger2);
+        
+        route_trie.insert_middleware("/noral/test/", logger2);
+        route_trie.insert_middleware("/ノーマル/テーブル/", logger3);
 
-        let normal_result = route_trie.search_route("/normal/test/");
-        let noral_result = route_trie.search_route("/noral/test/");
-        let utf8_normal_test_result = route_trie.search_route("/ノーマル/テスト/");
-        let utf8_normal_table_result = route_trie.search_route("/ノーマル/テーブル/");
+        let test_cases = vec![
+            ("/normal/test/", 1),
+            ("/noral/test/", 2),
+            ("/ノーマル/テスト/", 1),
+            ("/ノーマル/テーブル/", 2),
+        ];
 
-        assert!(normal_result.is_ok());
-        assert!(noral_result.is_ok());
-        assert!(utf8_normal_test_result.is_ok());
-        assert!(utf8_normal_table_result.is_ok());
+        for case in test_cases.iter() {
+            let normal_result = route_trie.search_route(case.0);
 
-        match normal_result {
-            Ok(route) => {
-                let middleware = route.get_middleware();
-                let route_value = route.get_route(&Method::GET).unwrap();
+            assert!(normal_result.is_ok());
 
-                assert_eq!(middleware.len(), 1);
-                assert_eq!(route_value.method, Method::GET);
-            }
-            _ => {
-                assert!(false);
-            }
-        }
+            match normal_result {
+                Ok(route) => {
+                    let middleware = route.get_middleware();
+                    let route_value = route.get_route(&Method::GET).is_some();
 
-        match noral_result {
-            Ok(route) => {
-                let middleware = route.get_middleware();
-                let route_value = route.get_route(&Method::GET).unwrap();
-
-                assert_eq!(middleware.len(), 1);
-                assert_eq!(route_value.method, Method::GET);
-            }
-            _ => {
-                assert!(false);
-            }
-        }
-
-        match utf8_normal_test_result {
-            Ok(route) => {
-                let middleware = route.get_middleware();
-                let route_value = route.get_route(&Method::GET).unwrap();
-
-                assert_eq!(middleware.len(), 1);
-                assert_eq!(route_value.method, Method::GET);
-            }
-            _ => {
-                assert!(false);
-            }
-        }
-
-        match utf8_normal_table_result {
-            Ok(route) => {
-                let middleware = route.get_middleware();
-                let route_value = route.get_route(&Method::GET).unwrap();
-
-                assert_eq!(middleware.len(), 2);
-                assert_eq!(route_value.method, Method::GET);
-            }
-            _ => {
-                assert!(false);
+                    assert_eq!(middleware.len(), case.1);
+                    assert!(route_value);
+                }
+                _ => {
+                    assert!(false);
+                }
             }
         }
     }
@@ -689,15 +666,35 @@ mod tests {
             match normal_result {
                 Ok(route) => {
                     let middleware = route.get_middleware();
-                    let route_value = route.get_route(&Method::GET).unwrap();
+                    let route_value = route.get_route(&Method::GET).is_some();
 
                     assert_eq!(middleware.len(), 3);
-                    assert_eq!(route_value.method, Method::GET);
+                    assert!(route_value);
                 }
                 _ => {
                     assert!(false);
                 }
             }
         }
+    }
+
+    #[should_panic]
+    #[test]
+    fn radix_trie_wildcard_param_conflict_test() {
+        let mut route_trie = RouteTrie::new();
+        let handler = |_x, _y| ResponseBuilder::new().body("test");
+
+        route_trie.insert_route("/normal/test/*", Route::new(Method::GET, handler));
+        route_trie.insert_route("/normal/test/:param", Route::new(Method::GET, handler));
+    }
+
+    #[should_panic]
+    #[test]
+    fn radix_trie_param_wildcard_conflict_test() {
+        let mut route_trie = RouteTrie::new();
+        let handler = |_x, _y| ResponseBuilder::new().body("test");
+
+        route_trie.insert_route("/normal/test/:param", Route::new(Method::GET, handler));
+        route_trie.insert_route("/normal/test/*", Route::new(Method::GET, handler));
     }
 }

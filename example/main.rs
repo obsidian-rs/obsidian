@@ -141,7 +141,7 @@ fn main() {
     );
     app.use_router("/params/", param_router);
     app.use_router("/forms/", form_router);
-    app.use_static("/files/", "/assets/");
+    app.use_static_to("/files/", "/assets/");
 
     app.listen(&addr, || {
         println!("server is listening to {}", &addr);

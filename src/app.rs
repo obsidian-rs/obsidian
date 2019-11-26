@@ -35,6 +35,11 @@ impl App {
         self.router.delete(path, handler);
     }
 
+    /// Apply middleware in the provided route
+    pub fn use_service_to(&mut self, path: &str, middleware: impl Middleware) {
+        self.router.use_service_to(path, middleware);
+    }
+
     /// Apply middleware in current relative route
     pub fn use_service(&mut self, middleware: impl Middleware) {
         self.router.use_service(middleware);
@@ -42,16 +47,17 @@ impl App {
 
     /// Apply route handler in current relative route
     pub fn use_router(&mut self, path: &str, router: Router) {
-        self.router.merge_router(path, router);
+        self.router.use_router(path, router);
     }
 
-    /// Apply static file handler in current relative route and all of its sub route
-    pub fn use_static(&mut self, virtual_path: &str, dir_path: &str) {
-        self.router.use_static(virtual_path, dir_path);
+    /// Serve static files by the virtual path as the route and directory path as the server file path
+    pub fn use_static_to(&mut self, virtual_path: &str, dir_path: &str) {
+        self.router.use_static_to(virtual_path, dir_path);
     }
 
-    pub fn use_static_dir(&mut self, dir_path: &str) {
-        self.router.use_static_dir(dir_path);
+    /// Serve static files by the directory path as the route and server file path
+    pub fn use_static(&mut self, dir_path: &str) {
+        self.router.use_static(dir_path);
     }
 
     pub fn listen(self, addr: &SocketAddr, callback: impl Fn()) {
