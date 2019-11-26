@@ -380,8 +380,8 @@ impl Node {
                 }
             }
 
-            // Only allow one wildcard
-            if node.key == "*" && key != "*" {
+            // Wildcard can only be the last leaf
+            if key == "*" && node.key != "*" {
                 return Action::new(ActionName::Error, ActionPayload::new(0, index));
             }
 
