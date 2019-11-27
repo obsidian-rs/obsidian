@@ -139,6 +139,11 @@ fn main() {
             res.status(StatusCode::OK).json(param_test)
         },
     );
+    param_router.get("/*", |_ctx, res: ResponseBuilder| {
+        res.status(StatusCode::OK)
+            .body("<h1>404 Not Found</h1>".to_string())
+    });
+
     app.use_router("/params/", param_router);
     app.use_router("/forms/", form_router);
     app.use_static_to("/files/", "/assets/");

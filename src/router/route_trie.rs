@@ -173,7 +173,9 @@ impl RouteTrie {
     pub fn search_route(&self, key: &str) -> Result<RouteValueResult, ObsidianError> {
         // Split key and drop additional '/'
         let split_key = key.split('/');
-        let mut split_key = split_key.filter(|key| !key.is_empty()).peekable();
+        let mut split_key = split_key
+            .filter(|key| !key.is_empty())
+            .collect::<Vec<&str>>();
 
         let mut curr_node = &self.head;
         let mut params = HashMap::default();
@@ -186,20 +188,12 @@ impl RouteTrie {
             None => {}
         }
 
-        while let Some(k) = split_key.next() {
-            match *curr_node.get_next_node(k, &mut params) {
-                Some(next_node) => {
-                    curr_node = next_node;
-
-                    match &curr_node.value {
-                        Some(val) => middleware.append(&mut val.middleware.clone()),
-                        None => {}
-                    }
+        if split_key.len() != 0 {
+            match *curr_node.get_next_node(&mut split_key, &mut params, &mut middleware) {
+                Some(handler_node) => {
+                    curr_node = handler_node;
                 }
                 None => {
-                    if curr_node.key == "*" {
-                        break;
-                    }
                     // Path is not registered
                     return Err(ObsidianError::NoneError);
                 }
@@ -370,7 +364,8 @@ impl Node {
     /// Determine the action required to be performed for the new route path
     fn get_insertion_action(&self, key: &str) -> Action {
         for (index, node) in self.child_nodes.iter().enumerate() {
-            let is_param = node.key.chars().next().unwrap_or(' ') == ':' || key.chars().next().unwrap_or(' ') == ':';
+            let is_param = node.key.chars().next().unwrap_or(' ') == ':'
+                || key.chars().next().unwrap_or(' ') == ':';
             if is_param {
                 // Only allow one param leaf in on children series
                 if key == node.key {
@@ -381,7 +376,7 @@ impl Node {
             }
 
             // Wildcard can only be the last leaf
-            if key == "*" && node.key != "*" {
+            if node.key == "*" && key != "*" {
                 return Action::new(ActionName::Error, ActionPayload::new(0, index));
             }
 
@@ -416,23 +411,66 @@ impl Node {
     }
 
     // Helper function to consume the whole key and get the next available node
-    fn get_next_node(&self, key: &str, params: &mut HashMap<String, String>) -> Box<Option<&Self>> {
+    fn get_next_node(
+        &self,
+        key: &mut Vec<&str>,
+        params: &mut HashMap<String, String>,
+        middleware: &mut Vec<std::sync::Arc<(dyn Middleware + 'static)>>,
+    ) -> Box<Option<&Self>> {
+        let curr_key = key.remove(0);
+
         for node in self.child_nodes.iter() {
-            let is_param =
-                node.key.chars().next().unwrap_or(' ') == ':' || key.chars().next().unwrap_or(' ') == ':';
-            if is_param {
-                params.insert(node.key[1..].to_string(), key.to_string());
-                return Box::new(Some(node));
+            // Check param
+            if node.key.chars().next().unwrap_or(' ') == ':' {
+                if key.is_empty() {
+                    match &node.value {
+                        Some(curr_val) => {
+                            params.insert(node.key[1..].to_string(), curr_key.to_string());
+                            middleware.append(&mut curr_val.middleware.clone());
+                            return Box::new(Some(node));
+                        }
+                        None => {
+                            continue;
+                        }
+                    }
+                }
+                else {
+                    match *(node.get_next_node(key, params, middleware)) {
+                        Some(final_val) => {
+                            params.insert(node.key[1..].to_string(), curr_key.to_string());
+
+                            match &node.value {
+                                Some(curr_val) => {
+                                    middleware.append(&mut curr_val.middleware.clone());
+                                }
+                                None => {}
+                            }
+
+                            return Box::new(Some(final_val));
+                        }
+                        None => {
+                            continue;
+                        }
+                    }
+                }
             }
 
+            // Check wildcard
             if node.key == "*" {
+                match &node.value {
+                    Some(curr_val) => {
+                        middleware.append(&mut curr_val.middleware.clone());
+                    }
+                    None => {}
+                }
+
                 return Box::new(Some(node));
             }
 
-            let mut temp_key_ch = key.chars();
+            let mut temp_key_ch = curr_key.chars();
             let mut count = 0;
 
-            // match characters 
+            // match characters
             for k in node.key.chars() {
                 let t_k = match temp_key_ch.next() {
                     Some(key) => key,
@@ -446,12 +484,38 @@ impl Node {
                 }
             }
 
-            if count == key.len() {
-                // fully match
-                return Box::new(Some(node));
-            } else if count == node.key.len() {
+            if count == node.key.len() && count != curr_key.len() {
                 // break key
-                return node.get_next_node(&key[count..], params);
+                key.insert(0, &curr_key[count..]);
+            }
+
+            if count != 0 {
+                if key.is_empty() {
+                    match &node.value {
+                        Some(curr_val) => {
+                            middleware.append(&mut curr_val.middleware.clone());
+                            return Box::new(Some(node));
+                        }
+                        None => {
+                            continue;
+                        }
+                    }
+                }
+                else {
+                    match *(node.get_next_node(key, params, middleware)) {
+                        Some(final_val) => {
+                            match &node.value {
+                                Some(curr_val) => {
+                                    middleware.append(&mut curr_val.middleware.clone());
+                                }
+                                None => {}
+                            }
+
+                            return Box::new(Some(final_val));
+                        }
+                        None => {}
+                    }
+                }
             }
 
             continue;
@@ -607,7 +671,6 @@ mod tests {
         route_trie.insert_route("/noral/test/", Route::new(Method::GET, handler));
         route_trie.insert_route("/ノーマル/テスト/", Route::new(Method::GET, handler));
         route_trie.insert_route("/ノーマル/テーブル/", Route::new(Method::GET, handler));
-        
         route_trie.insert_middleware("/noral/test/", logger2);
         route_trie.insert_middleware("/ノーマル/テーブル/", logger3);
 
