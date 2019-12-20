@@ -189,7 +189,7 @@ impl RouteTrie {
         }
 
         if split_key.len() != 0 {
-            match *curr_node.get_next_node(&mut split_key, &mut params, &mut middleware) {
+            match *curr_node.get_next_node(&mut split_key, &mut params, &mut middleware, false) {
                 Some(handler_node) => {
                     curr_node = handler_node;
                 }
@@ -336,6 +336,12 @@ impl Node {
                         inter_node.value = std::mem::replace(&mut node.value, None);
 
                         node.child_nodes.push(inter_node);
+
+                        // In the case of insert key length less than matched node key length
+                        if new_key.is_empty() {
+                            return Box::new(Some(node));
+                        }
+
                         let new_node = Self::new(new_key, None);
 
                         node.child_nodes.push(new_node);
@@ -397,7 +403,7 @@ impl Node {
                 }
             }
 
-            if count == key.len() {
+            if count == key.len() && count == node.key.len() {
                 return Action::new(ActionName::NextNode, ActionPayload::new(count, index));
             } else if count == node.key.len() {
                 return Action::new(ActionName::SplitKey, ActionPayload::new(count, index));
@@ -416,55 +422,60 @@ impl Node {
         key: &mut Vec<&str>,
         params: &mut HashMap<String, String>,
         middleware: &mut Vec<std::sync::Arc<(dyn Middleware + 'static)>>,
+        is_break_parent: bool
     ) -> Box<Option<&Self>> {
         let curr_key = key.remove(0);
 
         for node in self.child_nodes.iter() {
-            // Check param
-            if node.key.chars().next().unwrap_or(' ') == ':' {
-                if key.is_empty() {
+            let mut break_key = false;
+
+            if !is_break_parent {
+                // Check param
+                if node.key.chars().next().unwrap_or(' ') == ':' {
+                    if key.is_empty() {
+                        match &node.value {
+                            Some(curr_val) => {
+                                params.insert(node.key[1..].to_string(), curr_key.to_string());
+                                middleware.append(&mut curr_val.middleware.clone());
+                                return Box::new(Some(node));
+                            }
+                            None => {
+                                continue;
+                            }
+                        }
+                    }
+                    else {
+                        match *(node.get_next_node(key, params, middleware, break_key)) {
+                            Some(final_val) => {
+                                params.insert(node.key[1..].to_string(), curr_key.to_string());
+
+                                match &node.value {
+                                    Some(curr_val) => {
+                                        middleware.append(&mut curr_val.middleware.clone());
+                                    }
+                                    None => {}
+                                }
+
+                                return Box::new(Some(final_val));
+                            }
+                            None => {
+                                continue;
+                            }
+                        }
+                    }
+                }
+
+                // Check wildcard
+                if node.key == "*" {
                     match &node.value {
                         Some(curr_val) => {
-                            params.insert(node.key[1..].to_string(), curr_key.to_string());
                             middleware.append(&mut curr_val.middleware.clone());
-                            return Box::new(Some(node));
                         }
-                        None => {
-                            continue;
-                        }
+                        None => {}
                     }
+
+                    return Box::new(Some(node));
                 }
-                else {
-                    match *(node.get_next_node(key, params, middleware)) {
-                        Some(final_val) => {
-                            params.insert(node.key[1..].to_string(), curr_key.to_string());
-
-                            match &node.value {
-                                Some(curr_val) => {
-                                    middleware.append(&mut curr_val.middleware.clone());
-                                }
-                                None => {}
-                            }
-
-                            return Box::new(Some(final_val));
-                        }
-                        None => {
-                            continue;
-                        }
-                    }
-                }
-            }
-
-            // Check wildcard
-            if node.key == "*" {
-                match &node.value {
-                    Some(curr_val) => {
-                        middleware.append(&mut curr_val.middleware.clone());
-                    }
-                    None => {}
-                }
-
-                return Box::new(Some(node));
             }
 
             let mut temp_key_ch = curr_key.chars();
@@ -486,10 +497,11 @@ impl Node {
 
             if count == node.key.len() && count != curr_key.len() {
                 // break key
+                break_key = true;
                 key.insert(0, &curr_key[count..]);
             }
 
-            if count != 0 {
+            if count != 0 && count == node.key.len() {
                 if key.is_empty() {
                     match &node.value {
                         Some(curr_val) => {
@@ -497,12 +509,24 @@ impl Node {
                             return Box::new(Some(node));
                         }
                         None => {
+                            for child in node.child_nodes.iter(){
+                                if child.key == "*" {
+                                    match &child.value {
+                                        Some(child_val) => {
+                                            middleware.append(&mut child_val.middleware.clone());
+                                            return Box::new(Some(child));
+                                        },
+                                        None => {}
+                                    }
+                                }
+                            }
+
                             continue;
                         }
                     }
                 }
                 else {
-                    match *(node.get_next_node(key, params, middleware)) {
+                    match *(node.get_next_node(key, params, middleware, break_key)) {
                         Some(final_val) => {
                             match &node.value {
                                 Some(curr_val) => {

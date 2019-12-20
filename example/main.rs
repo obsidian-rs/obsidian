@@ -79,6 +79,11 @@ fn main() {
         res.status(StatusCode::OK).send_file("./testjson.html")
     });
 
+    app.get("/jsan", |_ctx: Context, res: ResponseBuilder| {
+        res.status(StatusCode::OK)
+            .body("<h1>jsan</h1>".to_string())
+    });
+
     app.post("/jsontestapi", |mut ctx: Context, res: ResponseBuilder| {
         let json: serde_json::Value = ctx.json().unwrap();
 
@@ -102,6 +107,29 @@ fn main() {
         res.status(StatusCode::OK)
             .body(format!("{}<br>{}","<h1>Test wildcard</h1>".to_string(), ctx.uri().path()))
     });
+
+    app.get("router/test", |ctx: Context, res: ResponseBuilder| {
+        res.status(StatusCode::OK)
+            .body(format!("{}<br>{}","<h1>router test get</h1>".to_string(), ctx.uri().path()))
+    });
+    app.post("router/test", |ctx: Context, res: ResponseBuilder| {
+        res.status(StatusCode::OK)
+            .body(format!("{}<br>{}","<h1>router test post</h1>".to_string(), ctx.uri().path()))
+    });
+    app.put("router/test", |ctx: Context, res: ResponseBuilder| {
+        res.status(StatusCode::OK)
+            .body(format!("{}<br>{}","<h1>router test put</h1>".to_string(), ctx.uri().path()))
+    });
+    app.delete("router/test", |ctx: Context, res: ResponseBuilder| {
+        res.status(StatusCode::OK)
+            .body(format!("{}<br>{}","<h1>router test delete</h1>".to_string(), ctx.uri().path()))
+    });
+
+    app.get("route/diff_route", |ctx: Context, res: ResponseBuilder| {
+        res.status(StatusCode::OK)
+            .body(format!("{}<br>{}","<h1>route diff get</h1>".to_string(), ctx.uri().path()))
+    });
+
 
     let mut form_router = Router::new();
 
@@ -139,6 +167,12 @@ fn main() {
             res.status(StatusCode::OK).json(param_test)
         },
     );
+
+    param_router.get("/test-next-wild/*", |_ctx, res: ResponseBuilder| {
+        res.status(StatusCode::OK)
+            .body("<h1>test next wild</h1>".to_string())
+    });
+
     param_router.get("/*", |_ctx, res: ResponseBuilder| {
         res.status(StatusCode::OK)
             .body("<h1>404 Not Found</h1>".to_string())
