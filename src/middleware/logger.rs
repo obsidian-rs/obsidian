@@ -5,6 +5,7 @@ use crate::context::Context;
 use crate::middleware::Middleware;
 use crate::{Body, Response};
 
+#[derive(Default)]
 pub struct Logger {}
 
 impl Logger {

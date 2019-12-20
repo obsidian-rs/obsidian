@@ -2,6 +2,7 @@ use futures::{Future, Stream};
 use serde::de::DeserializeOwned;
 use url::form_urlencoded;
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::convert::From;
 use std::str::FromStr;
@@ -117,20 +118,20 @@ impl Context {
         };
 
         let mut parsed_form_map: HashMap<String, Vec<String>> = HashMap::default();
-        let mut cow_form_map = HashMap::default();
+        let mut cow_form_map = HashMap::<Cow<str>, Cow<[String]>>::default();
 
         // Parse and merge chunks with same name key
         form_urlencoded::parse(&chunks)
             .into_owned()
             .for_each(|(key, val)| {
-                parsed_form_map.entry(key).or_insert(vec![]).push(val);
+                parsed_form_map.entry(key).or_insert_with(|| vec![]).push(val);
             });
 
         // Wrap vec with cow pointer
         parsed_form_map.iter().for_each(|(key, val)| {
             cow_form_map
                 .entry(std::borrow::Cow::from(key))
-                .or_insert(std::borrow::Cow::from(val));
+                .or_insert_with(|| std::borrow::Cow::from(val));
         });
 
         Ok(from_cow_map(&cow_form_map)?)

@@ -20,6 +20,7 @@ use std::fmt::Display;
 /// # use futures::{Future, Stream};
 /// # use serde_derive::*;
 /// # use std::collections::HashMap;
+/// # use std::borrow::Cow;
 ///
 /// #[derive(Deserialize, Debug, PartialEq)]
 /// struct Example {
@@ -38,7 +39,7 @@ use std::fmt::Display;
 /// };
 ///         
 /// let mut parsed_form_map: HashMap<String, Vec<String>> = HashMap::default();
-/// let mut cow_form_map = HashMap::default();
+/// let mut cow_form_map = HashMap::<Cow<str>, Cow<[String]>>::default();
 ///         
 /// // Parse and merge chunks with same name key
 /// form_urlencoded::parse(&chunks)
@@ -59,11 +60,11 @@ use std::fmt::Display;
 ///        
 /// assert_eq!(actual_result, expected_result);
 /// ```
-pub fn from_cow_map<'de, T>(s: &'de HashMap<Cow<'de, str>, Cow<'de, [String]>>) -> Result<T, Error>
+pub fn from_cow_map<'de, T, S: ::std::hash::BuildHasher>(s: &'de HashMap<Cow<'de, str>, Cow<'de, [String]>, S>) -> Result<T, Error>
 where
     T: Deserialize<'de>,
 {
-    let mut deserializer = FormDeserializer::from_cow_map(s.into_iter().peekable());
+    let mut deserializer = FormDeserializer::from_cow_map(s.iter().peekable());
     let t = T::deserialize(&mut deserializer)?;
     Ok(t)
 }
@@ -468,7 +469,7 @@ mod tests {
             }
         };
         let mut parsed_form_map: HashMap<String, Vec<String>> = HashMap::default();
-        let mut cow_form_map = HashMap::default();
+        let mut cow_form_map = HashMap::<Cow<str>, Cow<[String]>>::default();
         // Parse and merge chunks with same name key
         form_urlencoded::parse(&chunks)
             .into_owned()
@@ -501,7 +502,7 @@ mod tests {
             }
         };
         let mut parsed_form_map: HashMap<String, Vec<String>> = HashMap::default();
-        let mut cow_form_map = HashMap::default();
+        let mut cow_form_map = HashMap::<Cow<str>, Cow<[String]>>::default();
         // Parse and merge chunks with same name key
         form_urlencoded::parse(&chunks)
             .into_owned()
@@ -531,7 +532,7 @@ mod tests {
             }
         };
         let mut parsed_form_map: HashMap<String, Vec<String>> = HashMap::default();
-        let mut cow_form_map = HashMap::default();
+        let mut cow_form_map = HashMap::<Cow<str>, Cow<[String]>>::default();
         // Parse and merge chunks with same name key
         form_urlencoded::parse(&chunks)
             .into_owned()
@@ -561,7 +562,7 @@ mod tests {
             }
         };
         let mut parsed_form_map: HashMap<String, Vec<String>> = HashMap::default();
-        let mut cow_form_map = HashMap::default();
+        let mut cow_form_map = HashMap::<Cow<str>, Cow<[String]>>::default();
         // Parse and merge chunks with same name key
         form_urlencoded::parse(&chunks)
             .into_owned()
@@ -594,7 +595,7 @@ mod tests {
             }
         };
         let mut parsed_form_map: HashMap<String, Vec<String>> = HashMap::default();
-        let mut cow_form_map = HashMap::default();
+        let mut cow_form_map = HashMap::<Cow<str>, Cow<[String]>>::default();
         // Parse and merge chunks with same name key
         form_urlencoded::parse(&chunks)
             .into_owned()

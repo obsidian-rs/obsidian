@@ -12,6 +12,12 @@ pub struct App {
     router: Router,
 }
 
+impl Default for App {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl App {
     pub fn new() -> Self {
         App {

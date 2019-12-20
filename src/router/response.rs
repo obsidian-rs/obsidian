@@ -35,15 +35,13 @@ impl ResponseBody for String {
 
 impl ResponseBody for Vec<u8> {
     fn into_body(self) -> Result<Body, StatusCode> {
-        let result = match serde_json::to_string(&self) {
+        match serde_json::to_string(&self) {
             Ok(json) => Ok(Body::from(json)),
             Err(e) => {
                 eprintln!("serializing failed: {}", e);
                 Err(StatusCode::INTERNAL_SERVER_ERROR)
             }
-        };
-
-        result
+        }
     }
 }
 

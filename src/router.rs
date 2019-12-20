@@ -29,6 +29,12 @@ impl Clone for Router {
     }
 }
 
+impl Default for Router {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Router {
     pub fn new() -> Self {
         Router {
@@ -91,7 +97,7 @@ impl Router {
     }
 
     fn insert_route(&mut self, method: Method, path: &str, handler: impl EndPointHandler) {
-        let route = Route::new(method.clone(), handler);
+        let route = Route::new(method, handler);
 
         self.routes.insert_route(path, route);
     }
@@ -101,23 +107,22 @@ impl Router {
         dir_path: &str,
     ) -> impl Fn(Context, ResponseBuilder) -> ResponseBuilder {
         let dir_path = dir_path
-            .split("/")
+            .split('/')
             .filter(|key| !key.is_empty())
             .map(|x| x.to_string())
             .collect::<Vec<String>>();
 
         let virtual_path_len = virtual_path
-            .split("/")
+            .split('/')
             .filter(|key| !key.is_empty())
-            .collect::<Vec<&str>>()
-            .len();
+            .count();
 
         move |ctx: Context, res: ResponseBuilder| {
             let mut dir_path = dir_path.clone();
             let mut relative_path = ctx
                 .uri()
                 .path()
-                .split("/")
+                .split('/')
                 .filter(|key| !key.is_empty())
                 .skip(virtual_path_len)
                 .map(|x| x.to_string())
@@ -134,7 +139,7 @@ impl Router {
             let relative_path = ctx
                 .uri()
                 .path()
-                .split("/")
+                .split('/')
                 .filter(|key| !key.is_empty())
                 .map(|x| x.to_string())
                 .collect::<Vec<String>>();

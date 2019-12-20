@@ -188,7 +188,7 @@ impl RouteTrie {
             None => {}
         }
 
-        if split_key.len() != 0 {
+        if !split_key.is_empty() {
             match *curr_node.get_next_node(&mut split_key, &mut params, &mut middleware, false) {
                 Some(handler_node) => {
                     curr_node = handler_node;
@@ -204,11 +204,9 @@ impl RouteTrie {
             Some(val) => {
                 let route_val = RouteValue::new(middleware, val.route.clone());
 
-                return Ok(RouteValueResult::new(route_val, params));
+                Ok(RouteValueResult::new(route_val, params))
             }
-            None => {
-                return Err(ObsidianError::NoneError);
-            }
+            None => Err(ObsidianError::NoneError),
         }
     }
 
@@ -233,7 +231,7 @@ impl RouteTrie {
             match *curr_node.process_insertion(k) {
                 Some(next_node) => {
                     if split_key.peek().is_none() {
-                        if next_node.value.is_some() || next_node.child_nodes.len() > 0 {
+                        if next_node.value.is_some() || !next_node.child_nodes.is_empty() {
                             panic!("There is conflict between main router and sub router at '{}'. Make sure main router does not consist any routing data in '{}'.", key, key);
                         }
 
@@ -300,68 +298,56 @@ impl Node {
                 let new_node = Self::new(key.to_string(), None);
 
                 self.child_nodes.push(new_node);
-                match self.child_nodes.last_mut() {
-                    Some(node) => return Box::new(Some(node)),
-                    None => {}
+                if let Some(node) = self.child_nodes.last_mut() {
+                    return Box::new(Some(node));
                 };
             }
             ActionName::NextNode => {
-                match self.child_nodes.get_mut(action.payload.node_index) {
-                    Some(node) => {
-                        return Box::new(Some(node));
-                    }
-                    None => {}
+                if let Some(node) = self.child_nodes.get_mut(action.payload.node_index) {
+                    return Box::new(Some(node));
                 };
             }
             ActionName::SplitKey => {
-                match self.child_nodes.get_mut(action.payload.node_index) {
-                    Some(node) => {
-                        return node.process_insertion(&key[action.payload.match_count..]);
-                    }
-                    None => {}
+                if let Some(node) = self.child_nodes.get_mut(action.payload.node_index) {
+                    return node.process_insertion(&key[action.payload.match_count..]);
                 };
             }
             ActionName::SplitNode => {
-                match self.child_nodes.get_mut(action.payload.node_index) {
-                    Some(node) => {
-                        let count = action.payload.match_count;
-                        let child_key = node.key[count..].to_string();
-                        let new_key = key[count..].to_string();
-                        node.key = key[..count].to_string();
+                if let Some(node) = self.child_nodes.get_mut(action.payload.node_index) {
+                    let count = action.payload.match_count;
+                    let child_key = node.key[count..].to_string();
+                    let new_key = key[count..].to_string();
+                    node.key = key[..count].to_string();
 
-                        let mut inter_node = Self::new(child_key, None);
+                    let mut inter_node = Self::new(child_key, None);
 
-                        // Move out the previous child and transfer to intermediate node
-                        inter_node.child_nodes = std::mem::replace(&mut node.child_nodes, vec![]);
-                        inter_node.value = std::mem::replace(&mut node.value, None);
+                    // Move out the previous child and transfer to intermediate node
+                    inter_node.child_nodes = std::mem::replace(&mut node.child_nodes, vec![]);
+                    inter_node.value = std::mem::replace(&mut node.value, None);
 
-                        node.child_nodes.push(inter_node);
+                    node.child_nodes.push(inter_node);
 
-                        // In the case of insert key length less than matched node key length
-                        if new_key.is_empty() {
-                            return Box::new(Some(node));
-                        }
-
-                        let new_node = Self::new(new_key, None);
-
-                        node.child_nodes.push(new_node);
-                        match node.child_nodes.last_mut() {
-                            Some(result_node) => return Box::new(Some(result_node)),
-                            None => {}
-                        }
+                    // In the case of insert key length less than matched node key length
+                    if new_key.is_empty() {
+                        return Box::new(Some(node));
                     }
-                    None => {}
-                }
+
+                    let new_node = Self::new(new_key, None);
+
+                    node.child_nodes.push(new_node);
+                    if let Some(result_node) = node.child_nodes.last_mut() {
+                        return Box::new(Some(result_node));
+                    }
+                };
             }
-            ActionName::Error => match self.child_nodes.get(action.payload.node_index) {
-                Some(node) => {
+            ActionName::Error => {
+                if let Some(node) = self.child_nodes.get(action.payload.node_index) {
                     panic!(
                         "ERROR: Ambigous definition between {} and {}",
                         key, node.key
                     );
                 }
-                None => {}
-            },
+            }
         }
 
         unreachable!();
@@ -397,7 +383,7 @@ impl Node {
                 };
 
                 if t_k == k {
-                    count = count + t_k.len_utf8();
+                    count += t_k.len_utf8();
                 } else {
                     break;
                 }
@@ -422,7 +408,7 @@ impl Node {
         key: &mut Vec<&str>,
         params: &mut HashMap<String, String>,
         middleware: &mut Vec<std::sync::Arc<(dyn Middleware + 'static)>>,
-        is_break_parent: bool
+        is_break_parent: bool,
     ) -> Box<Option<&Self>> {
         let curr_key = key.remove(0);
 
@@ -443,8 +429,7 @@ impl Node {
                                 continue;
                             }
                         }
-                    }
-                    else {
+                    } else {
                         match *(node.get_next_node(key, params, middleware, break_key)) {
                             Some(final_val) => {
                                 params.insert(node.key[1..].to_string(), curr_key.to_string());
@@ -489,7 +474,7 @@ impl Node {
                 };
 
                 if t_k == k {
-                    count = count + t_k.len_utf8();
+                    count += t_k.len_utf8();
                 } else {
                     break;
                 }
@@ -509,14 +494,11 @@ impl Node {
                             return Box::new(Some(node));
                         }
                         None => {
-                            for child in node.child_nodes.iter(){
+                            for child in node.child_nodes.iter() {
                                 if child.key == "*" {
-                                    match &child.value {
-                                        Some(child_val) => {
-                                            middleware.append(&mut child_val.middleware.clone());
-                                            return Box::new(Some(child));
-                                        },
-                                        None => {}
+                                    if let Some(child_val) = &child.value {
+                                        middleware.append(&mut child_val.middleware.clone());
+                                        return Box::new(Some(child));
                                     }
                                 }
                             }
@@ -524,21 +506,14 @@ impl Node {
                             continue;
                         }
                     }
-                }
-                else {
-                    match *(node.get_next_node(key, params, middleware, break_key)) {
-                        Some(final_val) => {
-                            match &node.value {
-                                Some(curr_val) => {
-                                    middleware.append(&mut curr_val.middleware.clone());
-                                }
-                                None => {}
-                            }
-
-                            return Box::new(Some(final_val));
-                        }
-                        None => {}
+                } else if let Some(final_val) =
+                    *(node.get_next_node(key, params, middleware, break_key))
+                {
+                    if let Some(curr_val) = &node.value {
+                        middleware.append(&mut curr_val.middleware.clone());
                     }
+
+                    return Box::new(Some(final_val));
                 }
             }
 
