@@ -18,18 +18,12 @@ impl Middleware for Logger {
         &'a self,
         context: Context,
         ep_executor: EndpointExecutor<'a>,
-    ) -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send> {
+    ) -> Box<dyn Future<Item = Response<Body>, Error = hyper::Error> + Send> {
         println!(
             "{} {} \n{}",
-            context.request.method(),
-            context.request.uri(),
-            context
-                .request
-                .headers()
-                .get("host")
-                .unwrap()
-                .to_str()
-                .unwrap()
+            context.method(),
+            context.uri(),
+            context.headers().get("host").unwrap().to_str().unwrap()
         );
 
         ep_executor.next(context)

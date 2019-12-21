@@ -1,12 +1,11 @@
 use crate::context::Context;
 use crate::middleware::Middleware;
-use crate::router::{EndPointHandler, ResponseBuilder, RouteData, Router};
+use crate::router::{EndPointHandler, Params, ResponseBuilder, Router};
 use futures::{future, Future, Stream};
 use hyper::{service::service_fn, Body, Request, Response, Server};
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
-
 
 /// There are two level of router
 /// - App level -> main_router, middleware for this level will be run for all endpoint
@@ -60,7 +59,7 @@ impl App {
             let server_clone = app_server.clone();
 
             service_fn(
-                move |req| -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send> {
+                move |req| -> Box<dyn Future<Item = Response<Body>, Error = hyper::Error> + Send> {
                     // Resolve the route endpoint
                     server_clone.resolve_endpoint(req)
                 },
@@ -87,7 +86,7 @@ impl AppServer {
     pub fn resolve_endpoint(
         &self,
         req: Request<Body>,
-    ) -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send> {
+    ) -> Box<dyn Future<Item = Response<Body>, Error = hyper::Error> + Send> {
         let (parts, body) = req.into_parts();
 
         // Currently support only one router until radix tree complete.
@@ -102,8 +101,7 @@ impl AppServer {
             // Temporary used as the hyper stream thread block. async will be used soon
             Box::new(body.concat2().and_then(move |b| {
                 let req = Request::from_parts(parts, Body::from(b));
-                let route_data = RouteData::new();
-                let context = Context::new(req, route_data, HashMap::new());
+                let context = Context::new(req, Params::default());
                 let executor = EndpointExecutor::new(&route.handler, &middlewares);
 
                 executor.next(context)
@@ -114,7 +112,7 @@ impl AppServer {
     }
 }
 
-pub fn page_not_found() -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send> {
+pub fn page_not_found() -> Box<dyn Future<Item = Response<Body>, Error = hyper::Error> + Send> {
     let server_response = Response::new(Body::from("404 Not Found"));
 
     Box::new(future::ok(server_response))
@@ -122,13 +120,13 @@ pub fn page_not_found() -> Box<Future<Item = Response<Body>, Error = hyper::Erro
 
 pub struct EndpointExecutor<'a> {
     pub route_endpoint: &'a Arc<dyn EndPointHandler<Output = ResponseBuilder>>,
-    pub middleware: &'a [Arc<Middleware>],
+    pub middleware: &'a [Arc<dyn Middleware>],
 }
 
 impl<'a> EndpointExecutor<'a> {
     pub fn new(
         route_endpoint: &'a Arc<dyn EndPointHandler<Output = ResponseBuilder>>,
-        middleware: &'a [Arc<Middleware>],
+        middleware: &'a [Arc<dyn Middleware>],
     ) -> Self {
         EndpointExecutor {
             route_endpoint,
@@ -139,7 +137,7 @@ impl<'a> EndpointExecutor<'a> {
     pub fn next(
         mut self,
         context: Context,
-    ) -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send> {
+    ) -> Box<dyn Future<Item = Response<Body>, Error = hyper::Error> + Send> {
         if let Some((current, all_next)) = self.middleware.split_first() {
             self.middleware = all_next;
             current.handle(context, self)
@@ -160,8 +158,8 @@ mod test {
     fn test_app_server_resolve_endpoint() {
         let mut main_router = Router::new();
 
-        main_router.get("/", |context: Context, res: ResponseBuilder| {
-            let (parts, body) = context.request.into_parts();
+        main_router.get("/", |mut context: Context, res: ResponseBuilder| {
+            let body = context.take_body();
 
             let request_body = body
                 .map_err(|_| ())
@@ -171,7 +169,7 @@ mod test {
                 })
                 .and_then(|v| String::from_utf8(v).map_err(|_| ()));
 
-            assert_eq!(parts.uri.path(), "/");
+            assert_eq!(context.uri().path(), "/");
             assert_eq!(request_body.wait().unwrap(), "test_app_server");
             res.status(StatusCode::OK).body("test_app_server")
         });
@@ -219,4 +217,3 @@ mod test {
         );
     }
 }
-

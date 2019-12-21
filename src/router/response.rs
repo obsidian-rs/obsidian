@@ -124,8 +124,8 @@ impl Into<Response<Body>> for ResponseBuilder {
     }
 }
 
-impl Into<Box<Future<Item = Response<Body>, Error = hyper::Error> + Send>> for ResponseBuilder {
-    fn into(self) -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send> {
+impl Into<Box<dyn Future<Item = Response<Body>, Error = hyper::Error> + Send>> for ResponseBuilder {
+    fn into(self) -> Box<dyn Future<Item = Response<Body>, Error = hyper::Error> + Send> {
         if let Some(path) = self.file_path {
             Box::new(
                 tokio_fs::file::File::open(path)

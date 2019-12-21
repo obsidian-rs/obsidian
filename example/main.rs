@@ -1,11 +1,8 @@
 use serde_derive::*;
+use std::{fmt, fmt::Display};
 
 use obsidian::{
-    context::Context,
-    header,
-    middleware::{BodyParser, Logger, UrlEncodedParser},
-    router::ResponseBuilder,
-    App, StatusCode,
+    context::Context, header, middleware::Logger, router::ResponseBuilder, App, StatusCode,
 };
 
 // Testing example
@@ -13,6 +10,24 @@ use obsidian::{
 struct Point {
     x: i32,
     y: i32,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct JsonTest {
+    title: String,
+    content: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct ParamTest {
+    test: Vec<String>,
+    test2: String,
+}
+
+impl Display for JsonTest {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{{title: {}, content: {}}}", self.title, self.content)
+    }
 }
 
 fn main() {
@@ -48,28 +63,40 @@ fn main() {
         res.status(StatusCode::OK).send_file("./test.html")
     });
 
-    app.post("/paramtest2", |ctx: Context, res: ResponseBuilder| {
-        let multi_test: Vec<String> = ctx.params("test").into();
-        let unique_test: String = ctx.params("test2").into();
-        let json_test = &ctx.json["test_json"];
-
-        for value in multi_test {
-            println!("test / {}", value);
-        }
-
-        println!("test2 / {}", unique_test);
-        println!("test_json / {}", json_test);
-
-        res.status(StatusCode::OK).body("params result")
+    app.get("/jsontest", |_ctx: Context, res: ResponseBuilder| {
+        res.status(StatusCode::OK).send_file("./testjson.html")
     });
 
-    let body_parser = BodyParser::new();
+    app.post("/jsontestapi", |mut ctx: Context, res: ResponseBuilder| {
+        let json: serde_json::Value = ctx.json().unwrap();
+
+        println!("{}", json);
+
+        res.status(StatusCode::OK).json(json)
+    });
+
+    app.post(
+        "/jsonteststructapi",
+        |mut ctx: Context, res: ResponseBuilder| {
+            let json: JsonTest = ctx.json().unwrap();
+
+            println!("{}", json);
+
+            res.status(StatusCode::OK).json(json)
+        },
+    );
+
+    app.post("/paramtest2", |mut ctx: Context, res: ResponseBuilder| {
+        let param_test: ParamTest = ctx.form().unwrap();
+
+        dbg!(&param_test);
+
+        res.status(StatusCode::OK).json(param_test)
+    });
+
     let logger = Logger::new();
-    let url_parser = UrlEncodedParser::new();
 
     app.use_service(logger);
-    app.use_service(url_parser);
-    app.use_service(body_parser);
 
     app.listen(&addr, || {
         println!("server is listening to {}", &addr);
