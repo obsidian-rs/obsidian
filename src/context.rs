@@ -243,7 +243,9 @@ impl Context {
         form_urlencoded::parse(query)
             .into_owned()
             .for_each(|(key, val)| {
-                parsed_form_map.entry(key).or_insert(vec![]).push(val);
+                if !val.is_empty() {
+                    parsed_form_map.entry(key).or_insert(vec![]).push(val);
+                }
             });
 
         // Wrap vec with cow pointer
