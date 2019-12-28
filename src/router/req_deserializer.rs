@@ -1,19 +1,19 @@
 use serde::de::{self, DeserializeSeed, IntoDeserializer, MapAccess, SeqAccess, Visitor};
-use serde::ser;
 use serde::forward_to_deserialize_any;
+use serde::ser;
 use serde::Deserialize;
 
-use std::fmt::Display;
 use std::fmt;
+use std::fmt::Display;
 
 use std::borrow::Cow;
 use std::collections::HashMap;
 
 /// Parse merged forms key, value pair get from form_urlencoded into a user defined struct
 /// Key and Value should be in Cow pointer
-/// 
+///
 /// # Example
-/// 
+///
 /// ```
 /// # use obsidian::router::from_cow_map;
 /// # use hyper::{Body, Request};
@@ -27,7 +27,7 @@ use std::collections::HashMap;
 ///     field1: Vec<i32>,
 ///     field2: i32,
 /// }
-/// 
+///
 /// let body = Request::new(Body::from("field1=1&field1=2&field2=12")).into_body();
 ///  
 /// let chunks = match body.concat2().wait() {
@@ -69,7 +69,7 @@ where
     Ok(t)
 }
 
-/// Deserializer for merged hashmap forms. 
+/// Deserializer for merged hashmap forms.
 struct FormDeserializer<'de> {
     input: std::iter::Peekable<
         std::collections::hash_map::Iter<
@@ -88,7 +88,7 @@ macro_rules! from_string_forms_key_impl {
                 match self.input.peek() {
                     Some(key) => key.0.clone().into_deserializer().$method(visitor),
                     _ => Err(Error::NoneError),
-                } 
+                }
             }
     )*}
 }
@@ -188,7 +188,6 @@ macro_rules! from_string_forms_impl {
                     Ok(result) => result.into_deserializer().$method(visitor),
                     Err(e) => Err(Error::Message(format!("{}", e))),
                 }
-                    
             }
     )*}
 }
@@ -436,10 +435,10 @@ impl std::error::Error for Error {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use hyper::{Body, Request};
-    use url::form_urlencoded;
     use futures::{Future, Stream};
+    use hyper::{Body, Request};
     use serde_derive::*;
+    use url::form_urlencoded;
 
     #[derive(Deserialize, Debug, PartialEq)]
     struct VecAndSingleVariableStruct {
@@ -462,7 +461,6 @@ mod tests {
     #[test]
     fn test_deserialize_to_struct_with_vec_and_single_variable() {
         let body = Request::new(Body::from("field1=abc&field1=xyz&field2=12")).into_body();
- 
         let chunks = match body.concat2().wait() {
             Ok(chunk) => chunk,
             Err(e) => {
@@ -470,17 +468,14 @@ mod tests {
                 hyper::Chunk::default()
             }
         };
-        
         let mut parsed_form_map: HashMap<String, Vec<String>> = HashMap::default();
         let mut cow_form_map = HashMap::default();
-        
         // Parse and merge chunks with same name key
         form_urlencoded::parse(&chunks)
             .into_owned()
             .for_each(|(key, val)| {
                 parsed_form_map.entry(key).or_insert(vec![]).push(val);
             });
-        
         // Wrap vec with cow pointer
         parsed_form_map.iter().for_each(|(key, val)| {
             cow_form_map
@@ -489,15 +484,16 @@ mod tests {
         });
 
         let actual_result: VecAndSingleVariableStruct = from_cow_map(&cow_form_map).unwrap();
-        let expected_result = VecAndSingleVariableStruct{field1: vec!["abc".to_string(), "xyz".to_string()], field2: 12};
-        
+        let expected_result = VecAndSingleVariableStruct {
+            field1: vec!["abc".to_string(), "xyz".to_string()],
+            field2: 12,
+        };
         assert_eq!(actual_result, expected_result);
     }
 
     #[test]
     fn test_deserialize_to_struct_with_vec() {
         let body = Request::new(Body::from("field1=1&field1=2")).into_body();
- 
         let chunks = match body.concat2().wait() {
             Ok(chunk) => chunk,
             Err(e) => {
@@ -505,17 +501,14 @@ mod tests {
                 hyper::Chunk::default()
             }
         };
-        
         let mut parsed_form_map: HashMap<String, Vec<String>> = HashMap::default();
         let mut cow_form_map = HashMap::default();
-        
         // Parse and merge chunks with same name key
         form_urlencoded::parse(&chunks)
             .into_owned()
             .for_each(|(key, val)| {
                 parsed_form_map.entry(key).or_insert(vec![]).push(val);
             });
-        
         // Wrap vec with cow pointer
         parsed_form_map.iter().for_each(|(key, val)| {
             cow_form_map
@@ -524,15 +517,13 @@ mod tests {
         });
 
         let actual_result: VecStruct = from_cow_map(&cow_form_map).unwrap();
-        let expected_result = VecStruct{field1: vec![1,2]};
-        
+        let expected_result = VecStruct { field1: vec![1, 2] };
         assert_eq!(actual_result, expected_result);
     }
 
     #[test]
     fn test_deserialize_to_struct_with_extra_form_value() {
         let body = Request::new(Body::from("field1=1&field1=2&field2=12")).into_body();
- 
         let chunks = match body.concat2().wait() {
             Ok(chunk) => chunk,
             Err(e) => {
@@ -540,17 +531,14 @@ mod tests {
                 hyper::Chunk::default()
             }
         };
-        
         let mut parsed_form_map: HashMap<String, Vec<String>> = HashMap::default();
         let mut cow_form_map = HashMap::default();
-        
         // Parse and merge chunks with same name key
         form_urlencoded::parse(&chunks)
             .into_owned()
             .for_each(|(key, val)| {
                 parsed_form_map.entry(key).or_insert(vec![]).push(val);
             });
-        
         // Wrap vec with cow pointer
         parsed_form_map.iter().for_each(|(key, val)| {
             cow_form_map
@@ -559,15 +547,13 @@ mod tests {
         });
 
         let actual_result: VecStruct = from_cow_map(&cow_form_map).unwrap();
-        let expected_result = VecStruct{field1: vec![1,2]};
-        
+        let expected_result = VecStruct { field1: vec![1, 2] };
         assert_eq!(actual_result, expected_result);
     }
 
     #[test]
     fn test_deserialize_to_struct_with_extra_struct_field() {
         let body = Request::new(Body::from("field1=1&field1=2")).into_body();
- 
         let chunks = match body.concat2().wait() {
             Ok(chunk) => chunk,
             Err(e) => {
@@ -575,17 +561,14 @@ mod tests {
                 hyper::Chunk::default()
             }
         };
-        
         let mut parsed_form_map: HashMap<String, Vec<String>> = HashMap::default();
         let mut cow_form_map = HashMap::default();
-        
         // Parse and merge chunks with same name key
         form_urlencoded::parse(&chunks)
             .into_owned()
             .for_each(|(key, val)| {
                 parsed_form_map.entry(key).or_insert(vec![]).push(val);
             });
-        
         // Wrap vec with cow pointer
         parsed_form_map.iter().for_each(|(key, val)| {
             cow_form_map
@@ -594,15 +577,16 @@ mod tests {
         });
 
         let actual_result: VecWithDefaultStruct = from_cow_map(&cow_form_map).unwrap();
-        let expected_result = VecWithDefaultStruct{field1: vec![1,2], field2: i32::default()};
-        
+        let expected_result = VecWithDefaultStruct {
+            field1: vec![1, 2],
+            field2: i32::default(),
+        };
         assert_eq!(actual_result, expected_result);
     }
 
     #[test]
     fn test_deserialize_to_map_type() {
         let body = Request::new(Body::from("field1=1&field1=2&field2=3")).into_body();
- 
         let chunks = match body.concat2().wait() {
             Ok(chunk) => chunk,
             Err(e) => {
@@ -610,17 +594,14 @@ mod tests {
                 hyper::Chunk::default()
             }
         };
-        
         let mut parsed_form_map: HashMap<String, Vec<String>> = HashMap::default();
         let mut cow_form_map = HashMap::default();
-        
         // Parse and merge chunks with same name key
         form_urlencoded::parse(&chunks)
             .into_owned()
             .for_each(|(key, val)| {
                 parsed_form_map.entry(key).or_insert(vec![]).push(val);
             });
-        
         // Wrap vec with cow pointer
         parsed_form_map.iter().for_each(|(key, val)| {
             cow_form_map
@@ -631,10 +612,18 @@ mod tests {
         let actual_result: HashMap<String, Vec<i32>> = from_cow_map(&cow_form_map).unwrap();
         let mut expected_result: HashMap<String, Vec<i32>> = HashMap::default();
 
-        expected_result.entry("field1".to_string()).or_insert(vec![]).push(1);
-        expected_result.entry("field1".to_string()).or_insert(vec![]).push(2);
-        expected_result.entry("field2".to_string()).or_insert(vec![]).push(3);
-        
+        expected_result
+            .entry("field1".to_string())
+            .or_insert(vec![])
+            .push(1);
+        expected_result
+            .entry("field1".to_string())
+            .or_insert(vec![])
+            .push(2);
+        expected_result
+            .entry("field2".to_string())
+            .or_insert(vec![])
+            .push(3);
         assert_eq!(actual_result, expected_result);
     }
 }
