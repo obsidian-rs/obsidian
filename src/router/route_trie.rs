@@ -95,7 +95,7 @@ impl RouteTrie {
         }
 
         while let Some(k) = split_key.next() {
-            match *curr_node.process_insertion(k) {
+            match curr_node.process_insertion(k) {
                 Some(next_node) => {
                     if split_key.peek().is_none() {
                         match &mut next_node.value {
@@ -143,7 +143,7 @@ impl RouteTrie {
         let mut curr_node = &mut self.head;
 
         while let Some(k) = split_key.next() {
-            match *curr_node.process_insertion(k) {
+            match curr_node.process_insertion(k) {
                 Some(next_node) => {
                     if split_key.peek().is_none() {
                         match &mut next_node.value {
@@ -189,7 +189,7 @@ impl RouteTrie {
         }
 
         if !split_key.is_empty() {
-            match *curr_node.get_next_node(&mut split_key, &mut params, &mut middleware, false) {
+            match curr_node.get_next_node(&mut split_key, &mut params, &mut middleware, false) {
                 Some(handler_node) => {
                     curr_node = handler_node;
                 }
@@ -228,7 +228,7 @@ impl RouteTrie {
         }
 
         while let Some(k) = split_key.next() {
-            match *curr_node.process_insertion(k) {
+            match curr_node.process_insertion(k) {
                 Some(next_node) => {
                     if split_key.peek().is_none() {
                         if next_node.value.is_some() || !next_node.child_nodes.is_empty() {
@@ -290,7 +290,7 @@ impl Node {
     }
 
     /// Process the side effects of node insertion
-    fn process_insertion(&mut self, key: &str) -> Box<Option<&mut Self>> {
+    fn process_insertion(&mut self, key: &str) -> Option<&mut Self> {
         let action = self.get_insertion_action(key);
 
         match action.name {
@@ -299,12 +299,12 @@ impl Node {
 
                 self.child_nodes.push(new_node);
                 if let Some(node) = self.child_nodes.last_mut() {
-                    return Box::new(Some(node));
+                    return Some(node);
                 };
             }
             ActionName::NextNode => {
                 if let Some(node) = self.child_nodes.get_mut(action.payload.node_index) {
-                    return Box::new(Some(node));
+                    return Some(node);
                 };
             }
             ActionName::SplitKey => {
@@ -329,14 +329,14 @@ impl Node {
 
                     // In the case of insert key length less than matched node key length
                     if new_key.is_empty() {
-                        return Box::new(Some(node));
+                        return Some(node);
                     }
 
                     let new_node = Self::new(new_key, None);
 
                     node.child_nodes.push(new_node);
                     if let Some(result_node) = node.child_nodes.last_mut() {
-                        return Box::new(Some(result_node));
+                        return Some(result_node);
                     }
                 };
             }
@@ -409,7 +409,7 @@ impl Node {
         params: &mut HashMap<String, String>,
         middleware: &mut Vec<std::sync::Arc<(dyn Middleware + 'static)>>,
         is_break_parent: bool,
-    ) -> Box<Option<&Self>> {
+    ) -> Option<&Self> {
         let curr_key = key.remove(0);
 
         for node in self.child_nodes.iter() {
@@ -423,14 +423,14 @@ impl Node {
                             Some(curr_val) => {
                                 params.insert(node.key[1..].to_string(), curr_key.to_string());
                                 middleware.append(&mut curr_val.middleware.clone());
-                                return Box::new(Some(node));
+                                return Some(node);
                             }
                             None => {
                                 continue;
                             }
                         }
                     } else {
-                        match *(node.get_next_node(key, params, middleware, break_key)) {
+                        match node.get_next_node(key, params, middleware, break_key) {
                             Some(final_val) => {
                                 params.insert(node.key[1..].to_string(), curr_key.to_string());
 
@@ -441,7 +441,7 @@ impl Node {
                                     None => {}
                                 }
 
-                                return Box::new(Some(final_val));
+                                return Some(final_val);
                             }
                             None => {
                                 continue;
@@ -459,7 +459,7 @@ impl Node {
                         None => {}
                     }
 
-                    return Box::new(Some(node));
+                    return Some(node);
                 }
             }
 
@@ -491,14 +491,14 @@ impl Node {
                     match &node.value {
                         Some(curr_val) => {
                             middleware.append(&mut curr_val.middleware.clone());
-                            return Box::new(Some(node));
+                            return Some(node);
                         }
                         None => {
                             for child in node.child_nodes.iter() {
                                 if child.key == "*" {
                                     if let Some(child_val) = &child.value {
                                         middleware.append(&mut child_val.middleware.clone());
-                                        return Box::new(Some(child));
+                                        return Some(child);
                                     }
                                 }
                             }
@@ -507,13 +507,13 @@ impl Node {
                         }
                     }
                 } else if let Some(final_val) =
-                    *(node.get_next_node(key, params, middleware, break_key))
+                    node.get_next_node(key, params, middleware, break_key)
                 {
                     if let Some(curr_val) = &node.value {
                         middleware.append(&mut curr_val.middleware.clone());
                     }
 
-                    return Box::new(Some(final_val));
+                    return Some(final_val);
                 }
             }
 
@@ -521,7 +521,7 @@ impl Node {
         }
 
         // Not found
-        Box::new(None)
+        None
     }
 }
 
