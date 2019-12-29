@@ -87,6 +87,16 @@ impl RouteTrie {
         let split_key = key.split('/');
         let mut split_key = split_key.filter(|key| !key.is_empty()).peekable();
 
+        split_key.clone().enumerate().for_each(|(pos, x)| {
+            if x.contains('*') {
+                if x.len() != 1 {
+                    panic!("ERROR: Consisting * in route name at: {}", key);
+                } else if pos != split_key.clone().count() - 1 {
+                    panic!("ERROR: * must be in the last at: {}", key);
+                }
+            }
+        });
+
         let mut curr_node = &mut self.head;
 
         if split_key.peek().is_none() {
@@ -96,7 +106,7 @@ impl RouteTrie {
 
         while let Some(k) = split_key.next() {
             match curr_node.process_insertion(k) {
-                Some(next_node) => {
+                Ok(next_node) => {
                     if split_key.peek().is_none() {
                         match &mut next_node.value {
                             Some(val) => {
@@ -127,8 +137,8 @@ impl RouteTrie {
                     }
                     curr_node = next_node;
                 }
-                None => {
-                    break;
+                Err(err) => {
+                    panic!("Insert Route: {} at {}", err, key);
                 }
             }
         }
@@ -140,11 +150,21 @@ impl RouteTrie {
         let split_key = key.split('/');
         let mut split_key = split_key.filter(|key| !key.is_empty()).peekable();
 
+        split_key.clone().enumerate().for_each(|(pos, x)| {
+            if x.contains('*') {
+                if x.len() != 1 {
+                    panic!("ERROR: Consisting * in route name at: {}", key);
+                } else if pos != split_key.clone().count() - 1 {
+                    panic!("ERROR: * must be in the last at: {}", key);
+                }
+            }
+        });
+
         let mut curr_node = &mut self.head;
 
         while let Some(k) = split_key.next() {
             match curr_node.process_insertion(k) {
-                Some(next_node) => {
+                Ok(next_node) => {
                     if split_key.peek().is_none() {
                         match &mut next_node.value {
                             Some(val) => {
@@ -161,8 +181,8 @@ impl RouteTrie {
                     }
                     curr_node = next_node;
                 }
-                None => {
-                    break;
+                Err(err) => {
+                    panic!("Middleware: {} at {}", err, key);
                 }
             }
         }
@@ -170,7 +190,7 @@ impl RouteTrie {
 
     /// Search node through the provided key
     /// Middleware will be accumulated throughout the search path
-    pub fn search_route(&self, key: &str) -> Result<RouteValueResult, ObsidianError> {
+    pub fn search_route(&self, key: &str) -> Option<RouteValueResult> {
         // Split key and drop additional '/'
         let split_key = key.split('/');
         let mut split_key = split_key
@@ -195,7 +215,7 @@ impl RouteTrie {
                 }
                 None => {
                     // Path is not registered
-                    return Err(ObsidianError::NoneError);
+                    return None;
                 }
             }
         }
@@ -204,9 +224,9 @@ impl RouteTrie {
             Some(val) => {
                 let route_val = RouteValue::new(middleware, val.route.clone());
 
-                Ok(RouteValueResult::new(route_val, params))
+                Some(RouteValueResult::new(route_val, params))
             }
-            None => Err(ObsidianError::NoneError),
+            None => None,
         }
     }
 
@@ -220,6 +240,16 @@ impl RouteTrie {
         let split_key = key.split('/');
         let mut split_key = split_key.filter(|key| !key.is_empty()).peekable();
 
+        split_key.clone().enumerate().for_each(|(pos, x)| {
+            if x.contains('*') {
+                if x.len() != 1 {
+                    panic!("ERROR: Consisting * in route name at: {}", key);
+                } else if pos != split_key.clone().count() - 1 {
+                    panic!("ERROR: * must be in the last at: {}", key);
+                }
+            }
+        });
+
         let mut curr_node = &mut des.head;
 
         if split_key.peek().is_none() {
@@ -229,7 +259,7 @@ impl RouteTrie {
 
         while let Some(k) = split_key.next() {
             match curr_node.process_insertion(k) {
-                Some(next_node) => {
+                Ok(next_node) => {
                     if split_key.peek().is_none() {
                         if next_node.value.is_some() || !next_node.child_nodes.is_empty() {
                             panic!("There is conflict between main router and sub router at '{}'. Make sure main router does not consist any routing data in '{}'.", key, key);
@@ -241,8 +271,8 @@ impl RouteTrie {
                     }
                     curr_node = next_node;
                 }
-                None => {
-                    break;
+                Err(err) => {
+                    panic!("SubRouter: {} at {}", err, key);
                 }
             }
         }
@@ -290,21 +320,33 @@ impl Node {
     }
 
     /// Process the side effects of node insertion
-    fn process_insertion(&mut self, key: &str) -> Option<&mut Self> {
+    fn process_insertion(&mut self, key: &str) -> Result<&mut Self, ObsidianError> {
         let action = self.get_insertion_action(key);
 
         match action.name {
             ActionName::CreateNewNode => {
                 let new_node = Self::new(key.to_string(), None);
 
-                self.child_nodes.push(new_node);
-                if let Some(node) = self.child_nodes.last_mut() {
-                    return Some(node);
-                };
+                match key {
+                    k if k == "*" => {
+                        self.child_nodes.push(new_node);
+
+                        if let Some(node) = self.child_nodes.last_mut() {
+                            return Ok(node);
+                        };
+                    }
+                    _ => {
+                        self.child_nodes.insert(0, new_node);
+
+                        if let Some(node) = self.child_nodes.first_mut() {
+                            return Ok(node);
+                        };
+                    }
+                }
             }
             ActionName::NextNode => {
                 if let Some(node) = self.child_nodes.get_mut(action.payload.node_index) {
-                    return Some(node);
+                    return Ok(node);
                 };
             }
             ActionName::SplitKey => {
@@ -325,27 +367,27 @@ impl Node {
                     inter_node.child_nodes = std::mem::replace(&mut node.child_nodes, vec![]);
                     inter_node.value = std::mem::replace(&mut node.value, None);
 
-                    node.child_nodes.push(inter_node);
+                    node.child_nodes.insert(0, inter_node);
 
                     // In the case of insert key length less than matched node key length
                     if new_key.is_empty() {
-                        return Some(node);
+                        return Ok(node);
                     }
 
                     let new_node = Self::new(new_key, None);
 
-                    node.child_nodes.push(new_node);
-                    if let Some(result_node) = node.child_nodes.last_mut() {
-                        return Some(result_node);
+                    node.child_nodes.insert(0, new_node);
+                    if let Some(result_node) = node.child_nodes.first_mut() {
+                        return Ok(result_node);
                     }
                 };
             }
             ActionName::Error => {
                 if let Some(node) = self.child_nodes.get(action.payload.node_index) {
-                    panic!(
+                    return Err(ObsidianError::GeneralError(format!(
                         "ERROR: Ambigous definition between {} and {}",
                         key, node.key
-                    );
+                    )));
                 }
             }
         }
@@ -359,17 +401,12 @@ impl Node {
             let is_param = node.key.chars().next().unwrap_or(' ') == ':'
                 || key.chars().next().unwrap_or(' ') == ':';
             if is_param {
-                // Only allow one param leaf in on children series
+                // Only allow one param leaf in one children series
                 if key == node.key {
                     return Action::new(ActionName::NextNode, ActionPayload::new(0, index));
                 } else {
                     return Action::new(ActionName::Error, ActionPayload::new(0, index));
                 }
-            }
-
-            // Wildcard can only be the last leaf
-            if node.key == "*" && key != "*" {
-                return Action::new(ActionName::Error, ActionPayload::new(0, index));
             }
 
             let mut temp_key_ch = key.chars();
@@ -389,12 +426,17 @@ impl Node {
                 }
             }
 
-            if count == key.len() && count == node.key.len() {
-                return Action::new(ActionName::NextNode, ActionPayload::new(count, index));
-            } else if count == node.key.len() {
-                return Action::new(ActionName::SplitKey, ActionPayload::new(count, index));
-            } else if count != 0 {
-                return Action::new(ActionName::SplitNode, ActionPayload::new(count, index));
+            match count {
+                x if x == key.len() && x == node.key.len() => {
+                    return Action::new(ActionName::NextNode, ActionPayload::new(x, index))
+                }
+                x if x == node.key.len() => {
+                    return Action::new(ActionName::SplitKey, ActionPayload::new(x, index))
+                }
+                x if x != 0 => {
+                    return Action::new(ActionName::SplitNode, ActionPayload::new(x, index))
+                }
+                _ => {}
             }
         }
 
@@ -580,10 +622,10 @@ mod tests {
 
         let result = route_trie.search_route("/");
 
-        assert!(result.is_ok());
+        assert!(result.is_some());
 
         match result {
-            Ok(route) => {
+            Some(route) => {
                 let middleware = route.get_middleware();
                 let route_value = route.get_route(&Method::GET).is_some();
 
@@ -610,10 +652,10 @@ mod tests {
 
         let result = route_trie.search_route("/normal/test/");
 
-        assert!(result.is_ok());
+        assert!(result.is_some());
 
         match result {
-            Ok(route) => {
+            Some(route) => {
                 let middleware = route.get_middleware();
                 let route_value = route.get_route(&Method::GET).is_some();
 
@@ -627,10 +669,10 @@ mod tests {
 
         let result = route_trie.search_route("/ノーマル/テスト/");
 
-        assert!(result.is_ok());
+        assert!(result.is_some());
 
         match result {
-            Ok(route) => {
+            Some(route) => {
                 let middleware = route.get_middleware();
                 let route_value = route.get_route(&Method::GET).is_some();
 
@@ -654,7 +696,7 @@ mod tests {
 
         let result = route_trie.search_route("/fail/test/");
 
-        assert!(result.is_err());
+        assert!(result.is_none());
     }
 
     #[test]
@@ -683,10 +725,10 @@ mod tests {
         for case in test_cases.iter() {
             let normal_result = route_trie.search_route(case.0);
 
-            assert!(normal_result.is_ok());
+            assert!(normal_result.is_some());
 
             match normal_result {
-                Ok(route) => {
+                Some(route) => {
                     let middleware = route.get_middleware();
                     let route_value = route.get_route(&Method::GET).is_some();
 
@@ -723,10 +765,10 @@ mod tests {
         for case in test_cases.iter() {
             let normal_result = route_trie.search_route(case);
 
-            assert!(normal_result.is_ok());
+            assert!(normal_result.is_some());
 
             match normal_result {
-                Ok(route) => {
+                Some(route) => {
                     let middleware = route.get_middleware();
                     let route_value = route.get_route(&Method::GET).is_some();
 

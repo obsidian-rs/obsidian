@@ -9,7 +9,6 @@ use self::route_trie::{RouteTrie, RouteValueResult};
 use crate::context::Context;
 use crate::middleware::Middleware;
 use crate::Method;
-use crate::ObsidianError;
 
 pub use self::end_point_type::EndPointHandler;
 pub use self::req_deserializer::{from_cow_map, Error as FormError};
@@ -92,7 +91,7 @@ impl Router {
         RouteTrie::insert_sub_route(&mut self.routes, path, other.routes);
     }
 
-    pub fn search_route(&self, path: &str) -> Result<RouteValueResult, ObsidianError> {
+    pub fn search_route(&self, path: &str) -> Option<RouteValueResult> {
         self.routes.search_route(path)
     }
 
@@ -168,11 +167,11 @@ mod tests {
         let result = router.search_route("router/test");
         let fail_result = router.search_route("failed");
 
-        assert!(result.is_ok());
-        assert!(fail_result.is_err());
+        assert!(result.is_some());
+        assert!(fail_result.is_none());
 
         match result {
-            Ok(route) => {
+            Some(route) => {
                 let middleware = route.get_middleware();
                 let route_value = route.get_route(&Method::GET).unwrap();
 
@@ -194,11 +193,11 @@ mod tests {
         let result = router.search_route("router/test");
         let fail_result = router.search_route("failed");
 
-        assert!(result.is_ok());
-        assert!(fail_result.is_err());
+        assert!(result.is_some());
+        assert!(fail_result.is_none());
 
         match result {
-            Ok(route) => {
+            Some(route) => {
                 let middleware = route.get_middleware();
                 let route_value = route.get_route(&Method::POST).unwrap();
 
@@ -220,11 +219,11 @@ mod tests {
         let result = router.search_route("router/test");
         let fail_result = router.search_route("failed");
 
-        assert!(result.is_ok());
-        assert!(fail_result.is_err());
+        assert!(result.is_some());
+        assert!(fail_result.is_none());
 
         match result {
-            Ok(route) => {
+            Some(route) => {
                 let middleware = route.get_middleware();
                 let route_value = route.get_route(&Method::PUT).unwrap();
 
@@ -246,11 +245,11 @@ mod tests {
         let result = router.search_route("router/test");
         let fail_result = router.search_route("failed");
 
-        assert!(result.is_ok());
-        assert!(fail_result.is_err());
+        assert!(result.is_some());
+        assert!(fail_result.is_none());
 
         match result {
-            Ok(route) => {
+            Some(route) => {
                 let middleware = route.get_middleware();
                 let route_value = route.get_route(&Method::DELETE).unwrap();
 
@@ -273,11 +272,11 @@ mod tests {
         let result = router.search_route("/");
         let fail_result = router.search_route("failed");
 
-        assert!(result.is_ok());
-        assert!(fail_result.is_err());
+        assert!(result.is_some());
+        assert!(fail_result.is_none());
 
         match result {
-            Ok(route) => {
+            Some(route) => {
                 let middleware = route.get_middleware();
 
                 assert_eq!(middleware.len(), 1);
@@ -298,11 +297,11 @@ mod tests {
         let result = router.search_route("/middleware/child");
         let fail_result = router.search_route("/");
 
-        assert!(result.is_ok());
-        assert!(fail_result.is_err());
+        assert!(result.is_some());
+        assert!(fail_result.is_none());
 
         match result {
-            Ok(route) => {
+            Some(route) => {
                 let middleware = route.get_middleware();
 
                 assert_eq!(middleware.len(), 1);
@@ -328,12 +327,12 @@ mod tests {
         let diff_result = router.search_route("route/diff_route");
         let fail_result = router.search_route("failed");
 
-        assert!(result.is_ok());
-        assert!(diff_result.is_ok());
-        assert!(fail_result.is_err());
+        assert!(result.is_some());
+        assert!(diff_result.is_some());
+        assert!(fail_result.is_none());
 
         match result {
-            Ok(route) => {
+            Some(route) => {
                 let middleware = route.get_middleware();
                 let route_value = route.get_route(&Method::GET).unwrap();
 
@@ -361,7 +360,7 @@ mod tests {
         }
 
         match diff_result {
-            Ok(route) => {
+            Some(route) => {
                 let middleware = route.get_middleware();
                 let route_value = route.get_route(&Method::GET).unwrap();
 
@@ -392,12 +391,12 @@ mod tests {
         let sub_result = main_router.search_route("sub_router/router/test");
         let fail_result = main_router.search_route("failed");
 
-        assert!(result.is_ok());
-        assert!(sub_result.is_ok());
-        assert!(fail_result.is_err());
+        assert!(result.is_some());
+        assert!(sub_result.is_some());
+        assert!(fail_result.is_none());
 
         match result {
-            Ok(route) => {
+            Some(route) => {
                 let middleware = route.get_middleware();
                 let route_value = route.get_route(&Method::GET).unwrap();
 
@@ -410,7 +409,7 @@ mod tests {
         }
 
         match sub_result {
-            Ok(route) => {
+            Some(route) => {
                 let middleware = route.get_middleware();
                 let route_value = route.get_route(&Method::GET).unwrap();
 

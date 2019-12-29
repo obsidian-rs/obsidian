@@ -105,7 +105,7 @@ impl AppServer {
         let (parts, body) = req.into_parts();
 
         // Currently support only one router until radix tree complete.
-        if let Ok(path) = self.router.search_route(parts.uri.path()) {
+        if let Some(path) = self.router.search_route(parts.uri.path()) {
             // Temporary used as the hyper stream thread block. async will be used soon
             Box::new(body.concat2().and_then(move |b| {
                 let route = match path.get_route(&parts.method) {
