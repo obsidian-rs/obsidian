@@ -82,22 +82,22 @@ impl RouteTrie {
 
     /// Insert route values into the trie
     /// Panic if ambigous definition is detected
-    pub fn insert_route(&mut self, key: &str, route: Route) {
-        // Split key and drop additional '/'
-        let split_key = key.split('/');
-        let mut split_key = split_key.filter(|key| !key.is_empty()).peekable();
+    pub fn insert_route(&mut self, path: &str, route: Route) {
+        // Split path string and drop additional '/'
+        let mut splitted_path = path.split('/').filter(|key| !key.is_empty()).peekable();
 
         let mut curr_node = &mut self.head;
 
-        if split_key.peek().is_none() {
+        // if the path is "/"
+        if splitted_path.peek().is_none() {
             self.insert_default_route(route);
             return;
         }
 
-        while let Some(k) = split_key.next() {
+        while let Some(k) = splitted_path.next() {
             match curr_node.process_insertion(k) {
                 Some(next_node) => {
-                    if split_key.peek().is_none() {
+                    if splitted_path.peek().is_none() {
                         match &mut next_node.value {
                             Some(val) => {
                                 if let Some(duplicated) =
@@ -105,7 +105,7 @@ impl RouteTrie {
                                 {
                                     panic!(
                                         "Duplicated route method '{}' at '{}' detected",
-                                        duplicated.method, key
+                                        duplicated.method, path
                                     );
                                 }
                             }
@@ -116,7 +116,7 @@ impl RouteTrie {
                                 {
                                     panic!(
                                         "Duplicated route method '{}' at '{}' detected",
-                                        duplicated.method, key
+                                        duplicated.method, path
                                     );
                                 }
 
@@ -289,6 +289,10 @@ impl Node {
         }
     }
 
+    fn is_param(&self) -> bool {
+        self.key.chars().next().unwrap_or(' ') == ':'
+    }
+
     /// Process the side effects of node insertion
     fn process_insertion(&mut self, key: &str) -> Option<&mut Self> {
         let action = self.get_insertion_action(key);
@@ -356,8 +360,7 @@ impl Node {
     /// Determine the action required to be performed for the new route path
     fn get_insertion_action(&self, key: &str) -> Action {
         for (index, node) in self.child_nodes.iter().enumerate() {
-            let is_param = node.key.chars().next().unwrap_or(' ') == ':'
-                || key.chars().next().unwrap_or(' ') == ':';
+            let is_param = node.is_param() || key.chars().next().unwrap_or(' ') == ':';
             if is_param {
                 // Only allow one param leaf in on children series
                 if key == node.key {
@@ -391,9 +394,13 @@ impl Node {
 
             if count == key.len() && count == node.key.len() {
                 return Action::new(ActionName::NextNode, ActionPayload::new(count, index));
-            } else if count == node.key.len() {
+            }
+
+            if count == node.key.len() {
                 return Action::new(ActionName::SplitKey, ActionPayload::new(count, index));
-            } else if count != 0 {
+            }
+
+            if count != 0 {
                 return Action::new(ActionName::SplitNode, ActionPayload::new(count, index));
             }
         }
@@ -417,7 +424,7 @@ impl Node {
 
             if !is_break_parent {
                 // Check param
-                if node.key.chars().next().unwrap_or(' ') == ':' {
+                if node.is_param() {
                     if key.is_empty() {
                         match &node.value {
                             Some(curr_val) => {

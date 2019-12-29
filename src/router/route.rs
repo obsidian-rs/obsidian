@@ -1,20 +1,16 @@
 use std::sync::Arc;
 
-use super::{EndPointHandler, ResponseBuilder};
+use super::EndPointHandler;
 use crate::Method;
 
 pub struct Route {
     pub method: Method,
-    pub handler: Arc<dyn EndPointHandler<Output = ResponseBuilder>>,
+    pub handler: Arc<dyn EndPointHandler>,
 }
 
 impl std::fmt::Debug for Route {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Route {{ method: {} }}",
-            self.method
-        )
+        write!(f, "Route {{ method: {} }}", self.method)
     }
 }
 
