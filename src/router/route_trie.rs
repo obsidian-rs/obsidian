@@ -11,7 +11,7 @@ use crate::ObsidianError;
 
 #[derive(Clone, Default)]
 pub struct RouteValue {
-    middleware: Vec<Arc<dyn Middleware>>,
+    middlewares: Vec<Arc<dyn Middleware>>,
     route: Resource,
 }
 
@@ -22,8 +22,8 @@ impl fmt::Debug for RouteValue {
 }
 
 impl RouteValue {
-    pub fn new(middleware: Vec<Arc<dyn Middleware>>, route: Resource) -> Self {
-        RouteValue { middleware, route }
+    pub fn new(middlewares: Vec<Arc<dyn Middleware>>, route: Resource) -> Self {
+        RouteValue { middlewares, route }
     }
 }
 
@@ -44,8 +44,8 @@ impl RouteValueResult {
         self.route_value.route.get_route(method)
     }
 
-    pub fn get_middleware(&self) -> &Vec<Arc<dyn Middleware>> {
-        &self.route_value.middleware
+    pub fn get_middlewares(&self) -> &Vec<Arc<dyn Middleware>> {
+        &self.route_value.middlewares
     }
 
     pub fn get_params(&self) -> HashMap<String, String> {
@@ -69,11 +69,11 @@ impl RouteTrie {
     pub fn insert_default_middleware(&mut self, middleware: impl Middleware) {
         match &mut self.head.value {
             Some(val) => {
-                val.middleware.push(Arc::new(middleware));
+                val.middlewares.push(Arc::new(middleware));
             }
             None => {
                 let mut val = RouteValue::default();
-                val.middleware.push(Arc::new(middleware));
+                val.middlewares.push(Arc::new(middleware));
 
                 self.head.value = Some(val);
             }
@@ -168,11 +168,11 @@ impl RouteTrie {
                     if split_key.peek().is_none() {
                         match &mut next_node.value {
                             Some(val) => {
-                                val.middleware.push(Arc::new(middleware));
+                                val.middlewares.push(Arc::new(middleware));
                             }
                             None => {
                                 let mut next_node_val = RouteValue::default();
-                                next_node_val.middleware.push(Arc::new(middleware));
+                                next_node_val.middlewares.push(Arc::new(middleware));
 
                                 next_node.value = Some(next_node_val);
                             }
@@ -199,17 +199,17 @@ impl RouteTrie {
 
         let mut curr_node = &self.head;
         let mut params = HashMap::default();
-        let mut middleware = vec![];
+        let mut middlewares = vec![];
 
         match &curr_node.value {
             Some(val) => {
-                middleware.append(&mut val.middleware.clone());
+                middlewares.append(&mut val.middlewares.clone());
             }
             None => {}
         }
 
         if !split_key.is_empty() {
-            match curr_node.get_next_node(&mut split_key, &mut params, &mut middleware, false) {
+            match curr_node.get_next_node(&mut split_key, &mut params, &mut middlewares, false) {
                 Some(handler_node) => {
                     curr_node = handler_node;
                 }
@@ -222,7 +222,7 @@ impl RouteTrie {
 
         match &curr_node.value {
             Some(val) => {
-                let route_val = RouteValue::new(middleware, val.route.clone());
+                let route_val = RouteValue::new(middlewares, val.route.clone());
 
                 Some(RouteValueResult::new(route_val, params))
             }
@@ -452,7 +452,7 @@ impl Node {
         &self,
         key: &mut Vec<&str>,
         params: &mut HashMap<String, String>,
-        middleware: &mut Vec<std::sync::Arc<(dyn Middleware + 'static)>>,
+        middlewares: &mut Vec<std::sync::Arc<(dyn Middleware + 'static)>>,
         is_break_parent: bool,
     ) -> Option<&Self> {
         let curr_key = key.remove(0);
@@ -467,7 +467,7 @@ impl Node {
                         match &node.value {
                             Some(curr_val) => {
                                 params.insert(node.key[1..].to_string(), curr_key.to_string());
-                                middleware.append(&mut curr_val.middleware.clone());
+                                middlewares.append(&mut curr_val.middlewares.clone());
                                 return Some(node);
                             }
                             None => {
@@ -475,13 +475,13 @@ impl Node {
                             }
                         }
                     } else {
-                        match node.get_next_node(key, params, middleware, break_key) {
+                        match node.get_next_node(key, params, middlewares, break_key) {
                             Some(final_val) => {
                                 params.insert(node.key[1..].to_string(), curr_key.to_string());
 
                                 match &node.value {
                                     Some(curr_val) => {
-                                        middleware.append(&mut curr_val.middleware.clone());
+                                        middlewares.append(&mut curr_val.middlewares.clone());
                                     }
                                     None => {}
                                 }
@@ -499,7 +499,7 @@ impl Node {
                 if node.key == "*" {
                     match &node.value {
                         Some(curr_val) => {
-                            middleware.append(&mut curr_val.middleware.clone());
+                            middlewares.append(&mut curr_val.middlewares.clone());
                         }
                         None => {}
                     }
@@ -508,12 +508,12 @@ impl Node {
                 }
             }
 
-            let mut temp_key_ch = curr_key.chars();
+            let mut temp_key_chars = curr_key.chars();
             let mut count = 0;
 
             // match characters
             for k in node.key.chars() {
-                let t_k = match temp_key_ch.next() {
+                let t_k = match temp_key_chars.next() {
                     Some(key) => key,
                     None => break,
                 };
@@ -535,14 +535,14 @@ impl Node {
                 if key.is_empty() {
                     match &node.value {
                         Some(curr_val) => {
-                            middleware.append(&mut curr_val.middleware.clone());
+                            middlewares.append(&mut curr_val.middlewares.clone());
                             return Some(node);
                         }
                         None => {
                             for child in node.child_nodes.iter() {
                                 if child.key == "*" {
                                     if let Some(child_val) = &child.value {
-                                        middleware.append(&mut child_val.middleware.clone());
+                                        middlewares.append(&mut child_val.middlewares.clone());
                                         return Some(child);
                                     }
                                 }
@@ -552,10 +552,10 @@ impl Node {
                         }
                     }
                 } else if let Some(final_val) =
-                    node.get_next_node(key, params, middleware, break_key)
+                    node.get_next_node(key, params, middlewares, break_key)
                 {
                     if let Some(curr_val) = &node.value {
-                        middleware.append(&mut curr_val.middleware.clone());
+                        middlewares.append(&mut curr_val.middlewares.clone());
                     }
 
                     return Some(final_val);
@@ -629,10 +629,10 @@ mod tests {
 
         match result {
             Some(route) => {
-                let middleware = route.get_middleware();
+                let middlewares = route.get_middlewares();
                 let route_value = route.get_route(&Method::GET).is_some();
 
-                assert_eq!(middleware.len(), 1);
+                assert_eq!(middlewares.len(), 1);
                 assert!(route_value);
             }
             _ => {
@@ -659,10 +659,10 @@ mod tests {
 
         match result {
             Some(route) => {
-                let middleware = route.get_middleware();
+                let middlewares = route.get_middlewares();
                 let route_value = route.get_route(&Method::GET).is_some();
 
-                assert_eq!(middleware.len(), 1);
+                assert_eq!(middlewares.len(), 1);
                 assert!(route_value);
             }
             _ => {
@@ -676,10 +676,10 @@ mod tests {
 
         match result {
             Some(route) => {
-                let middleware = route.get_middleware();
+                let middlewares = route.get_middlewares();
                 let route_value = route.get_route(&Method::GET).is_some();
 
-                assert_eq!(middleware.len(), 2);
+                assert_eq!(middlewares.len(), 2);
                 assert!(route_value);
             }
             _ => {
@@ -732,10 +732,10 @@ mod tests {
 
             match normal_result {
                 Some(route) => {
-                    let middleware = route.get_middleware();
+                    let middlewares = route.get_middlewares();
                     let route_value = route.get_route(&Method::GET).is_some();
 
-                    assert_eq!(middleware.len(), case.1);
+                    assert_eq!(middlewares.len(), case.1);
                     assert!(route_value);
                 }
                 _ => {
@@ -772,10 +772,10 @@ mod tests {
 
             match normal_result {
                 Some(route) => {
-                    let middleware = route.get_middleware();
+                    let middlewares = route.get_middlewares();
                     let route_value = route.get_route(&Method::GET).is_some();
 
-                    assert_eq!(middleware.len(), 3);
+                    assert_eq!(middlewares.len(), 3);
                     assert!(route_value);
                 }
                 _ => {
