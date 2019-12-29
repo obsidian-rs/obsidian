@@ -112,7 +112,7 @@ impl AppServer {
                     Some(r) => r,
                     None => return page_not_found(),
                 };
-                let middlewares = path.get_middleware();
+                let middlewares = path.get_middlewares();
                 let params = path.get_params();
                 let req = Request::from_parts(parts, Body::from(b));
                 let context = Context::new(req, params);

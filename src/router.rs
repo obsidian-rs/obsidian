@@ -172,10 +172,10 @@ mod tests {
 
         match result {
             Some(route) => {
-                let middleware = route.get_middleware();
+                let middlewares = route.get_middlewares();
                 let route_value = route.get_route(&Method::GET).unwrap();
 
-                assert_eq!(middleware.len(), 0);
+                assert_eq!(middlewares.len(), 0);
                 assert_eq!(route_value.method, Method::GET);
             }
             _ => {
@@ -198,10 +198,10 @@ mod tests {
 
         match result {
             Some(route) => {
-                let middleware = route.get_middleware();
+                let middlewares = route.get_middlewares();
                 let route_value = route.get_route(&Method::POST).unwrap();
 
-                assert_eq!(middleware.len(), 0);
+                assert_eq!(middlewares.len(), 0);
                 assert_eq!(route_value.method, Method::POST);
             }
             _ => {
@@ -224,10 +224,10 @@ mod tests {
 
         match result {
             Some(route) => {
-                let middleware = route.get_middleware();
+                let middlewares = route.get_middlewares();
                 let route_value = route.get_route(&Method::PUT).unwrap();
 
-                assert_eq!(middleware.len(), 0);
+                assert_eq!(middlewares.len(), 0);
                 assert_eq!(route_value.method, Method::PUT);
             }
             _ => {
@@ -250,10 +250,10 @@ mod tests {
 
         match result {
             Some(route) => {
-                let middleware = route.get_middleware();
+                let middlewares = route.get_middlewares();
                 let route_value = route.get_route(&Method::DELETE).unwrap();
 
-                assert_eq!(middleware.len(), 0);
+                assert_eq!(middlewares.len(), 0);
                 assert_eq!(route_value.method, Method::DELETE);
             }
             _ => {
@@ -277,9 +277,9 @@ mod tests {
 
         match result {
             Some(route) => {
-                let middleware = route.get_middleware();
+                let middlewares = route.get_middlewares();
 
-                assert_eq!(middleware.len(), 1);
+                assert_eq!(middlewares.len(), 1);
             }
             _ => {
                 assert!(false);
@@ -302,9 +302,9 @@ mod tests {
 
         match result {
             Some(route) => {
-                let middleware = route.get_middleware();
+                let middlewares = route.get_middlewares();
 
-                assert_eq!(middleware.len(), 1);
+                assert_eq!(middlewares.len(), 1);
             }
             _ => {
                 assert!(false);
@@ -333,25 +333,25 @@ mod tests {
 
         match result {
             Some(route) => {
-                let middleware = route.get_middleware();
+                let middlewares = route.get_middlewares();
                 let route_value = route.get_route(&Method::GET).unwrap();
 
-                assert_eq!(middleware.len(), 0);
+                assert_eq!(middlewares.len(), 0);
                 assert_eq!(route_value.method, Method::GET);
 
                 let route_value = route.get_route(&Method::POST).unwrap();
 
-                assert_eq!(middleware.len(), 0);
+                assert_eq!(middlewares.len(), 0);
                 assert_eq!(route_value.method, Method::POST);
 
                 let route_value = route.get_route(&Method::PUT).unwrap();
 
-                assert_eq!(middleware.len(), 0);
+                assert_eq!(middlewares.len(), 0);
                 assert_eq!(route_value.method, Method::PUT);
 
                 let route_value = route.get_route(&Method::DELETE).unwrap();
 
-                assert_eq!(middleware.len(), 0);
+                assert_eq!(middlewares.len(), 0);
                 assert_eq!(route_value.method, Method::DELETE);
             }
             _ => {
@@ -361,10 +361,10 @@ mod tests {
 
         match diff_result {
             Some(route) => {
-                let middleware = route.get_middleware();
+                let middlewares = route.get_middlewares();
                 let route_value = route.get_route(&Method::GET).unwrap();
 
-                assert_eq!(middleware.len(), 0);
+                assert_eq!(middlewares.len(), 0);
                 assert_eq!(route_value.method, Method::GET);
             }
             _ => {
@@ -397,10 +397,10 @@ mod tests {
 
         match result {
             Some(route) => {
-                let middleware = route.get_middleware();
+                let middlewares = route.get_middlewares();
                 let route_value = route.get_route(&Method::GET).unwrap();
 
-                assert_eq!(middleware.len(), 0);
+                assert_eq!(middlewares.len(), 0);
                 assert_eq!(route_value.method, Method::GET);
             }
             _ => {
@@ -410,10 +410,10 @@ mod tests {
 
         match sub_result {
             Some(route) => {
-                let middleware = route.get_middleware();
+                let middlewares = route.get_middlewares();
                 let route_value = route.get_route(&Method::GET).unwrap();
 
-                assert_eq!(middleware.len(), 1);
+                assert_eq!(middlewares.len(), 1);
                 assert_eq!(route_value.method, Method::GET);
             }
             _ => {
