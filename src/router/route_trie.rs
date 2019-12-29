@@ -84,14 +84,14 @@ impl RouteTrie {
     /// Panic if ambigous definition is detected
     pub fn insert_route(&mut self, path: &str, route: Route) {
         // Split path string and drop additional '/'
-        let mut splitted_path = path.split('/').filter(|key| !key.is_empty()).peekable();
+        let mut split_key = path.split('/').filter(|key| !key.is_empty()).peekable();
 
         split_key.clone().enumerate().for_each(|(pos, x)| {
             if x.contains('*') {
                 if x.len() != 1 {
-                    panic!("ERROR: Consisting * in route name at: {}", key);
+                    panic!("ERROR: Consisting * in route name at: {}", path);
                 } else if pos != split_key.clone().count() - 1 {
-                    panic!("ERROR: * must be in the last at: {}", key);
+                    panic!("ERROR: * must be in the last at: {}", path);
                 }
             }
         });
@@ -99,12 +99,12 @@ impl RouteTrie {
         let mut curr_node = &mut self.head;
 
         // if the path is "/"
-        if splitted_path.peek().is_none() {
+        if split_key.peek().is_none() {
             self.insert_default_route(route);
             return;
         }
 
-        while let Some(k) = splitted_path.next() {
+        while let Some(k) = split_key.next() {
             match curr_node.process_insertion(k) {
                 Ok(next_node) => {
                     if split_key.peek().is_none() {
@@ -138,7 +138,7 @@ impl RouteTrie {
                     curr_node = next_node;
                 }
                 Err(err) => {
-                    panic!("Insert Route: {} at {}", err, key);
+                    panic!("Insert Route: {} at {}", err, path);
                 }
             }
         }
@@ -190,7 +190,7 @@ impl RouteTrie {
 
     /// Search node through the provided key
     /// Middleware will be accumulated throughout the search path
-    pub fn search_route(&self, key: &str) -> Option<RouteValueResult> {
+    pub fn search_route(&self, path: &str) -> Option<RouteValueResult> {
         // Split key and drop additional '/'
         let split_key = path.split('/');
         let mut split_key = split_key
@@ -243,9 +243,9 @@ impl RouteTrie {
         split_key.clone().enumerate().for_each(|(pos, x)| {
             if x.contains('*') {
                 if x.len() != 1 {
-                    panic!("ERROR: Consisting * in route name at: {}", key);
+                    panic!("ERROR: Consisting * in route name at: {}", path);
                 } else if pos != split_key.clone().count() - 1 {
-                    panic!("ERROR: * must be in the last at: {}", key);
+                    panic!("ERROR: * must be in the last at: {}", path);
                 }
             }
         });
@@ -272,7 +272,7 @@ impl RouteTrie {
                     curr_node = next_node;
                 }
                 Err(err) => {
-                    panic!("SubRouter: {} at {}", err, key);
+                    panic!("SubRouter: {} at {}", err, path);
                 }
             }
         }
