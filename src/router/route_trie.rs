@@ -192,7 +192,7 @@ impl RouteTrie {
     /// Middleware will be accumulated throughout the search path
     pub fn search_route(&self, key: &str) -> Option<RouteValueResult> {
         // Split key and drop additional '/'
-        let split_key = key.split('/');
+        let split_key = path.split('/');
         let mut split_key = split_key
             .filter(|key| !key.is_empty())
             .collect::<Vec<&str>>();
@@ -235,9 +235,9 @@ impl RouteTrie {
     ///
     /// For example, /src/ -> /des/ with 'example' key path
     /// src will be located at /des/example/src/
-    pub fn insert_sub_route(des: &mut Self, key: &str, src: Self) {
+    pub fn insert_sub_route(des: &mut Self, path: &str, src: Self) {
         // Split key and drop additional '/'
-        let split_key = key.split('/');
+        let split_key = path.split('/');
         let mut split_key = split_key.filter(|key| !key.is_empty()).peekable();
 
         split_key.clone().enumerate().for_each(|(pos, x)| {
@@ -262,7 +262,7 @@ impl RouteTrie {
                 Ok(next_node) => {
                     if split_key.peek().is_none() {
                         if next_node.value.is_some() || !next_node.child_nodes.is_empty() {
-                            panic!("There is conflict between main router and sub router at '{}'. Make sure main router does not consist any routing data in '{}'.", key, key);
+                            panic!("There is conflict between main router and sub router at '{}'. Make sure main router does not consist any routing data in '{}'.", path, path);
                         }
 
                         next_node.value = src.head.value;
@@ -412,12 +412,12 @@ impl Node {
                 }
             }
 
-            let mut temp_key_ch = key.chars();
+            let mut temp_key_chars = key.chars();
             let mut count = 0;
 
             // match characters
             for k in node.key.chars() {
-                let t_k = match temp_key_ch.next() {
+                let t_k = match temp_key_chars.next() {
                     Some(key) => key,
                     None => break,
                 };
