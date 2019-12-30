@@ -1,12 +1,13 @@
-use futures::{future, future::Future};
-use http::response::Builder;
-use hyper::{header::HeaderName, Body, Response, StatusCode, Version};
-use serde::ser::Serialize;
-use serde_json;
 use std::any::Any;
 
+use futures::{future, future::Future};
+use http::response::Builder;
+use serde::ser::Serialize;
+use serde_json;
 use tokio_fs;
 use tokio_io;
+
+use crate::{header::HeaderName, Body, Response, StatusCode, Version};
 
 static NOTFOUND: &[u8] = b"Not Found";
 
@@ -34,15 +35,13 @@ impl ResponseBody for String {
 
 impl ResponseBody for Vec<u8> {
     fn into_body(self) -> Result<Body, StatusCode> {
-        let result = match serde_json::to_string(&self) {
+        match serde_json::to_string(&self) {
             Ok(json) => Ok(Body::from(json)),
             Err(e) => {
                 eprintln!("serializing failed: {}", e);
                 Err(StatusCode::INTERNAL_SERVER_ERROR)
             }
-        };
-
-        result
+        }
     }
 }
 
