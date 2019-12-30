@@ -145,17 +145,17 @@ impl RouteTrie {
     }
 
     /// Insert middleware into specific node
-    pub fn insert_middleware(&mut self, key: &str, middleware: impl Middleware) {
+    pub fn insert_middleware(&mut self, path: &str, middleware: impl Middleware) {
         // Split key and drop additional '/'
-        let split_key = key.split('/');
+        let split_key = path.split('/');
         let mut split_key = split_key.filter(|key| !key.is_empty()).peekable();
 
-        split_key.clone().enumerate().for_each(|(pos, x)| {
-            if x.contains('*') {
-                if x.len() != 1 {
-                    panic!("ERROR: Consisting * in route name at: {}", key);
+        split_key.clone().enumerate().for_each(|(pos, key)| {
+            if key.contains('*') {
+                if key.len() != 1 {
+                    panic!("ERROR: Consisting * in route name at: {}", path);
                 } else if pos != split_key.clone().count() - 1 {
-                    panic!("ERROR: * must be in the last at: {}", key);
+                    panic!("ERROR: * must be in the last at: {}", path);
                 }
             }
         });
@@ -182,7 +182,7 @@ impl RouteTrie {
                     curr_node = next_node;
                 }
                 Err(err) => {
-                    panic!("Middleware: {} at {}", err, key);
+                    panic!("Middleware: {} at {}", err, path);
                 }
             }
         }
