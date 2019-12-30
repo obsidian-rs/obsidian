@@ -78,6 +78,43 @@ impl Context {
             .map_err(|_err| ObsidianError::ParamError(format!("Failed to parse param {}", key)))
     }
 
+    /// Method to get the string query data from the request url.
+    /// Untagged is not supported
+    ///
+    /// # Example
+    /// ```
+    /// # use serde_derive::*;
+    ///
+    /// # use obsidian::context::Context;
+    /// # use obsidian::router::ResponseBuilder;
+    /// # use obsidian::StatusCode;
+    ///
+    /// #[derive(Deserialize, Serialize, Debug)]
+    /// struct QueryString {
+    ///     id: i32,
+    ///     mode: String,
+    /// }
+    ///
+    /// // Assume ctx contains string query with data {id=1&mode=edit}
+    /// fn get_handler(mut ctx: Context, res: ResponseBuilder) -> ResponseBuilder {
+    ///     let result: QueryString = ctx.uri_query().unwrap();
+    ///
+    ///     assert_eq!(result.id, 1);
+    ///     assert_eq!(result.mode, "edit".to_string());
+    ///
+    ///     res.status(StatusCode::OK)
+    /// }
+    /// ```
+    pub fn uri_query<T: DeserializeOwned>(&mut self) -> Result<T, ObsidianError> {
+        let query = match self.uri().query() {
+            Some(query) => query,
+            _ => "",
+        }
+        .as_bytes();
+
+        Self::parse_queries(&query)
+    }
+
     /// Method to get the forms query data from the request body.
     /// Body is consumed after calling this method.
     /// Untagged is not supported
@@ -117,24 +154,7 @@ impl Context {
             }
         };
 
-        let mut parsed_form_map: HashMap<String, Vec<String>> = HashMap::default();
-        let mut cow_form_map = HashMap::<Cow<str>, Cow<[String]>>::default();
-
-        // Parse and merge chunks with same name key
-        form_urlencoded::parse(&chunks)
-            .into_owned()
-            .for_each(|(key, val)| {
-                parsed_form_map.entry(key).or_insert_with(|| vec![]).push(val);
-            });
-
-        // Wrap vec with cow pointer
-        parsed_form_map.iter().for_each(|(key, val)| {
-            cow_form_map
-                .entry(std::borrow::Cow::from(key))
-                .or_insert_with(|| std::borrow::Cow::from(val));
-        });
-
-        Ok(from_cow_map(&cow_form_map)?)
+        Self::parse_queries(&chunks)
     }
 
     /// Form value merge with Params
@@ -214,6 +234,32 @@ impl Context {
     pub fn take_body(&mut self) -> Body {
         std::mem::replace(self.request.body_mut(), Body::empty())
     }
+
+    fn parse_queries<T: DeserializeOwned>(query: &[u8]) -> Result<T, ObsidianError> {
+        let mut parsed_form_map: HashMap<String, Vec<String>> = HashMap::default();
+        let mut cow_form_map = HashMap::<Cow<str>, Cow<[String]>>::default();
+
+        // Parse and merge chunks with same name key
+        form_urlencoded::parse(query)
+            .into_owned()
+            .for_each(|(key, val)| {
+                if !val.is_empty() {
+                    parsed_form_map
+                        .entry(key)
+                        .or_insert_with(|| vec![])
+                        .push(val);
+                }
+            });
+
+        // Wrap vec with cow pointer
+        parsed_form_map.iter().for_each(|(key, val)| {
+            cow_form_map
+                .entry(std::borrow::Cow::from(key))
+                .or_insert_with(|| std::borrow::Cow::from(val));
+        });
+
+        Ok(from_cow_map(&cow_form_map)?)
+    }
 }
 
 #[cfg(test)]
@@ -284,6 +330,25 @@ mod test {
 
         let _mode: String = ctx.param("mode").unwrap();
         let _id: i32 = ctx.param("id").unwrap();
+    }
+
+    #[test]
+    fn test_string_query() -> Result<(), ObsidianError> {
+        let params_map = HashMap::default();
+
+        let mut request = Request::new(Body::from(""));
+        *request.uri_mut() = Uri::from_str("/test/test?id=1&mode=edit").unwrap();
+
+        let mut ctx = Context::new(request, params_map);
+
+        let actual_result: FormResult = ctx.uri_query()?;
+        let expected_result = FormResult {
+            id: 1,
+            mode: "edit".to_string(),
+        };
+
+        assert_eq!(actual_result, expected_result);
+        Ok(())
     }
 
     #[test]
