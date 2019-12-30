@@ -1,10 +1,11 @@
 use futures::Future;
-use hyper::{Body, Response};
-
-use super::Middleware;
 
 use crate::app::EndpointExecutor;
 use crate::context::Context;
+use crate::middleware::Middleware;
+use crate::{Body, Response};
+
+#[derive(Default)]
 pub struct Logger {}
 
 impl Logger {
