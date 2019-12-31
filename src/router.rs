@@ -1,7 +1,9 @@
 mod end_point_type;
 mod req_deserializer;
 mod resource;
+mod responder;
 mod response;
+mod response_body;
 mod route;
 mod route_trie;
 
@@ -14,6 +16,7 @@ pub use self::end_point_type::EndPointHandler;
 pub use self::req_deserializer::{from_cow_map, Error as FormError};
 pub use self::resource::Resource;
 pub use self::response::ResponseBuilder;
+pub use self::response_body::ResponseBody;
 pub use self::route::Route;
 
 pub struct Router {
