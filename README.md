@@ -30,7 +30,7 @@ fn main() {
 
 ## Hello World (with handler function)
 ```rust
-use obsidian::{App, Responder, context::Context};
+use obsidian::{App, router::Responder, context::Context};
 
 fn hello_world(_ctx: Context) -> impl Responder {
   "Hello World"
