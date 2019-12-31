@@ -1,7 +1,6 @@
 use super::ResponseBody;
 use crate::error::ObsidianError;
 use hyper::{Body, Response, StatusCode};
-use serde::de::DeserializeOwned;
 use std::error::Error;
 
 // use serde::ser::Serialize;
