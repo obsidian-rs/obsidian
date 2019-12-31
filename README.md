@@ -1,9 +1,8 @@
 # Obsidian
-Make the web development fun again
 
 ## What's Obsidian?
 
-`Obsidian` is a web-application framework in Rust.
+`Obsidian` is a web-application framework in Rust with a vision to make Rust web development fun.
 
 ## Code Status
 
