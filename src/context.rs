@@ -54,18 +54,18 @@ impl Context {
     ///
     /// ```
     /// # use obsidian::StatusCode;
+    /// # use obsidian::router::Responder;
     /// # use obsidian::context::Context;
-    /// # use obsidian::router::ResponseBuilder;
     ///
     /// // Assumming ctx contains params for id and mode
-    /// fn get_handler(ctx: Context, res: ResponseBuilder) -> ResponseBuilder {
+    /// fn get_handler(ctx: Context) -> impl Responder {
     ///     let id: i32 = ctx.param("id").unwrap();
     ///     let mode: String = ctx.param("mode").unwrap();
     ///
     ///     assert_eq!(id, 1);
     ///     assert_eq!(mode, "edit".to_string());
     ///
-    ///     res.status(StatusCode::OK)
+    ///     StatusCode::OK
     /// }
     ///
     /// ```
@@ -86,7 +86,7 @@ impl Context {
     /// # use serde_derive::*;
     ///
     /// # use obsidian::context::Context;
-    /// # use obsidian::router::ResponseBuilder;
+    /// # use obsidian::router::Responder;
     /// # use obsidian::StatusCode;
     ///
     /// #[derive(Deserialize, Serialize, Debug)]
@@ -96,13 +96,13 @@ impl Context {
     /// }
     ///
     /// // Assume ctx contains string query with data {id=1&mode=edit}
-    /// fn get_handler(mut ctx: Context, res: ResponseBuilder) -> ResponseBuilder {
+    /// fn get_handler(mut ctx: Context) -> impl Responder {
     ///     let result: QueryString = ctx.uri_query().unwrap();
     ///
     ///     assert_eq!(result.id, 1);
     ///     assert_eq!(result.mode, "edit".to_string());
     ///
-    ///     res.status(StatusCode::OK)
+    ///     StatusCode::OK
     /// }
     /// ```
     pub fn uri_query<T: DeserializeOwned>(&mut self) -> Result<T, ObsidianError> {
@@ -124,7 +124,7 @@ impl Context {
     /// # use serde_derive::*;
     ///
     /// # use obsidian::context::Context;
-    /// # use obsidian::router::ResponseBuilder;
+    /// # use obsidian::router::Responder;
     /// # use obsidian::StatusCode;
     ///
     /// #[derive(Deserialize, Serialize, Debug)]
@@ -134,13 +134,13 @@ impl Context {
     /// }
     ///
     /// // Assume ctx contains form query with data {id=1&mode=edit}
-    /// fn get_handler(mut ctx: Context, res: ResponseBuilder) -> ResponseBuilder {
+    /// fn get_handler(mut ctx: Context) -> impl Responder {
     ///     let result: FormResult = ctx.form().unwrap();
     ///
     ///     assert_eq!(result.id, 1);
     ///     assert_eq!(result.mode, "edit".to_string());
     ///
-    ///     res.status(StatusCode::OK)
+    ///     StatusCode::OK
     /// }
     /// ```
     pub fn form<T: DeserializeOwned>(&mut self) -> Result<T, ObsidianError> {
@@ -173,7 +173,7 @@ impl Context {
     /// # use serde_derive::*;
     ///
     /// # use obsidian::context::Context;
-    /// # use obsidian::router::ResponseBuilder;
+    /// # use obsidian::router::Responder;
     /// # use obsidian::StatusCode;
     ///
     /// #[derive(Deserialize, Serialize, Debug)]
@@ -183,13 +183,13 @@ impl Context {
     /// }
     ///
     /// // Assume ctx contains json with data {id:1, mode:'edit'}
-    /// fn get_handler(mut ctx: Context, res: ResponseBuilder) -> ResponseBuilder {
+    /// fn get_handler(mut ctx: Context) -> impl Responder {
     ///     let result: JsonResult = ctx.json().unwrap();
     ///
     ///     assert_eq!(result.id, 1);
     ///     assert_eq!(result.mode, "edit".to_string());
     ///
-    ///     res.status(StatusCode::OK)
+    ///     StatusCode::OK
     /// }
     /// ```
     ///
@@ -198,17 +198,17 @@ impl Context {
     /// # use serde_json::Value;
     ///
     /// # use obsidian::context::Context;
-    /// # use obsidian::router::ResponseBuilder;
+    /// # use obsidian::router::Responder;
     /// # use obsidian::StatusCode;
     ///
     /// // Assume ctx contains json with data {id:1, mode:'edit'}
-    /// fn get_handler(mut ctx: Context, res: ResponseBuilder) -> ResponseBuilder {
+    /// fn get_handler(mut ctx: Context) -> impl Responder {
     ///     let result: serde_json::Value = ctx.json().unwrap();
     ///
     ///     assert_eq!(result["id"], 1);
     ///     assert_eq!(result["mode"], "edit".to_string());
     ///
-    ///     res.status(StatusCode::OK)
+    ///     StatusCode::OK
     /// }
     /// ```
     pub fn json<T: DeserializeOwned>(&mut self) -> Result<T, ObsidianError> {
@@ -217,7 +217,7 @@ impl Context {
         let chunks = match body.concat2().wait() {
             Ok(chunk) => chunk,
             Err(e) => {
-                println!("{}", e);
+                println!("json error here: {}", e);
                 hyper::Chunk::default()
             }
         };

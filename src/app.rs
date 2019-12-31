@@ -6,7 +6,7 @@ use hyper::{service::service_fn, Body, Request, Response, Server, StatusCode};
 
 use crate::context::Context;
 use crate::middleware::Middleware;
-use crate::router::{EndPointHandler, ResponseBuilder, Router};
+use crate::router::{Handler, Router};
 
 pub struct App {
     router: Router,
@@ -25,19 +25,19 @@ impl App {
         }
     }
 
-    pub fn get(&mut self, path: &str, handler: impl EndPointHandler) {
+    pub fn get(&mut self, path: &str, handler: impl Handler) {
         self.router.get(path, handler);
     }
 
-    pub fn post(&mut self, path: &str, handler: impl EndPointHandler) {
+    pub fn post(&mut self, path: &str, handler: impl Handler) {
         self.router.post(path, handler);
     }
 
-    pub fn put(&mut self, path: &str, handler: impl EndPointHandler) {
+    pub fn put(&mut self, path: &str, handler: impl Handler) {
         self.router.put(path, handler);
     }
 
-    pub fn delete(&mut self, path: &str, handler: impl EndPointHandler) {
+    pub fn delete(&mut self, path: &str, handler: impl Handler) {
         self.router.delete(path, handler);
     }
 
@@ -135,13 +135,13 @@ fn page_not_found() -> Box<dyn Future<Item = Response<Body>, Error = hyper::Erro
 }
 
 pub struct EndpointExecutor<'a> {
-    pub route_endpoint: &'a Arc<dyn EndPointHandler<Output = ResponseBuilder>>,
+    pub route_endpoint: &'a Arc<dyn Handler>,
     pub middleware: &'a [Arc<dyn Middleware>],
 }
 
 impl<'a> EndpointExecutor<'a> {
     pub fn new(
-        route_endpoint: &'a Arc<dyn EndPointHandler<Output = ResponseBuilder>>,
+        route_endpoint: &'a Arc<dyn Handler>,
         middleware: &'a [Arc<dyn Middleware>],
     ) -> Self {
         EndpointExecutor {
@@ -158,9 +158,19 @@ impl<'a> EndpointExecutor<'a> {
             self.middleware = all_next;
             current.handle(context, self)
         } else {
-            let response_builder = ResponseBuilder::new();
-            let route_response = (*self.route_endpoint)(context, response_builder);
-            route_response.into()
+            let route_response = self.route_endpoint.call(context);
+            match route_response {
+                Ok(res) => Box::new(future::ok(res)),
+                Err(err) => {
+                    let body = Body::from(std::error::Error::description(&err).to_string());
+                    let response = Response::builder()
+                        .status(StatusCode::INTERNAL_SERVER_ERROR)
+                        .body(body)
+                        .unwrap();
+
+                    Box::new(future::ok(response))
+                }
+            }
         }
     }
 }
@@ -175,7 +185,7 @@ mod test {
     fn test_app_server_resolve_endpoint() {
         let mut router = Router::new();
 
-        router.get("/", |mut context: Context, res: ResponseBuilder| {
+        router.get("/", |mut context: Context| {
             let body = context.take_body();
 
             let request_body = body
@@ -188,7 +198,7 @@ mod test {
 
             assert_eq!(context.uri().path(), "/");
             assert_eq!(request_body.wait().unwrap(), "test_app_server");
-            res.status(StatusCode::OK).body("test_app_server")
+            "test_app_server"
         });
 
         let app_server = AppServer { router };
