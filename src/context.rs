@@ -217,7 +217,7 @@ impl Context {
         let chunks = match body.concat2().wait() {
             Ok(chunk) => chunk,
             Err(e) => {
-                println!("{}", e);
+                println!("json error here: {}", e);
                 hyper::Chunk::default()
             }
         };

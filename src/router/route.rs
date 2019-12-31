@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
-use super::EndPointHandler;
+use super::Handler;
 use crate::Method;
 
 pub struct Route {
     pub method: Method,
-    pub handler: Arc<dyn EndPointHandler>,
+    pub handler: Arc<dyn Handler>,
 }
 
 impl std::fmt::Debug for Route {
@@ -24,7 +24,7 @@ impl Clone for Route {
 }
 
 impl Route {
-    pub fn new(method: Method, handler: impl EndPointHandler) -> Self {
+    pub fn new(method: Method, handler: impl Handler) -> Self {
         Route {
             method,
             handler: Arc::new(handler),

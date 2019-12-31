@@ -1,8 +1,8 @@
-mod end_point_type;
+mod handler;
 mod req_deserializer;
 mod resource;
 mod responder;
-mod response;
+pub mod response;
 mod response_body;
 mod route;
 mod route_trie;
@@ -12,10 +12,10 @@ use crate::context::Context;
 use crate::middleware::Middleware;
 use crate::Method;
 
-pub use self::end_point_type::EndPointHandler;
+pub use self::handler::Handler;
 pub use self::req_deserializer::{from_cow_map, Error as FormError};
 pub use self::resource::Resource;
-pub use self::response::ResponseBuilder;
+pub use self::responder::{Responder, ResponseResult};
 pub use self::response_body::ResponseBody;
 pub use self::route::Route;
 
@@ -44,19 +44,19 @@ impl Router {
         }
     }
 
-    pub fn get(&mut self, path: &str, handler: impl EndPointHandler) {
+    pub fn get(&mut self, path: &str, handler: impl Handler) {
         self.insert_route(Method::GET, path, handler);
     }
 
-    pub fn post(&mut self, path: &str, handler: impl EndPointHandler) {
+    pub fn post(&mut self, path: &str, handler: impl Handler) {
         self.insert_route(Method::POST, path, handler);
     }
 
-    pub fn put(&mut self, path: &str, handler: impl EndPointHandler) {
+    pub fn put(&mut self, path: &str, handler: impl Handler) {
         self.insert_route(Method::PUT, path, handler);
     }
 
-    pub fn delete(&mut self, path: &str, handler: impl EndPointHandler) {
+    pub fn delete(&mut self, path: &str, handler: impl Handler) {
         self.insert_route(Method::DELETE, path, handler);
     }
 
@@ -98,16 +98,13 @@ impl Router {
         self.routes.search_route(path)
     }
 
-    fn insert_route(&mut self, method: Method, path: &str, handler: impl EndPointHandler) {
+    fn insert_route(&mut self, method: Method, path: &str, handler: impl Handler) {
         let route = Route::new(method, handler);
 
         self.routes.insert_route(path, route);
     }
 
-    fn static_virtual_file_handler(
-        virtual_path: &str,
-        dir_path: &str,
-    ) -> impl Fn(Context, ResponseBuilder) -> ResponseBuilder {
+    fn static_virtual_file_handler(virtual_path: &str, dir_path: &str) -> impl Handler {
         let dir_path = dir_path
             .split('/')
             .filter(|key| !key.is_empty())
@@ -119,7 +116,7 @@ impl Router {
             .filter(|key| !key.is_empty())
             .count();
 
-        move |ctx: Context, res: ResponseBuilder| {
+        move |ctx: Context| {
             let mut dir_path = dir_path.clone();
             let mut relative_path = ctx
                 .uri()
@@ -132,12 +129,12 @@ impl Router {
 
             dir_path.append(&mut relative_path);
 
-            res.send_file(&dir_path.join("/"))
+            response::file(&dir_path.join("/"))
         }
     }
 
-    fn static_dir_file_handler() -> impl Fn(Context, ResponseBuilder) -> ResponseBuilder {
-        move |ctx: Context, res: ResponseBuilder| {
+    fn static_dir_file_handler() -> impl Handler {
+        move |ctx: Context| {
             let relative_path = ctx
                 .uri()
                 .path()
@@ -146,7 +143,7 @@ impl Router {
                 .map(|x| x.to_string())
                 .collect::<Vec<String>>();
 
-            res.send_file(&relative_path.join("/"))
+            response::file(&relative_path.join("/"))
         }
     }
 }
@@ -157,8 +154,8 @@ mod tests {
     use crate::context::Context;
     use crate::middleware::Logger;
 
-    fn handler(_ctx: Context, res: ResponseBuilder) -> ResponseBuilder {
-        res.body("test")
+    fn handler(_ctx: Context) -> impl Responder {
+        "test"
     }
 
     #[test]

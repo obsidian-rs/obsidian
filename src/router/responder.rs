@@ -1,9 +1,12 @@
-use super::{response, ResponseBody};
+use super::ResponseBody;
+use crate::error::ObsidianError;
 use hyper::{Body, Response, StatusCode};
+use serde::de::DeserializeOwned;
+use std::error::Error;
 
 // use serde::ser::Serialize;
 
-pub type ResponseResult<T = Response<Body>> = Result<T, http::Error>;
+pub type ResponseResult<T = Response<Body>> = http::Result<T>;
 
 pub trait Responder {
     fn respond_to(self) -> ResponseResult;
@@ -16,7 +19,7 @@ pub trait Responder {
 }
 
 /// Allows to override status code and headers for a responder.
-struct CustomResponder<T> {
+pub struct CustomResponder<T> {
     body: T,
     status: Option<StatusCode>,
 }
@@ -100,6 +103,33 @@ where
     }
 }
 
+impl<T> Responder for Result<T, ObsidianError>
+where
+    T: ResponseBody,
+{
+    fn respond_to(self) -> ResponseResult {
+        match self {
+            Ok(_) => Response::builder()
+                .status(StatusCode::OK)
+                .body(().into_body()),
+            Err(e) => Response::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .body(e.description().to_string().into_body()),
+        }
+    }
+}
+
+impl Responder for Result<ResponseResult, ObsidianError> {
+    fn respond_to(self) -> ResponseResult {
+        match self {
+            Ok(x) => x,
+            Err(e) => Response::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .body(e.description().to_string().into_body()),
+        }
+    }
+}
+
 impl Responder for () {
     fn respond_to(self) -> ResponseResult {
         Response::builder()
@@ -114,6 +144,26 @@ where
 {
     fn respond_to(self) -> ResponseResult {
         Response::builder().status(self.0).body(self.1.into_body())
+    }
+}
+
+impl Responder for Vec<u8> {
+    fn respond_to(self) -> ResponseResult {
+        Response::builder()
+            .status(StatusCode::OK)
+            .body(self.into_body())
+    }
+}
+
+impl Responder for StatusCode {
+    fn respond_to(self) -> ResponseResult {
+        Response::builder().status(self).body(().into_body())
+    }
+}
+
+impl Responder for ResponseResult {
+    fn respond_to(self) -> ResponseResult {
+        self
     }
 }
 
@@ -156,12 +206,6 @@ where
 //         match self.1 {
 //             ResponseType::JSON(body) => response::json(body, status_code),
 //         }
-//     }
-// }
-
-// impl Responder for ResponseResult {
-//     fn respond_to(self) -> ResponseResult {
-//         self
 //     }
 // }
 
