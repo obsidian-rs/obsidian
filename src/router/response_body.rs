@@ -24,14 +24,12 @@ impl ResponseBody for String {
 
 impl ResponseBody for Vec<u8> {
     fn into_body(self) -> Body {
-        let result = match serde_json::to_string(&self) {
+        match serde_json::to_string(&self) {
             Ok(json) => Body::from(json),
             Err(e) => {
                 eprintln!("serializing failed: {}", e);
                 Body::from(std::error::Error::description(&e).to_string())
             }
-        };
-
-        result
+        }
     }
 }

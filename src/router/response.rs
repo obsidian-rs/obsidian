@@ -31,7 +31,7 @@ pub fn json(body: impl Serialize, status_code: StatusCode) -> ResponseResult {
 }
 
 pub fn file(file_path: &str) -> ResponseResult {
-    let response = tokio_fs::file::File::open(file_path.to_string())
+    tokio_fs::file::File::open(file_path.to_string())
         .and_then(|file| {
             let buf: Vec<u8> = Vec::new();
             tokio_io::io::read_to_end(file, buf)
@@ -55,7 +55,5 @@ pub fn file(file_path: &str) -> ResponseResult {
                 .body(NOTFOUND.into())
                 .unwrap())
         })
-        .wait();
-
-    response
+        .wait()
 }
