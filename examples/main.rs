@@ -39,6 +39,14 @@ async fn responder_obsidian_error(mut ctx: Context) -> impl Responder {
     Ok(response::json(json, StatusCode::OK))
 }
 
+fn responder_with_header(_ctx: Context) -> impl Responder {
+    "here"
+        .header("Content-Type", "application/json")
+        .header("X-Custom-Header", "custom-value")
+        .header("X-Custom-Header-2", "custom-value-2")
+        .status(StatusCode::CREATED)
+}
+
 #[tokio::main]
 async fn main() {
     let mut app = App::new();
@@ -185,7 +193,7 @@ async fn main() {
     param_router.get("/*", |_ctx| async {
         "<h1>404 Not Found</h1>"
             .to_string()
-            .with_status(StatusCode::NOT_FOUND)
+            .status(StatusCode::NOT_FOUND)
     });
 
     app.use_router("/params/", param_router);
