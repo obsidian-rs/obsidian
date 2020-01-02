@@ -1,13 +1,11 @@
 use super::{ResponseBody, ResponseResult};
 
-use futures::future::Future;
 use hyper::header;
 use serde::ser::Serialize;
 use serde_json;
-use tokio_fs;
-use tokio_io;
+use async_std::fs;
 
-use crate::{Body, Response, StatusCode};
+use crate::{Response, StatusCode};
 
 static NOTFOUND: &[u8] = b"Not Found";
 
@@ -30,30 +28,20 @@ pub fn json(body: impl Serialize, status_code: StatusCode) -> ResponseResult {
         .body(body)
 }
 
-pub fn file(file_path: &str) -> ResponseResult {
-    tokio_fs::file::File::open(file_path.to_string())
-        .and_then(|file| {
-            let buf: Vec<u8> = Vec::new();
-            tokio_io::io::read_to_end(file, buf)
-                .and_then(|item| {
-                    Ok(Response::builder()
+pub async fn file(file_path: &str) -> ResponseResult {
+    match fs::read(file_path.to_string()).await {
+        Ok(buf) => {
+            Ok(Response::builder()
                         .status(StatusCode::OK)
-                        .body(item.1.into())
+                        .body(buf.into())
                         .unwrap())
-                })
-                .or_else(|_| {
-                    Ok(Response::builder()
-                        .status(StatusCode::INTERNAL_SERVER_ERROR)
-                        .body(Body::empty())
-                        .unwrap())
-                })
-        })
-        .or_else(|err| {
-            dbg!(&err);
+        },
+        Err(err) => {
+            dbg!(err);
             Ok(Response::builder()
                 .status(StatusCode::NOT_FOUND)
                 .body(NOTFOUND.into())
                 .unwrap())
-        })
-        .wait()
+        },
+    }
 }

@@ -86,7 +86,7 @@ impl Router {
         let mut path = String::from(dir_path);
         path.push_str("/*");
 
-        self.get(&path, Self::static_dir_file_handler());
+        self.get(&path, Self::static_dir_file_handler);
     }
 
     /// Apply route handler in current relative route
@@ -129,22 +129,20 @@ impl Router {
 
             dir_path.append(&mut relative_path);
 
-            response::file(&dir_path.join("/"))
+            Box::pin(async move { response::file(&dir_path.join("/")).await })
         }
     }
 
-    fn static_dir_file_handler() -> impl Handler {
-        move |ctx: Context| {
-            let relative_path = ctx
-                .uri()
-                .path()
-                .split('/')
-                .filter(|key| !key.is_empty())
-                .map(|x| x.to_string())
-                .collect::<Vec<String>>();
+    async fn static_dir_file_handler(ctx: Context) -> impl Responder {
+        let relative_path = ctx
+            .uri()
+            .path()
+            .split('/')
+            .filter(|key| !key.is_empty())
+            .map(|x| x.to_string())
+            .collect::<Vec<String>>();
 
-            response::file(&relative_path.join("/"))
-        }
+        response::file(&relative_path.join("/")).await
     }
 }
 
@@ -154,7 +152,7 @@ mod tests {
     use crate::context::Context;
     use crate::middleware::Logger;
 
-    fn handler(_ctx: Context) -> impl Responder {
+    async fn handler(_ctx: Context) -> impl Responder {
         "test"
     }
 

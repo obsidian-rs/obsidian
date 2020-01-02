@@ -1,8 +1,10 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-use futures::{future, Future, Stream};
-use hyper::{service::service_fn, Body, Request, Response, Server, StatusCode};
+use hyper::{
+    service::{make_service_fn, service_fn},
+    Body, Request, Response, Server, StatusCode,
+};
 
 use crate::context::Context;
 use crate::middleware::Middleware;
@@ -66,29 +68,26 @@ impl App {
         self.router.use_static(dir_path);
     }
 
-    pub fn listen(self, addr: &SocketAddr, callback: impl Fn()) {
+    pub async fn listen(self, addr: &SocketAddr, callback: impl Fn()) {
         let app_server = AppServer {
             router: self.router,
         };
 
-        let service = move || {
+        let service = make_service_fn(|_| {
             let server_clone = app_server.clone();
+            async {
+                Ok::<_, hyper::Error>(service_fn(move |req| {
+                    let server_clone = server_clone.clone();
+                    async move { Ok::<_, hyper::Error>(server_clone.resolve_endpoint(req).await) }
+                }))
+            }
+        });
 
-            service_fn(
-                move |req| -> Box<dyn Future<Item = Response<Body>, Error = hyper::Error> + Send> {
-                    // Resolve the route endpoint
-                    server_clone.resolve_endpoint(req)
-                },
-            )
-        };
-
-        let server = Server::bind(&addr)
-            .serve(service)
-            .map_err(|e| eprintln!("server error: {}", e));
+        let server = Server::bind(&addr).serve(service);
 
         callback();
 
-        hyper::rt::run(server);
+        server.await.map_err(|_| println!("Server error")).unwrap();
     }
 }
 
@@ -98,40 +97,30 @@ struct AppServer {
 }
 
 impl AppServer {
-    pub fn resolve_endpoint(
-        &self,
-        req: Request<Body>,
-    ) -> Box<dyn Future<Item = Response<Body>, Error = hyper::Error> + Send> {
-        let (parts, body) = req.into_parts();
+    pub async fn resolve_endpoint(&self, req: Request<Body>) -> Response<Body> {
+        if let Some(path) = self.router.search_route(req.uri().path()) {
+            let route = match path.get_route(req.method()) {
+                Some(r) => r,
+                None => return page_not_found(),
+            };
+            let middlewares = path.get_middlewares();
+            let params = path.get_params();
+            let context = Context::new(req, params);
 
-        // Currently support only one router until radix tree complete.
-        if let Some(path) = self.router.search_route(parts.uri.path()) {
-            // Temporary used as the hyper stream thread block. async will be used soon
-            Box::new(body.concat2().and_then(move |b| {
-                let route = match path.get_route(&parts.method) {
-                    Some(r) => r,
-                    None => return page_not_found(),
-                };
-                let middlewares = path.get_middlewares();
-                let params = path.get_params();
-                let req = Request::from_parts(parts, Body::from(b));
-                let context = Context::new(req, params);
+            let executor = EndpointExecutor::new(&route.handler, middlewares);
 
-                let executor = EndpointExecutor::new(&route.handler, middlewares);
-
-                executor.next(context)
-            }))
+            executor.next(context).await
         } else {
             page_not_found()
         }
     }
 }
 
-fn page_not_found() -> Box<dyn Future<Item = Response<Body>, Error = hyper::Error> + Send> {
+fn page_not_found() -> Response<Body> {
     let mut server_response = Response::new(Body::from("404 Not Found"));
     *server_response.status_mut() = StatusCode::NOT_FOUND;
 
-    Box::new(future::ok(server_response))
+    server_response
 }
 
 pub struct EndpointExecutor<'a> {
@@ -150,25 +139,20 @@ impl<'a> EndpointExecutor<'a> {
         }
     }
 
-    pub fn next(
-        mut self,
-        context: Context,
-    ) -> Box<dyn Future<Item = Response<Body>, Error = hyper::Error> + Send> {
+    pub async fn next(mut self, context: Context) -> Response<Body> {
         if let Some((current, all_next)) = self.middleware.split_first() {
             self.middleware = all_next;
-            current.handle(context, self)
+            current.handle(context, self).await
         } else {
-            let route_response = self.route_endpoint.call(context);
+            let route_response = self.route_endpoint.call(context).await;
             match route_response {
-                Ok(res) => Box::new(future::ok(res)),
+                Ok(res) => res,
                 Err(err) => {
                     let body = Body::from(std::error::Error::description(&err).to_string());
-                    let response = Response::builder()
+                    Response::builder()
                         .status(StatusCode::INTERNAL_SERVER_ERROR)
                         .body(body)
-                        .unwrap();
-
-                    Box::new(future::ok(response))
+                        .unwrap()
                 }
             }
         }
@@ -178,66 +162,58 @@ impl<'a> EndpointExecutor<'a> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use futures::Stream;
-    use hyper::StatusCode;
+    use async_std::task;
+    use hyper::{body, body::Buf, StatusCode};
 
     #[test]
     fn test_app_server_resolve_endpoint() {
-        let mut router = Router::new();
+        task::block_on(async {
+            let mut router = Router::new();
 
-        router.get("/", |mut context: Context| {
-            let body = context.take_body();
+            router.get("/", |mut context: Context| {
+                async move {
+                    let body = context.take_body();
 
-            let request_body = body
-                .map_err(|_| ())
-                .fold(vec![], |mut acc, chunk| {
-                    acc.extend_from_slice(&chunk);
-                    Ok(acc)
-                })
-                .and_then(|v| String::from_utf8(v).map_err(|_| ()));
+                    let request_body = match body::aggregate(body).await {
+                        Ok(buf) => String::from_utf8(buf.bytes().to_vec()),
+                        _ => {
+                            panic!();
+                        }
+                    };
 
-            assert_eq!(context.uri().path(), "/");
-            assert_eq!(request_body.wait().unwrap(), "test_app_server");
-            "test_app_server"
-        });
+                    assert_eq!(context.uri().path(), "/");
+                    assert_eq!(request_body.unwrap(), "test_app_server");
+                    "test_app_server"
+                }
+            });
 
-        let app_server = AppServer { router };
+            let app_server = AppServer { router };
 
-        let mut req_builder = Request::builder();
+            let req_builder = Request::builder();
 
-        let req = req_builder
-            .uri("/")
-            .body(Body::from("test_app_server"))
-            .unwrap();
+            let req = req_builder
+                .uri("/")
+                .body(Body::from("test_app_server"))
+                .unwrap();
 
-        let actual_response = app_server.resolve_endpoint(req).wait().unwrap();
+            let actual_response = app_server.resolve_endpoint(req).await;
 
-        let mut expected_response = Response::new(Body::from("test_app_server"));
-        *expected_response.status_mut() = StatusCode::OK;
+            let mut expected_response = Response::new(Body::from("test_app_server"));
+            *expected_response.status_mut() = StatusCode::OK;
 
-        assert_eq!(actual_response.status(), expected_response.status());
+            assert_eq!(actual_response.status(), expected_response.status());
 
-        let actual_res_body = actual_response
-            .into_body()
-            .map_err(|_| ())
-            .fold(vec![], |mut acc, chunk| {
-                acc.extend_from_slice(&chunk);
-                Ok(acc)
-            })
-            .and_then(|v| String::from_utf8(v).map_err(|_| ()));
+            let actual_res_body = match body::aggregate(actual_response).await {
+                Ok(buf) => String::from_utf8(buf.bytes().to_vec()),
+                _ => panic!(),
+            };
 
-        let expected_res_body = expected_response
-            .into_body()
-            .map_err(|_| ())
-            .fold(vec![], |mut acc, chunk| {
-                acc.extend_from_slice(&chunk);
-                Ok(acc)
-            })
-            .and_then(|v| String::from_utf8(v).map_err(|_| ()));
+            let expected_res_body = match body::aggregate(expected_response).await {
+                Ok(buf) => String::from_utf8(buf.bytes().to_vec()),
+                _ => panic!(),
+            };
 
-        assert_eq!(
-            actual_res_body.wait().unwrap(),
-            expected_res_body.wait().unwrap()
-        );
+            assert_eq!(actual_res_body.unwrap(), expected_res_body.unwrap());
+        })
     }
 }
