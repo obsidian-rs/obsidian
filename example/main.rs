@@ -39,6 +39,10 @@ fn responder_obsidian_error(mut ctx: Context) -> impl Responder {
     Ok(response::json(json, StatusCode::OK))
 }
 
+fn responder_with_header(_ctx: Context) -> impl Responder {
+    "here".header("Content-Type", "application/json")
+}
+
 fn main() {
     let mut app = App::new();
     let addr = ([127, 0, 0, 1], 3000).into();
@@ -55,6 +59,8 @@ fn main() {
         //     .status(StatusCode::OK)
         //     .json(point)
     });
+
+    app.get("/header", responder_with_header);
 
     app.get("/empty-body", |_ctx| StatusCode::OK);
 
