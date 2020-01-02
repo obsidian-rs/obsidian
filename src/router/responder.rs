@@ -69,10 +69,14 @@ where
 
         let mut res = Response::builder();
         if let Some(headers) = self.headers {
-            let response_headers = res.headers_mut().unwrap();
-            headers.iter().for_each(|(key, value)| {
-                response_headers.insert(*key, HeaderValue::from_static(value));
-            });
+            match res.headers_mut() {
+                Some(response_headers) => {
+                    headers.iter().for_each(|(key, value)| {
+                        response_headers.insert(*key, HeaderValue::from_static(value));
+                    });
+                }
+                None => {}
+            }
         }
         res.status(status).body(self.body.into_body())
     }
