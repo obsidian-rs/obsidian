@@ -2,17 +2,22 @@ use super::ResponseBody;
 use crate::error::ObsidianError;
 use hyper::{Body, Response, StatusCode};
 
-// use serde::ser::Serialize;
-
 pub type ResponseResult<T = Response<Body>> = http::Result<T>;
 
 pub trait Responder {
     fn respond_to(self) -> ResponseResult;
-    fn with_status(self, status: StatusCode) -> CustomResponder<Self>
+    fn status(self, status: StatusCode) -> CustomResponder<Self>
     where
         Self: ResponseBody + Sized,
     {
-        CustomResponder::new(self).with_status(status)
+        CustomResponder::new(self).status(status)
+    }
+
+    fn header(self, key: &str, value: &str) -> CustomResponder<Self>
+    where
+        Self: ResponseBody + Sized,
+    {
+        CustomResponder::new(self).header(key, value)
     }
 }
 
@@ -30,8 +35,12 @@ where
         CustomResponder { body, status: None }
     }
 
-    pub fn with_status(mut self, status: StatusCode) -> Self {
+    pub fn status(mut self, status: StatusCode) -> Self {
         self.status = Some(status);
+        self
+    }
+
+    pub fn header(self, key: &str, value: &str) -> Self {
         self
     }
 }
@@ -141,7 +150,10 @@ where
     T: ResponseBody,
 {
     fn respond_to(self) -> ResponseResult {
-        Response::builder().status(self.0).body(self.1.into_body())
+        let (status_code, body) = self;
+        Response::builder()
+            .status(status_code)
+            .body(body.into_body())
     }
 }
 
@@ -164,48 +176,6 @@ impl Responder for ResponseResult {
         self
     }
 }
-
-// impl<T> Responder for ResponseType<T>
-// where
-//     T: Serialize,
-// {
-//     fn respond_to(self) -> ResponseResult {
-//         match self {
-//             ResponseType::JSON(body) => response::json(body, StatusCode::OK),
-//         }
-//     }
-// }
-
-// impl<T> Responder for (StatusCode, ResponseType<T>)
-// where
-//     T: Serialize,
-// {
-//     fn respond_to(self) -> ResponseResult {
-//         match self.1 {
-//             ResponseType::JSON(body) => response::json(body, self.0),
-//         }
-//     }
-// }
-
-// impl<T> Responder for (u16, ResponseType<T>)
-// where
-//     T: Serialize,
-// {
-//     fn respond_to(self) -> ResponseResult {
-//         let status_code = match StatusCode::from_u16(self.0) {
-//             Ok(status_code) => status_code,
-//             Err(_) => {
-//                 return Response::builder()
-//                     .status(StatusCode::INTERNAL_SERVER_ERROR)
-//                     .body("Invalid Status Code".into_body())
-//             }
-//         };
-
-//         match self.1 {
-//             ResponseType::JSON(body) => response::json(body, status_code),
-//         }
-//     }
-// }
 
 #[cfg(test)]
 mod test {
