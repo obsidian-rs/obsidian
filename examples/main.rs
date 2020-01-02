@@ -40,11 +40,17 @@ async fn responder_obsidian_error(mut ctx: Context) -> impl Responder {
 }
 
 fn responder_with_header(_ctx: Context) -> impl Responder {
+    let headers = vec![
+        ("X-Custom-Header-4", "custom-value-4"),
+        ("X-Custom-Header-5", "custom-value-5"),
+    ];
+
     "here"
         .header("Content-Type", "application/json")
         .header("X-Custom-Header", "custom-value")
         .header("X-Custom-Header-2", "custom-value-2")
         .header("X-Custom-Header-3", "custom-value-3")
+        .set_headers(headers)
         .status(StatusCode::CREATED)
 }
 

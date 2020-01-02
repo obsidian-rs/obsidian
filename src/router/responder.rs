@@ -20,6 +20,13 @@ pub trait Responder {
     {
         CustomResponder::new(self).header(key, value)
     }
+
+    fn set_headers(self, headers: Vec<(&'static str, &'static str)>) -> CustomResponder<Self>
+    where
+        Self: ResponseBody + Sized,
+    {
+        CustomResponder::new(self).set_headers(headers)
+    }
 }
 
 /// Allows to override status code and headers for a responder.
@@ -49,9 +56,15 @@ where
     pub fn header(mut self, key: &'static str, value: &'static str) -> Self {
         match self.headers {
             Some(ref mut x) => x.push((key, value)),
-            None => {
-                self.headers = Some(vec![(key, value)]);
-            }
+            None => self.headers = Some(vec![(key, value)]),
+        };
+        self
+    }
+
+    pub fn set_headers(mut self, headers: Vec<(&'static str, &'static str)>) -> Self {
+        match self.headers {
+            Some(ref mut x) => x.extend_from_slice(&headers),
+            None => self.headers = Some(headers),
         };
         self
     }
