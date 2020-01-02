@@ -1,6 +1,6 @@
 use super::ResponseBody;
 use crate::error::ObsidianError;
-use hyper::{Body, Response, StatusCode};
+use hyper::{header::HeaderValue, Body, Response, StatusCode};
 use std::error::Error;
 
 pub type ResponseResult<T = Response<Body>> = http::Result<T>;
@@ -14,7 +14,7 @@ pub trait Responder {
         CustomResponder::new(self).status(status)
     }
 
-    fn header(self, key: &str, value: &str) -> CustomResponder<Self>
+    fn header(self, key: &'static str, value: &'static str) -> CustomResponder<Self>
     where
         Self: ResponseBody + Sized,
     {
@@ -26,6 +26,7 @@ pub trait Responder {
 pub struct CustomResponder<T> {
     body: T,
     status: Option<StatusCode>,
+    headers: Option<Vec<(&'static str, &'static str)>>,
 }
 
 impl<T> CustomResponder<T>
@@ -33,15 +34,27 @@ where
     T: ResponseBody,
 {
     fn new(body: T) -> Self {
-        CustomResponder { body, status: None }
+        CustomResponder {
+            body,
+            status: None,
+            headers: None,
+        }
     }
 
     pub fn status(mut self, status: StatusCode) -> Self {
         self.status = Some(status);
+        dbg!(&self.status);
         self
     }
 
-    pub fn header(self, key: &str, value: &str) -> Self {
+    pub fn header(mut self, key: &'static str, value: &'static str) -> Self {
+        match self.headers {
+            Some(ref mut x) => x.push((key, value)),
+            None => {
+                self.headers = Some(vec![(key, value)]);
+            }
+        };
+        dbg!(&self.headers);
         self
     }
 }
@@ -56,9 +69,20 @@ where
             None => StatusCode::OK,
         };
 
-        Response::builder()
-            .status(status)
-            .body(self.body.into_body())
+        if let Some(headers) = self.headers {
+            let mut res = Response::builder();
+            {
+                let response_headers = res.headers_mut().unwrap();
+                headers.iter().for_each(|(key, value)| {
+                    response_headers.insert(*key, HeaderValue::from_static(value));
+                });
+            }
+            res.status(status).body(self.body.into_body())
+        } else {
+            Response::builder()
+                .status(status)
+                .body(self.body.into_body())
+        }
     }
 }
 
