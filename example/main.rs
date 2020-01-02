@@ -44,6 +44,7 @@ fn responder_with_header(_ctx: Context) -> impl Responder {
         .header("Content-Type", "application/json")
         .header("X-Custom-Header", "custom-value")
         .header("X-Custom-Header-2", "custom-value-2")
+        .header("X-Custom-Header-3", "custom-value-3")
         .status(StatusCode::CREATED)
 }
 
