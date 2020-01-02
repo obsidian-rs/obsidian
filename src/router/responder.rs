@@ -43,7 +43,6 @@ where
 
     pub fn status(mut self, status: StatusCode) -> Self {
         self.status = Some(status);
-        dbg!(&self.status);
         self
     }
 
@@ -54,7 +53,6 @@ where
                 self.headers = Some(vec![(key, value)]);
             }
         };
-        dbg!(&self.headers);
         self
     }
 }
@@ -69,20 +67,14 @@ where
             None => StatusCode::OK,
         };
 
+        let mut res = Response::builder();
         if let Some(headers) = self.headers {
-            let mut res = Response::builder();
-            {
-                let response_headers = res.headers_mut().unwrap();
-                headers.iter().for_each(|(key, value)| {
-                    response_headers.insert(*key, HeaderValue::from_static(value));
-                });
-            }
-            res.status(status).body(self.body.into_body())
-        } else {
-            Response::builder()
-                .status(status)
-                .body(self.body.into_body())
+            let response_headers = res.headers_mut().unwrap();
+            headers.iter().for_each(|(key, value)| {
+                response_headers.insert(*key, HeaderValue::from_static(value));
+            });
         }
+        res.status(status).body(self.body.into_body())
     }
 }
 
