@@ -17,7 +17,6 @@ use std::fmt::Display;
 /// # use obsidian::router::from_cow_map;
 /// # use hyper::{Body, Request, body, body::Buf};
 /// # use url::form_urlencoded;
-/// # use futures::{Future, Stream};
 /// # use serde::*;
 /// # use std::collections::HashMap;
 /// # use std::borrow::Cow;

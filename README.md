@@ -14,37 +14,40 @@
 ```rust
 use obsidian::App;
 
-fn main() {
-  let mut app = App::new();
-  let addr = ([127, 0, 0, 1], 3000).into();
+#[tokio::main]
+async fn main() {
+    let mut app = App::new();
+    let addr = ([127, 0, 0, 1], 3000).into();
 
-  app.get("/", |_ctx| {
-    "Hello World"
-  });
+    app.get("/", |_ctx| async { "Hello World" });
 
-  app.listen(&addr, || {
-    println!("server is listening to {}", &addr);
-  });
+    app.listen(&addr, || {
+        {
+            println!("server is listening to {}", &addr);
+        }
+    }).await;
 }
 ```
 
 ## Hello World (with handler function)
 ```rust
-use obsidian::{App, router::Responder, context::Context};
+use obsidian::{context::Context, router::Responder, App};
 
-fn hello_world(_ctx: Context) -> impl Responder {
-  "Hello World"
+async fn hello_world(_ctx: Context) -> impl Responder {
+    "Hello World"
 }
 
-fn main() {
-  let mut app = App::new();
-  let addr = ([127, 0, 0, 1], 3000).into();
+#[tokio::main]
+async fn main() {
+    let mut app = App::new();
+    let addr = ([127, 0, 0, 1], 3000).into();
 
-  app.get("/", hello_world);
+    app.get("/", hello_world);
 
-  app.listen(&addr, || {
-    println!("server is listening to {}", &addr);
-  });
+    app.listen(&addr, || {
+        println!("server is listening to {}", &addr);
+    })
+    .await;
 }
 ```
 
