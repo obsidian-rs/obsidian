@@ -7,7 +7,7 @@ mod response_body;
 mod route;
 mod route_trie;
 
-use self::route_trie::{RouteTrie, RouteValueResult};
+use self::route_trie::RouteTrie;
 use crate::context::Context;
 use crate::middleware::Middleware;
 use crate::Method;
@@ -18,6 +18,8 @@ pub use self::resource::Resource;
 pub use self::responder::{Responder, ResponseResult};
 pub use self::response_body::ResponseBody;
 pub use self::route::Route;
+
+pub(crate) use self::route_trie::RouteValueResult;
 
 pub struct Router {
     routes: RouteTrie,

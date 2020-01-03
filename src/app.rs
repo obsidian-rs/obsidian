@@ -8,7 +8,7 @@ use hyper::{
 
 use crate::context::Context;
 use crate::middleware::Middleware;
-use crate::router::{Handler, Router};
+use crate::router::{Handler, Router, RouteValueResult};
 
 pub struct App {
     router: Router,
@@ -77,8 +77,8 @@ impl App {
             let server_clone = app_server.clone();
             async {
                 Ok::<_, hyper::Error>(service_fn(move |req| {
-                    let server_clone = server_clone.clone();
-                    async move { Ok::<_, hyper::Error>(server_clone.resolve_endpoint(req).await) }
+                    let route_value = server_clone.router.search_route(req.uri().path());
+                    AppServer::resolve_endpoint(req, route_value)
                 }))
             }
         });
@@ -97,21 +97,21 @@ struct AppServer {
 }
 
 impl AppServer {
-    pub async fn resolve_endpoint(&self, req: Request<Body>) -> Response<Body> {
-        if let Some(path) = self.router.search_route(req.uri().path()) {
-            let route = match path.get_route(req.method()) {
-                Some(r) => r,
-                None => return page_not_found(),
-            };
-            let middlewares = path.get_middlewares();
-            let params = path.get_params();
-            let context = Context::new(req, params);
+    pub async fn resolve_endpoint(req: Request<Body>, route_value: Option<RouteValueResult>) -> Result<Response<Body>, hyper::Error> {
+        match route_value {
+            Some(route_value) => {
+                let route = match route_value.get_route(req.method()) {
+                    Some(r) => r,
+                    None => return Ok::<_, hyper::Error>(page_not_found())
+                };
+                let middlewares = route_value.get_middlewares();
+                let params = route_value.get_params();
+                let context = Context::new(req, params);
+                let executor = EndpointExecutor::new(&route.handler, middlewares);
 
-            let executor = EndpointExecutor::new(&route.handler, middlewares);
-
-            executor.next(context).await
-        } else {
-            page_not_found()
+                Ok::<_, hyper::Error>(executor.next(context).await)
+            }
+            _ => Ok::<_, hyper::Error>(page_not_found())
         }
     }
 }
@@ -196,7 +196,8 @@ mod test {
                 .body(Body::from("test_app_server"))
                 .unwrap();
 
-            let actual_response = app_server.resolve_endpoint(req).await;
+            let route_value = app_server.router.search_route(req.uri().path());
+            let actual_response = AppServer::resolve_endpoint(req, route_value).await.unwrap();
 
             let mut expected_response = Response::new(Body::from("test_app_server"));
             *expected_response.status_mut() = StatusCode::OK;
@@ -217,3 +218,4 @@ mod test {
         })
     }
 }
+
