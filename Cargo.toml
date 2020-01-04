@@ -1,23 +1,39 @@
-[package]
-name = "obsidian"
-version = "0.1.0-alpha.1"
-authors = ["Gan Jun Kai <kuhn96@gmail.com>", "Wai Pai Lee <pailee.wai@gmail.com>"]
-edition = "2018"
-description = "A Rust framework"
-repository = "https://github.com/obsidian-rs/obsidian"
-license = "MIT"
-
-[dependencies]
-hyper = "0.12.15"
-futures = "0.1"
-http = "0.1.14"
-serde_json = "1.0.33"
-serde_derive = "1.0.80"
-serde = "1.0.99"
-tokio-fs = "0.1.4"
-tokio-io = "0.1.10"
-url = "1.7.2"
+[[example]]
+name = 'example'
+path = 'examples/main.rs'
 
 [[example]]
-name = "example"
-path = "example/main.rs"
+name = 'hello'
+path = 'examples/hello.rs'
+
+[[example]]
+name = 'hello_handler'
+path = 'examples/hello_handler.rs'
+
+[package]
+name = 'obsidian'
+version = '0.1.0-alpha.1'
+authors = [
+    'Gan Jun Kai <kuhn96@gmail.com>',
+    'Wai Pai Lee <pailee.wai@gmail.com>',
+]
+edition = '2018'
+description = 'A Rust framework'
+repository = 'https://github.com/obsidian-rs/obsidian'
+license = 'MIT'
+
+[dependencies]
+hyper = '0.13.1'
+http = '0.2.0'
+serde_json = '1.0.44'
+url = '2.1.0'
+async-std = '1.4.0'
+async-trait = '0.1.22'
+
+[dependencies.serde]
+version = '1.0.104'
+features = ['derive']
+
+[dependencies.tokio]
+version = '0.2.6'
+features = ['macros']

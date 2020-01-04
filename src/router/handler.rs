@@ -1,16 +1,22 @@
 use super::{Responder, ResponseResult};
 use crate::context::Context;
 
+use std::future::Future;
+use async_trait::async_trait;
+
+#[async_trait]
 pub trait Handler: Send + Sync + 'static {
-    fn call(&self, ctx: Context) -> ResponseResult;
+    async fn call(&self, ctx: Context) -> ResponseResult;
 }
 
-impl<T, R> Handler for T
+#[async_trait]
+impl<T, F> Handler for T
 where
-    T: Fn(Context) -> R + Send + Sync + 'static,
-    R: Responder,
+    T: Fn(Context) -> F + Send + Sync + 'static,
+    F: Future + Send + 'static,
+    F::Output: Responder,
 {
-    fn call(&self, ctx: Context) -> ResponseResult {
-        (self)(ctx).respond_to()
+    async fn call(&self, ctx: Context) -> ResponseResult {
+        (self)(ctx).await.respond_to()
     }
 }

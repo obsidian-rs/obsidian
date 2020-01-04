@@ -611,13 +611,18 @@ impl ActionPayload {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::context::Context;
     use crate::middleware::Logger;
+    use crate::router::Responder;
+
+    async fn handler(_ctx: Context) -> impl Responder {
+        "test"
+    }
 
     #[test]
     fn radix_trie_head_test() {
         let mut route_trie = RouteTrie::new();
         let logger = Logger::new();
-        let handler = |_x| "test";
 
         route_trie.insert_default_middleware(logger);
         route_trie.insert_route("/", Route::new(Method::GET, handler));
@@ -645,7 +650,6 @@ mod tests {
         let mut route_trie = RouteTrie::new();
         let logger = Logger::new();
         let logger2 = Logger::new();
-        let handler = |_x| "test";
 
         route_trie.insert_default_middleware(logger);
         route_trie.insert_route("/normal/test/", Route::new(Method::GET, handler));
@@ -691,7 +695,6 @@ mod tests {
     fn radix_trie_not_found_test() {
         let mut route_trie = RouteTrie::new();
         let logger = Logger::new();
-        let handler = |_x| "test";
 
         route_trie.insert_default_middleware(logger);
         route_trie.insert_route("/normal/test/", Route::new(Method::GET, handler));
@@ -707,7 +710,6 @@ mod tests {
         let logger = Logger::new();
         let logger2 = Logger::new();
         let logger3 = Logger::new();
-        let handler = |_x| "test";
 
         route_trie.insert_default_middleware(logger);
         route_trie.insert_route("/normal/test/", Route::new(Method::GET, handler));
@@ -747,7 +749,6 @@ mod tests {
     #[test]
     fn radix_trie_wildcard_test() {
         let mut route_trie = RouteTrie::new();
-        let handler = |_x| "test";
         let logger = Logger::new();
         let logger2 = Logger::new();
         let logger3 = Logger::new();
@@ -788,7 +789,6 @@ mod tests {
     #[test]
     fn radix_trie_wildcard_param_conflict_test() {
         let mut route_trie = RouteTrie::new();
-        let handler = |_x| "test";
 
         route_trie.insert_route("/normal/test/*", Route::new(Method::GET, handler));
         route_trie.insert_route("/normal/test/:param", Route::new(Method::GET, handler));
@@ -798,7 +798,6 @@ mod tests {
     #[test]
     fn radix_trie_param_wildcard_conflict_test() {
         let mut route_trie = RouteTrie::new();
-        let handler = |_x| "test";
 
         route_trie.insert_route("/normal/test/:param", Route::new(Method::GET, handler));
         route_trie.insert_route("/normal/test/*", Route::new(Method::GET, handler));

@@ -1,4 +1,4 @@
-use futures::Future;
+use async_trait::async_trait;
 
 use crate::app::EndpointExecutor;
 use crate::context::Context;
@@ -14,12 +14,13 @@ impl Logger {
     }
 }
 
+#[async_trait]
 impl Middleware for Logger {
-    fn handle<'a>(
+    async fn handle<'a>(
         &'a self,
         context: Context,
         ep_executor: EndpointExecutor<'a>,
-    ) -> Box<dyn Future<Item = Response<Body>, Error = hyper::Error> + Send> {
+    ) -> Response<Body> {
         println!(
             "{} {} \n{}",
             context.method(),
@@ -27,6 +28,6 @@ impl Middleware for Logger {
             context.headers().get("host").unwrap().to_str().unwrap()
         );
 
-        ep_executor.next(context)
+        ep_executor.next(context).await
     }
 }
