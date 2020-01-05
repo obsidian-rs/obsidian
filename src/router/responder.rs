@@ -217,10 +217,30 @@ mod test {
     use hyper::StatusCode;
 
     #[test]
-    fn test_custom_responder() {
-        let result = "Test".with_status(StatusCode::CREATED).respond_to();
+    fn test_string_responder() {
+        let result = "Hello World".respond_to();
+        if let Ok(response) = result {
+            assert_eq!(response.status(), StatusCode::OK);
+            // TODO: add testing for body once the Responder refactored
+        }
+    }
+
+    #[test]
+    fn test_responder_with_custom_status() {
+        let result = "Test".status(StatusCode::CREATED).respond_to();
         if let Ok(response) = result {
             assert_eq!(response.status(), StatusCode::CREATED);
+        }
+    }
+
+    #[test]
+    fn test_responder_with_custom_header() {
+        let result = "Test"
+            .header("Content-Type", "application/json")
+            .respond_to();
+        if let Ok(response) = result {
+            assert_eq!(response.status(), StatusCode::OK);
+            assert!(response.headers().contains_key("Content-Type"));
         }
     }
 }
