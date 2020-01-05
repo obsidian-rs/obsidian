@@ -217,11 +217,50 @@ mod test {
     use hyper::StatusCode;
 
     #[test]
-    fn test_string_responder() {
+    fn test_str_responder() {
         let result = "Hello World".respond_to();
         if let Ok(response) = result {
             assert_eq!(response.status(), StatusCode::OK);
-            // TODO: add testing for body once the Responder refactored
+            // TODO: add testing for body once the Responder is refactored
+        }
+    }
+
+    #[test]
+    fn test_string_responder() {
+        let result = "Hello World".to_string().respond_to();
+        if let Ok(response) = result {
+            assert_eq!(response.status(), StatusCode::OK);
+            // TODO: add testing for body once the Responder is refactored
+        }
+    }
+
+    #[test]
+    fn test_option_responder() {
+        let some_result = Some("Hello World").respond_to();
+        if let Ok(response) = some_result {
+            assert_eq!(response.status(), StatusCode::OK);
+            // TODO: add testing for body once the Responder is refactored
+        }
+
+        let none_result = None::<String>.respond_to();
+        if let Ok(response) = none_result {
+            assert_eq!(response.status(), StatusCode::NOT_FOUND);
+            // TODO: add testing for body once the Responder is refactored
+        }
+    }
+
+    #[test]
+    fn test_result_responder() {
+        let ok_result = Ok::<&str, &str>("Hello World").respond_to();
+        if let Ok(response) = ok_result {
+            assert_eq!(response.status(), StatusCode::OK);
+            // TODO: add testing for body once the Responder is refactored
+        }
+
+        let err_result = Err::<&str, &str>("Some error").respond_to();
+        if let Ok(response) = err_result {
+            assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+            // TODO: add testing for body once the Responder is refactored
         }
     }
 
