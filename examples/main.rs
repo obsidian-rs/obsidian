@@ -33,26 +33,26 @@ impl Display for JsonTest {
     }
 }
 
-async fn responder_obsidian_error(mut ctx: Context) -> impl Responder {
-    let json: JsonTest = ctx.json().await?;
-    println!("{}", json);
-    Ok(response::json(json, StatusCode::OK))
-}
+// async fn responder_obsidian_error(mut ctx: Context) -> impl Responder {
+//     let json: JsonTest = ctx.json().await?;
+//     println!("{}", json);
+//     Ok(response::json(json, StatusCode::OK))
+// }
 
-fn responder_with_header(_ctx: Context) -> impl Responder {
-    let headers = vec![
-        ("X-Custom-Header-4", "custom-value-4"),
-        ("X-Custom-Header-5", "custom-value-5"),
-    ];
+// fn responder_with_header(_ctx: Context) -> impl Responder {
+//     let headers = vec![
+//         ("X-Custom-Header-4", "custom-value-4"),
+//         ("X-Custom-Header-5", "custom-value-5"),
+//     ];
 
-    "here"
-        .header("Content-Type", "application/json")
-        .header("X-Custom-Header", "custom-value")
-        .header("X-Custom-Header-2", "custom-value-2")
-        .header("X-Custom-Header-3", "custom-value-3")
-        .set_headers(headers)
-        .status(StatusCode::CREATED)
-}
+//     "here"
+//         .header("Content-Type", "application/json")
+//         .header("X-Custom-Header", "custom-value")
+//         .header("X-Custom-Header-2", "custom-value-2")
+//         .header("X-Custom-Header-3", "custom-value-3")
+//         .set_headers(headers)
+//         .status(StatusCode::CREATED)
+// }
 
 #[tokio::main]
 async fn main() {
@@ -102,17 +102,17 @@ async fn main() {
         async { "<h1>jsan</h1>".to_string() }
     });
 
-    app.post("/jsontestapi", |mut ctx: Context| {
-        async move {
-            let json: serde_json::Value = ctx.json().await?;
+    // app.post("/jsontestapi", |mut ctx: Context| {
+    //     async move {
+    //         let json: serde_json::Value = ctx.json().await?;
 
-            println!("{}", json);
+    //         println!("{}", json);
 
-            Ok(response::json(json, StatusCode::OK))
-        }
-    });
+    //         Ok(response::json(json, StatusCode::OK))
+    //     }
+    // });
 
-    app.post("/jsonteststructapi", responder_obsidian_error);
+    // app.post("/jsonteststructapi", responder_obsidian_error);
 
     app.get("/test/wildcard/*", |ctx: Context| {
         async move {
@@ -165,33 +165,34 @@ async fn main() {
 
     form_router.get("/formtest", |_ctx| response::file("./test.html"));
 
-    form_router.post("/formtest", |mut ctx: Context| async move{
-        let param_test: ParamTest = ctx.form().await?;
+    // form_router.post("/formtest", |mut ctx: Context| async move{
+    //     let param_test: ParamTest = ctx.form().await?;
 
-        dbg!(&param_test);
+    //     dbg!(&param_test);
 
-        Ok(response::json(param_test, StatusCode::OK))
-    });
+    //     Ok(response::json(param_test, StatusCode::OK))
+    // });
 
     let mut param_router = Router::new();
     let logger = Logger::new();
     app.use_service(logger);
 
-    param_router.get("/paramtest/:id", |ctx: Context| async move {
-        let param_test: i32 = ctx.param("id")?;
+    // param_router.get("/paramtest/:id", |ctx: Context| async move {
+    //     let param_test: i32 = ctx.param("id")?;
 
-        dbg!(&param_test);
+    //     dbg!(&param_test);
 
-        Ok(response::json(param_test, StatusCode::OK))
-    });
-    param_router.get("/paramtest/:id/test", |ctx: Context| async move {
-        let mut param_test: i32 = ctx.param("id").unwrap();
-        param_test *= 10;
+    //     Ok(response::json(param_test, StatusCode::OK))
+    // });
+    //
+    // param_router.get("/paramtest/:id/test", |ctx: Context| async move {
+    //     let mut param_test: i32 = ctx.param("id").unwrap();
+    //     param_test = param_test * 10;
 
-        dbg!(&param_test);
+    //     dbg!(&param_test);
 
-        Ok(response::json(param_test, StatusCode::OK))
-    });
+    //     Ok(response::json(param_test, StatusCode::OK))
+    // });
 
     param_router.get("/test-next-wild/*", |_ctx| async {
         "<h1>test next wild</h1>".to_string()
