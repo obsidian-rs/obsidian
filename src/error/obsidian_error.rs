@@ -17,19 +17,15 @@ pub enum ObsidianError {
 
 impl Display for ObsidianError {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str(std::error::Error::description(self))
-    }
-}
+        let error_msg = match *self {
+            ObsidianError::ParamError(ref msg) => msg.to_string(),
+            ObsidianError::JsonError(ref err) => err.to_string(),
+            ObsidianError::FormError(ref err) => err.to_string(),
+            ObsidianError::GeneralError(ref msg) => msg.to_string(),
+            ObsidianError::NoneError => "Input should not be None".to_string(),
+        };
 
-impl std::error::Error for ObsidianError {
-    fn description(&self) -> &str {
-        match *self {
-            ObsidianError::ParamError(ref msg) => msg,
-            ObsidianError::JsonError(ref err) => std::error::Error::description(err),
-            ObsidianError::FormError(ref err) => std::error::Error::description(err),
-            ObsidianError::GeneralError(ref msg) => msg,
-            ObsidianError::NoneError => "Input should not be None",
-        }
+        formatter.write_str(&error_msg)
     }
 }
 

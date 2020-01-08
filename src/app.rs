@@ -148,7 +148,7 @@ impl<'a> EndpointExecutor<'a> {
             match route_response {
                 Ok(res) => res,
                 Err(err) => {
-                    let body = Body::from(std::error::Error::description(&err).to_string());
+                    let body = Body::from(err.to_string());
                     Response::builder()
                         .status(StatusCode::INTERNAL_SERVER_ERROR)
                         .body(body)

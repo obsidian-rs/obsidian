@@ -1,7 +1,6 @@
 use super::ResponseBody;
 use crate::error::ObsidianError;
 use hyper::{Body, Response, StatusCode};
-use std::error::Error;
 
 // use serde::ser::Serialize;
 
@@ -113,7 +112,7 @@ where
                 .body(().into_body()),
             Err(e) => Response::builder()
                 .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body(e.description().to_string().into_body()),
+                .body(e.to_string().into_body()),
         }
     }
 }
@@ -124,7 +123,7 @@ impl Responder for Result<ResponseResult, ObsidianError> {
             Ok(x) => x,
             Err(e) => Response::builder()
                 .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body(e.description().to_string().into_body()),
+                .body(e.to_string().into_body()),
         }
     }
 }

@@ -423,7 +423,7 @@ impl de::Error for Error {
 
 impl Display for Error {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str(std::error::Error::description(self))
+        formatter.write_str(&self.to_string())
     }
 }
 
@@ -477,13 +477,13 @@ mod tests {
             form_urlencoded::parse(buf.bytes())
                 .into_owned()
                 .for_each(|(key, val)| {
-                    parsed_form_map.entry(key).or_insert(vec![]).push(val);
+                    parsed_form_map.entry(key).or_insert_with(|| vec![]).push(val);
                 });
             // Wrap vec with cow pointer
             parsed_form_map.iter().for_each(|(key, val)| {
                 cow_form_map
                     .entry(std::borrow::Cow::from(key))
-                    .or_insert(std::borrow::Cow::from(val));
+                    .or_insert_with(|| std::borrow::Cow::from(val));
             });
 
             let actual_result: VecAndSingleVariableStruct = from_cow_map(&cow_form_map).unwrap();
@@ -511,13 +511,13 @@ mod tests {
             form_urlencoded::parse(buf.bytes())
                 .into_owned()
                 .for_each(|(key, val)| {
-                    parsed_form_map.entry(key).or_insert(vec![]).push(val);
+                    parsed_form_map.entry(key).or_insert_with(|| vec![]).push(val);
                 });
             // Wrap vec with cow pointer
             parsed_form_map.iter().for_each(|(key, val)| {
                 cow_form_map
                     .entry(std::borrow::Cow::from(key))
-                    .or_insert(std::borrow::Cow::from(val));
+                    .or_insert_with(|| std::borrow::Cow::from(val));
             });
 
             let actual_result: VecStruct = from_cow_map(&cow_form_map).unwrap();
@@ -542,13 +542,13 @@ mod tests {
             form_urlencoded::parse(buf.bytes())
                 .into_owned()
                 .for_each(|(key, val)| {
-                    parsed_form_map.entry(key).or_insert(vec![]).push(val);
+                    parsed_form_map.entry(key).or_insert_with(||vec![]).push(val);
                 });
             // Wrap vec with cow pointer
             parsed_form_map.iter().for_each(|(key, val)| {
                 cow_form_map
                     .entry(std::borrow::Cow::from(key))
-                    .or_insert(std::borrow::Cow::from(val));
+                    .or_insert_with(|| std::borrow::Cow::from(val));
             });
 
             let actual_result: VecStruct = from_cow_map(&cow_form_map).unwrap();
@@ -573,13 +573,13 @@ mod tests {
             form_urlencoded::parse(buf.bytes())
                 .into_owned()
                 .for_each(|(key, val)| {
-                    parsed_form_map.entry(key).or_insert(vec![]).push(val);
+                    parsed_form_map.entry(key).or_insert_with(|| vec![]).push(val);
                 });
             // Wrap vec with cow pointer
             parsed_form_map.iter().for_each(|(key, val)| {
                 cow_form_map
                     .entry(std::borrow::Cow::from(key))
-                    .or_insert(std::borrow::Cow::from(val));
+                    .or_insert_with(|| std::borrow::Cow::from(val));
             });
 
             let actual_result: VecWithDefaultStruct = from_cow_map(&cow_form_map).unwrap();
@@ -607,13 +607,13 @@ mod tests {
             form_urlencoded::parse(buf.bytes())
                 .into_owned()
                 .for_each(|(key, val)| {
-                    parsed_form_map.entry(key).or_insert(vec![]).push(val);
+                    parsed_form_map.entry(key).or_insert_with(|| vec![]).push(val);
                 });
             // Wrap vec with cow pointer
             parsed_form_map.iter().for_each(|(key, val)| {
                 cow_form_map
                     .entry(std::borrow::Cow::from(key))
-                    .or_insert(std::borrow::Cow::from(val));
+                    .or_insert_with(|| std::borrow::Cow::from(val));
             });
 
             let actual_result: HashMap<String, Vec<i32>> = from_cow_map(&cow_form_map).unwrap();
@@ -621,15 +621,15 @@ mod tests {
 
             expected_result
                 .entry("field1".to_string())
-                .or_insert(vec![])
+                .or_insert_with(|| vec![])
                 .push(1);
             expected_result
                 .entry("field1".to_string())
-                .or_insert(vec![])
+                .or_insert_with(|| vec![])
                 .push(2);
             expected_result
                 .entry("field2".to_string())
-                .or_insert(vec![])
+                .or_insert_with(|| vec![])
                 .push(3);
             assert_eq!(actual_result, expected_result);
         })
