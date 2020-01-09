@@ -17,7 +17,7 @@ pub fn body(body: impl ResponseBody) -> ResponseResult {
 pub fn json(body: impl Serialize, status_code: StatusCode) -> ResponseResult {
     let serialized_obj = match serde_json::to_string(&body) {
         Ok(val) => val,
-        Err(e) => std::error::Error::description(&e).to_string(),
+        Err(e) => e.to_string(),
     };
 
     let body = serialized_obj.into_body();

@@ -640,7 +640,7 @@ mod tests {
                 assert!(route_value);
             }
             _ => {
-                assert!(false);
+                panic!()
             }
         }
     }
@@ -669,7 +669,7 @@ mod tests {
                 assert!(route_value);
             }
             _ => {
-                assert!(false);
+                panic!()
             }
         }
 
@@ -686,7 +686,7 @@ mod tests {
                 assert!(route_value);
             }
             _ => {
-                assert!(false);
+                panic!()
             }
         }
     }
@@ -740,7 +740,7 @@ mod tests {
                     assert!(route_value);
                 }
                 _ => {
-                    assert!(false);
+                    panic!()
                 }
             }
         }
@@ -779,7 +779,7 @@ mod tests {
                     assert!(route_value);
                 }
                 _ => {
-                    assert!(false);
+                    panic!()
                 }
             }
         }

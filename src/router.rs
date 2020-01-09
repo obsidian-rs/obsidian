@@ -179,7 +179,7 @@ mod tests {
                 assert_eq!(route_value.method, Method::GET);
             }
             _ => {
-                assert!(false);
+                panic!()
             }
         }
     }
@@ -205,7 +205,7 @@ mod tests {
                 assert_eq!(route_value.method, Method::POST);
             }
             _ => {
-                assert!(false);
+                panic!()
             }
         }
     }
@@ -231,7 +231,7 @@ mod tests {
                 assert_eq!(route_value.method, Method::PUT);
             }
             _ => {
-                assert!(false);
+                panic!()
             }
         }
     }
@@ -257,7 +257,7 @@ mod tests {
                 assert_eq!(route_value.method, Method::DELETE);
             }
             _ => {
-                assert!(false);
+                panic!()
             }
         }
     }
@@ -282,7 +282,7 @@ mod tests {
                 assert_eq!(middlewares.len(), 1);
             }
             _ => {
-                assert!(false);
+                panic!()
             }
         }
     }
@@ -307,7 +307,7 @@ mod tests {
                 assert_eq!(middlewares.len(), 1);
             }
             _ => {
-                assert!(false);
+                panic!()
             }
         }
     }
@@ -355,7 +355,7 @@ mod tests {
                 assert_eq!(route_value.method, Method::DELETE);
             }
             _ => {
-                assert!(false);
+                panic!()
             }
         }
 
@@ -368,7 +368,7 @@ mod tests {
                 assert_eq!(route_value.method, Method::GET);
             }
             _ => {
-                assert!(false);
+                panic!()
             }
         }
     }
@@ -404,7 +404,7 @@ mod tests {
                 assert_eq!(route_value.method, Method::GET);
             }
             _ => {
-                assert!(false);
+                panic!()
             }
         }
 
@@ -417,7 +417,7 @@ mod tests {
                 assert_eq!(route_value.method, Method::GET);
             }
             _ => {
-                assert!(false);
+                panic!()
             }
         }
     }

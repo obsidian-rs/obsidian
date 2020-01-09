@@ -171,7 +171,7 @@ async fn main() {
     });
     param_router.get("/paramtest/:id/test", |ctx: Context| async move {
         let mut param_test: i32 = ctx.param("id").unwrap();
-        param_test = param_test * 10;
+        param_test *= 10;
 
         dbg!(&param_test);
 

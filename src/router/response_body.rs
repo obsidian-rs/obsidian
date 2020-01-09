@@ -28,7 +28,7 @@ impl ResponseBody for Vec<u8> {
             Ok(json) => Body::from(json),
             Err(e) => {
                 eprintln!("serializing failed: {}", e);
-                Body::from(std::error::Error::description(&e).to_string())
+                Body::from(e.to_string())
             }
         }
     }
