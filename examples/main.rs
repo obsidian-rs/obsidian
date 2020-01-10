@@ -4,7 +4,7 @@ use std::{fmt, fmt::Display};
 use obsidian::{
     context::Context,
     middleware::Logger,
-    router::{response, Responder, Router},
+    router::{response, Responder, Router, header},
     App, StatusCode,
 };
 
@@ -67,16 +67,13 @@ async fn main() {
         async {
             let point = Point { x: 1, y: 2 };
 
-            response::json(point, StatusCode::OK)
-            // res.header(header::CONTENT_TYPE, "application/json")
-            //     .status(StatusCode::OK)
-            //     .json(point)
+            response::json(point).status(StatusCode::CREATED)
         }
     });
 
     app.get("/empty-body", |_ctx| async { StatusCode::OK });
 
-    app.get("/vec", |_ctx| async { vec![1, 2, 3] });
+    app.get("/vec", |_ctx| async { vec![1, 2, 3].status(StatusCode::CREATED) });
 
     app.get("/String", |_ctx| {
         async { "<h1>This is a String</h1>".to_string() }
@@ -87,7 +84,7 @@ async fn main() {
     });
 
     app.get("/team/radix", |_ctx| {
-        async { "<h1>Team radix</h1>".to_string() }
+        async { "Team radix".to_string() }
     });
 
     app.get("/test/radix2", |_ctx| {

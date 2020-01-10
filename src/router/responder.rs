@@ -1,9 +1,5 @@
 use super::ResponseBody;
-use crate::error::ObsidianError;
 use hyper::{header, Body, Response, StatusCode};
-use serde::Serialize;
-use serde_json;
-use std::error::Error;
 
 pub type ResponseResult<T = Body> = http::Result<Response<T>>;
 
@@ -117,7 +113,7 @@ where
 
 impl Responder for String {
     fn respond_to(self) -> ResponseResult {
-        self.header(header::CONTENT_TYPE, "text/plain")
+        self.header(header::CONTENT_TYPE, "text/plain; charset=utf-8")
             .status(StatusCode::OK)
             .respond_to()
     }
