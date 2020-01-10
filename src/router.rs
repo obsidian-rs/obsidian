@@ -11,11 +11,13 @@ use self::route_trie::RouteTrie;
 use crate::context::Context;
 use crate::middleware::Middleware;
 use crate::Method;
+pub use hyper::header;
 
 pub use self::handler::Handler;
 pub use self::req_deserializer::{from_cow_map, Error as FormError};
 pub use self::resource::Resource;
 pub use self::responder::{Responder, ResponseResult};
+pub(crate) use self::responder::CustomResponder;
 pub use self::response_body::ResponseBody;
 pub use self::route::Route;
 
