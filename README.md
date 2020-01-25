@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://obsidian-rs.github.io">
-    <img alt="Obsidian Logo" src=".github/media/logo.png" width="256">
+    <img alt="Obsidian Logo" src=".github/media/logo.png" width="450">
   </a>
   <h1 align="center">
     Obsidian
