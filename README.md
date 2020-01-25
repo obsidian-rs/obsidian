@@ -1,4 +1,17 @@
-# Obsidian
+<p align="center">
+  <a href="https://obsidian-rs.github.io">
+    <img alt="Obsidian Logo" src=".github/media/logo.png" width="256">
+  </a>
+  <h1 align="center">
+    Obsidian
+    <a href="https://github.com/obsidian-rs/obsidian/actions">
+      <img alt="GitHub Actions status" src="https://github.com/obsidian-rs/obsidian/workflows/Obsidian%20Action/badge.svg">
+    </a>
+    <a href="https://crates.io/crates/obsidian">
+      <img alt="Obsidian crate" src="http://meritbadge.herokuapp.com/obsidian">
+    </a>
+  </h1>
+</p>
 
 ## What's Obsidian?
 
