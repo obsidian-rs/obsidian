@@ -13,8 +13,6 @@
   </h1>
 </p>
 
-## What's Obsidian?
-
 `Obsidian` is a web-application framework in Rust with a vision to make Rust web development fun.
 
 ## Code Status
