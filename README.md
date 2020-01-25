@@ -15,12 +15,6 @@
 
 `Obsidian` is a web-application framework in Rust with a vision to make Rust web development fun.
 
-## Code Status
-
-|                                    **Version**                                     |                                                                     **Master**                                                                      |
-| :--------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------------------------------------------------: |
-| [![](http://meritbadge.herokuapp.com/obsidian)](https://crates.io/crates/obsidian) | [![Actions Status](https://github.com/obsidian-rs/obsidian/workflows/Obsidian%20Action/badge.svg)](https://github.com/obsidian-rs/obsidian/actions) |
-
 ## Hello World
 ```rust
 use obsidian::App;
