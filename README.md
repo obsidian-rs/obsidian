@@ -15,7 +15,7 @@
     </a>
 </div>
 
-`Obsidian` is a web-application framework in Rust with a vision to make Rust web development fun.
+<p align="center"><strong>Obsidian</strong> is a web-application framework in Rust with a vision to make Rust web development fun.</p>
 
 ## Hello World
 ```rust
