@@ -1,14 +1,21 @@
-# Obsidian
+<p align="center">
+  <a href="https://obsidian-rs.github.io">
+    <img alt="Obsidian Logo" src=".github/media/logo.png" width="450">
+  </a>
+  <h1 align="center">
+    Obsidian
+  </h1>
+</p>
+<div align="center">
+    <a href="https://crates.io/crates/obsidian">
+      <img alt="Obsidian crate" src="https://img.shields.io/crates/v/obsidian.svg">
+    </a>
+    <a href="https://github.com/obsidian-rs/obsidian/actions">
+      <img alt="GitHub Actions status" src="https://github.com/obsidian-rs/obsidian/workflows/Obsidian%20Action/badge.svg">
+    </a>
+</div>
 
-## What's Obsidian?
-
-`Obsidian` is a web-application framework in Rust with a vision to make Rust web development fun.
-
-## Code Status
-
-|                                    **Version**                                     |                                                                     **Master**                                                                      |
-| :--------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------------------------------------------------: |
-| [![](http://meritbadge.herokuapp.com/obsidian)](https://crates.io/crates/obsidian) | [![Actions Status](https://github.com/obsidian-rs/obsidian/workflows/Obsidian%20Action/badge.svg)](https://github.com/obsidian-rs/obsidian/actions) |
+<p align="center"><strong>Obsidian</strong> is a Rust web framework with a vision to make Rust web development fun.</p>
 
 ## Hello World
 ```rust
