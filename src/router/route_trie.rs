@@ -612,7 +612,7 @@ impl ActionPayload {
 mod tests {
     use super::*;
     use crate::context::Context;
-    use crate::middleware::Logger;
+    use crate::middleware::logger::Logger;
     use crate::router::Responder;
 
     async fn handler(_ctx: Context) -> impl Responder {
@@ -639,9 +639,7 @@ mod tests {
                 assert_eq!(middlewares.len(), 1);
                 assert!(route_value);
             }
-            _ => {
-                panic!()
-            }
+            _ => panic!(),
         }
     }
 
@@ -668,9 +666,7 @@ mod tests {
                 assert_eq!(middlewares.len(), 1);
                 assert!(route_value);
             }
-            _ => {
-                panic!()
-            }
+            _ => panic!(),
         }
 
         let result = route_trie.search_route("/ノーマル/テスト/");
@@ -685,9 +681,7 @@ mod tests {
                 assert_eq!(middlewares.len(), 2);
                 assert!(route_value);
             }
-            _ => {
-                panic!()
-            }
+            _ => panic!(),
         }
     }
 
@@ -739,9 +733,7 @@ mod tests {
                     assert_eq!(middlewares.len(), case.1);
                     assert!(route_value);
                 }
-                _ => {
-                    panic!()
-                }
+                _ => panic!(),
             }
         }
     }
@@ -778,9 +770,7 @@ mod tests {
                     assert_eq!(middlewares.len(), 3);
                     assert!(route_value);
                 }
-                _ => {
-                    panic!()
-                }
+                _ => panic!(),
             }
         }
     }

@@ -1,9 +1,12 @@
+mod middleware;
+
+use middleware::logger_example::*;
 use serde::*;
 use std::{fmt, fmt::Display};
 
 use obsidian::{
     context::Context,
-    middleware::Logger,
+    middleware::logger::Logger,
     router::{response, Responder, Router},
     App, StatusCode,
 };
@@ -63,74 +66,74 @@ async fn main() {
 
     app.get("/vec", |_ctx| async { vec![1, 2, 3] });
 
-    app.get("/String", |_ctx| {
-        async { "<h1>This is a String</h1>".to_string() }
+    app.get("/String", |_ctx| async {
+        "<h1>This is a String</h1>".to_string()
     });
 
-    app.get("/test/radix", |_ctx| {
-        async { "<h1>Test radix</h1>".to_string() }
+    app.get("/test/radix", |_ctx| async {
+        "<h1>Test radix</h1>".to_string()
     });
 
-    app.get("/team/radix", |_ctx| {
-        async { "<h1>Team radix</h1>".to_string() }
+    app.get("/team/radix", |_ctx| async {
+        "<h1>Team radix</h1>".to_string()
     });
 
-    app.get("/test/radix2", |_ctx| {
-        async { "<h1>Test radix2</h1>".to_string() }
+    app.get("/test/radix2", |_ctx| async {
+        "<h1>Test radix2</h1>".to_string()
     });
 
-    app.get("/jsontest", |_ctx| {
-        async { response::file("./testjson.html").await }
+    app.get("/jsontest", |_ctx| async {
+        response::file("./testjson.html").await
     });
 
-    app.get("/jsan", |_ctx: Context| {
-        async { "<h1>jsan</h1>".to_string() }
+    app.get("/jsan", |_ctx: Context| async {
+        "<h1>jsan</h1>".to_string()
     });
 
-    app.post("/jsontestapi", |mut ctx: Context| {
-        async move {
-            let json: serde_json::Value = ctx.json().await?;
+    app.post("/jsontestapi", |mut ctx: Context| async move {
+        let json: serde_json::Value = ctx.json().await?;
 
-            println!("{}", json);
+        println!("{}", json);
 
-            Ok(response::json(json, StatusCode::OK))
-        }
+        Ok(response::json(json, StatusCode::OK))
     });
 
     app.post("/jsonteststructapi", responder_obsidian_error);
 
-    app.get("/test/wildcard/*", |ctx: Context| {
-        async move {
-            format!(
-                "{}<br>{}",
-                "<h1>Test wildcard</h1>".to_string(),
-                ctx.uri().path()
-            )
-        }
-    });
-
-    app.get("router/test", |ctx: Context| async move{
+    app.get("/test/wildcard/*", |ctx: Context| async move {
         format!(
             "{}<br>{}",
-            "<h1>router test get</h1>".to_string(),
+            "<h1>Test wildcard</h1>".to_string(),
             ctx.uri().path()
         )
     });
-    app.post("router/test", |ctx: Context| async move{
+
+    app.get("router/test", |ctx: Context| async move {
+        let result = ctx.extensions().get::<LoggerExampleData>()?;
+
+        dbg!(&result.0);
+
+        Some(format!(
+            "{}<br>{}",
+            "<h1>router test get</h1>".to_string(),
+            ctx.uri().path()
+        ))
+    });
+    app.post("router/test", |ctx: Context| async move {
         format!(
             "{}<br>{}",
             "<h1>router test post</h1>".to_string(),
             ctx.uri().path()
         )
     });
-    app.put("router/test", |ctx: Context| async move{
+    app.put("router/test", |ctx: Context| async move {
         format!(
             "{}<br>{}",
             "<h1>router test put</h1>".to_string(),
             ctx.uri().path()
         )
     });
-    app.delete("router/test", |ctx: Context| async move{
+    app.delete("router/test", |ctx: Context| async move {
         format!(
             "{}<br>{}",
             "<h1>router test delete</h1>".to_string(),
@@ -138,7 +141,7 @@ async fn main() {
         )
     });
 
-    app.get("route/diff_route", |ctx: Context| async move{
+    app.get("route/diff_route", |ctx: Context| async move {
         format!(
             "{}<br>{}",
             "<h1>route diff get</h1>".to_string(),
@@ -150,7 +153,7 @@ async fn main() {
 
     form_router.get("/formtest", |_ctx| response::file("./test.html"));
 
-    form_router.post("/formtest", |mut ctx: Context| async move{
+    form_router.post("/formtest", |mut ctx: Context| async move {
         let param_test: ParamTest = ctx.form().await?;
 
         dbg!(&param_test);
@@ -161,6 +164,9 @@ async fn main() {
     let mut param_router = Router::new();
     let logger = Logger::new();
     app.use_service(logger);
+
+    let logger_example = middleware::logger_example::LoggerExample::new();
+    app.use_service(logger_example);
 
     param_router.get("/paramtest/:id", |ctx: Context| async move {
         let param_test: i32 = ctx.param("id")?;
@@ -194,5 +200,6 @@ async fn main() {
 
     app.listen(&addr, || {
         println!("server is listening to {}", &addr);
-    }).await;
+    })
+    .await;
 }
