@@ -2,7 +2,7 @@ mod handler;
 mod req_deserializer;
 mod resource;
 mod responder;
-pub mod response;
+mod response;
 mod response_body;
 mod route;
 mod route_trie;
@@ -16,8 +16,8 @@ pub use hyper::header;
 pub use self::handler::Handler;
 pub use self::req_deserializer::{from_cow_map, Error as FormError};
 pub use self::resource::Resource;
-pub use self::responder::{Responder, ResponseResult};
-pub(crate) use self::responder::CustomResponder;
+pub use self::responder::Responder;
+pub use self::response::Response;
 pub use self::response_body::ResponseBody;
 pub use self::route::Route;
 
@@ -133,7 +133,7 @@ impl Router {
 
             dir_path.append(&mut relative_path);
 
-            Box::pin(async move { response::file(&dir_path.join("/")).await })
+            Box::pin(async move { Response::file(&dir_path.join("/")).await })
         }
     }
 
@@ -146,7 +146,7 @@ impl Router {
             .map(|x| x.to_string())
             .collect::<Vec<String>>();
 
-        response::file(&relative_path.join("/")).await
+        Response::file(&relative_path.join("/")).await
     }
 }
 
@@ -180,9 +180,7 @@ mod tests {
                 assert_eq!(middlewares.len(), 0);
                 assert_eq!(route_value.method, Method::GET);
             }
-            _ => {
-                panic!()
-            }
+            _ => panic!(),
         }
     }
 
@@ -206,9 +204,7 @@ mod tests {
                 assert_eq!(middlewares.len(), 0);
                 assert_eq!(route_value.method, Method::POST);
             }
-            _ => {
-                panic!()
-            }
+            _ => panic!(),
         }
     }
 
@@ -232,9 +228,7 @@ mod tests {
                 assert_eq!(middlewares.len(), 0);
                 assert_eq!(route_value.method, Method::PUT);
             }
-            _ => {
-                panic!()
-            }
+            _ => panic!(),
         }
     }
 
@@ -258,9 +252,7 @@ mod tests {
                 assert_eq!(middlewares.len(), 0);
                 assert_eq!(route_value.method, Method::DELETE);
             }
-            _ => {
-                panic!()
-            }
+            _ => panic!(),
         }
     }
 
@@ -283,9 +275,7 @@ mod tests {
 
                 assert_eq!(middlewares.len(), 1);
             }
-            _ => {
-                panic!()
-            }
+            _ => panic!(),
         }
     }
 
@@ -308,9 +298,7 @@ mod tests {
 
                 assert_eq!(middlewares.len(), 1);
             }
-            _ => {
-                panic!()
-            }
+            _ => panic!(),
         }
     }
 
@@ -356,9 +344,7 @@ mod tests {
                 assert_eq!(middlewares.len(), 0);
                 assert_eq!(route_value.method, Method::DELETE);
             }
-            _ => {
-                panic!()
-            }
+            _ => panic!(),
         }
 
         match diff_result {
@@ -369,9 +355,7 @@ mod tests {
                 assert_eq!(middlewares.len(), 0);
                 assert_eq!(route_value.method, Method::GET);
             }
-            _ => {
-                panic!()
-            }
+            _ => panic!(),
         }
     }
 
@@ -405,9 +389,7 @@ mod tests {
                 assert_eq!(middlewares.len(), 0);
                 assert_eq!(route_value.method, Method::GET);
             }
-            _ => {
-                panic!()
-            }
+            _ => panic!(),
         }
 
         match sub_result {
@@ -418,9 +400,7 @@ mod tests {
                 assert_eq!(middlewares.len(), 1);
                 assert_eq!(route_value.method, Method::GET);
             }
-            _ => {
-                panic!()
-            }
+            _ => panic!(),
         }
     }
 

@@ -1,133 +1,90 @@
+use super::Response;
 use super::ResponseBody;
-use hyper::{header, Body, Response, StatusCode};
-
-pub type ResponseResult<T = Body> = http::Result<Response<T>>;
+use hyper::{header, Body, StatusCode};
 
 pub trait Responder {
-    fn respond_to(self) -> ResponseResult;
-    fn status(self, status: StatusCode) -> CustomResponder<Self>
+    fn respond_to(self) -> Response;
+    fn with_status(self, status: StatusCode) -> Response
     where
         Self: Responder + ResponseBody + Sized,
     {
-        CustomResponder::new(self).status(status)
+        Response::new(self).set_status(status)
     }
 
-    fn header(self, key: header::HeaderName, value: &'static str) -> CustomResponder<Self>
+    fn header(self, key: header::HeaderName, value: &'static str) -> Response
     where
         Self: Responder + ResponseBody + Sized,
     {
-        CustomResponder::new(self).header(key, value)
+        Response::new(self).set_header(key, value)
     }
 
-    fn set_headers(self, headers: Vec<(header::HeaderName, &'static str)>) -> CustomResponder<Self>
+    fn set_headers(self, headers: Vec<(header::HeaderName, &'static str)>) -> Response
     where
         Self: Responder + ResponseBody + Sized,
     {
-        CustomResponder::new(self).set_headers(headers)
+        Response::new(self).set_headers(headers)
     }
 }
 
-/// Allows to override status code and headers for a responder.
-pub struct CustomResponder<T> {
-    body: T,
-    status: Option<StatusCode>,
-    headers: Option<Vec<(header::HeaderName, &'static str)>>,
-}
+// impl<T> Responder for CustomResponder<T>
+// where
+//     T: ResponseBody,
+// {
+//     fn respond_to(self) -> Response {
+//         let status = match self.status {
+//             Some(status) => status,
+//             None => StatusCode::OK,
+//         };
 
-impl<T> CustomResponder<T>
-where
-    T: Responder + ResponseBody,
-{
-    fn new(body: T) -> Self {
-        CustomResponder {
-            body,
-            status: None,
-            headers: None,
-        }
-    }
+//         let mut res = Response::new(status);
 
-    pub fn status(mut self, status: StatusCode) -> Self {
-        self.status = Some(status);
+//         if let Some(headers) = self.headers {
+//             res.set_headers(headers).set_body(self.body);
+//         }
+
+//         res
+//     }
+// }
+
+// enum Either<A, B> {
+//     Left(A),
+//     Right(B),
+// }
+
+// impl<A, B> Responder for Either<A, B>
+// where
+//     A: Responder,
+//     B: Responder,
+// {
+//     fn respond_to(self) -> ResponseResult {
+//         match self {
+//             Either::Left(a) => a.respond_to(),
+//             Either::Right(b) => b.respond_to(),
+//         }
+//     }
+// }
+
+impl Responder for Response {
+    fn respond_to(self) -> Response {
         self
-    }
-
-    pub fn header(mut self, key: header::HeaderName, value: &'static str) -> Self {
-        match self.headers {
-            Some(ref mut x) => x.push((key, value)),
-            None => self.headers = Some(vec![(key, value)]),
-        };
-        self
-    }
-
-    pub fn set_headers(mut self, headers: Vec<(header::HeaderName, &'static str)>) -> Self {
-        match self.headers {
-            Some(ref mut x) => x.extend_from_slice(&headers),
-            None => self.headers = Some(headers),
-        };
-        self
-    }
-}
-
-impl<T> Responder for CustomResponder<T>
-where
-    T: ResponseBody,
-{
-    fn respond_to(self) -> ResponseResult {
-        let status = match self.status {
-            Some(status) => status,
-            None => StatusCode::OK,
-        };
-
-        let mut res = Response::builder();
-        if let Some(headers) = self.headers {
-            match res.headers_mut() {
-                Some(response_headers) => {
-                    headers.iter().for_each(move |(key, value)| {
-                        response_headers.insert(key, header::HeaderValue::from_static(value));
-                    });
-                }
-                None => {}
-            }
-        }
-        res.status(status).body(self.body.into_body())
-    }
-}
-
-enum Either<A, B> {
-    Left(A),
-    Right(B),
-}
-
-impl<A, B> Responder for Either<A, B>
-where
-    A: Responder,
-    B: Responder,
-{
-    fn respond_to(self) -> ResponseResult {
-        match self {
-            Either::Left(a) => a.respond_to(),
-            Either::Right(b) => b.respond_to(),
-        }
     }
 }
 
 impl Responder for String {
-    fn respond_to(self) -> ResponseResult {
-        self.header(header::CONTENT_TYPE, "text/plain; charset=utf-8")
-            .status(StatusCode::OK)
-            .respond_to()
+    fn respond_to(self) -> Response {
+        Response::new(self).set_content_type("text/plain; charset=utf-8")
     }
 }
 
 impl Responder for &'static str {
-    fn respond_to(self) -> ResponseResult {
+    fn respond_to(self) -> Response {
         self.to_string().respond_to()
     }
 }
 
 impl Responder for () {
-    fn respond_to(self) -> ResponseResult {
-        ().status(StatusCode::OK).respond_to()
+    fn respond_to(self) -> Response {
+        Response::new(())
     }
 }
 
@@ -135,34 +92,30 @@ impl<T> Responder for (StatusCode, T)
 where
     T: Responder + ResponseBody,
 {
-    fn respond_to(self) -> ResponseResult {
+    fn respond_to(self) -> Response {
         let (status_code, body) = self;
-        body.status(status_code).respond_to()
+        Response::new(body).set_status(status_code)
     }
 }
 
 impl Responder for Vec<u8> {
-    fn respond_to(self) -> ResponseResult {
+    fn respond_to(self) -> Response {
         match serde_json::to_string(&self) {
-            Ok(json) => json.status(StatusCode::OK).respond_to(),
+            Ok(json) => json.with_status(StatusCode::OK).respond_to(),
             Err(e) => {
                 eprintln!("serializing failed: {}", e);
                 let error = std::error::Error::description(&e).to_string();
-                error.status(StatusCode::INTERNAL_SERVER_ERROR).respond_to()
+                error
+                    .with_status(StatusCode::INTERNAL_SERVER_ERROR)
+                    .respond_to()
             }
         }
     }
 }
 
-impl Responder for ResponseResult {
-    fn respond_to(self) -> ResponseResult {
-        self
-    }
-}
-
 impl Responder for StatusCode {
-    fn respond_to(self) -> ResponseResult {
-        ().status(self).respond_to()
+    fn respond_to(self) -> Response {
+        ().with_status(self).respond_to()
     }
 }
 

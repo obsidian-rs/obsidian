@@ -4,7 +4,7 @@ use std::{fmt, fmt::Display};
 use obsidian::{
     context::Context,
     middleware::Logger,
-    router::{response, Responder, Router, header},
+    router::{header, Responder, Response, Router},
     App, StatusCode,
 };
 
@@ -27,11 +27,25 @@ struct ParamTest {
     test2: String,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+struct Person {
+    name: String,
+    age: i8,
+}
+
 impl Display for JsonTest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{{title: {}, content: {}}}", self.title, self.content)
     }
 }
+
+// async fn responder_json(mut ctx: Context) -> impl Responder {
+//     let person: Person = ctx.json().await?;
+
+//     person.age += 1;
+
+//     Ok(response::json(person))
+// }
 
 // async fn responder_obsidian_error(mut ctx: Context) -> impl Responder {
 //     let json: JsonTest = ctx.json().await?;
@@ -63,40 +77,38 @@ async fn main() {
 "<!DOCTYPE html><html><head><link rel=\"shotcut icon\" href=\"favicon.ico\" type=\"image/x-icon\" sizes=\"32x32\" /></head> <h1>Hello Obsidian</h1></html>"
     });
 
-    app.get("/json", |_ctx| {
-        async {
-            let point = Point { x: 1, y: 2 };
+    app.get("/json", |_ctx| async {
+        let point = Point { x: 1, y: 2 };
 
-            response::json(point).status(StatusCode::CREATED)
-        }
+        Response::json(point).with_status(StatusCode::CREATED)
     });
 
     app.get("/empty-body", |_ctx| async { StatusCode::OK });
 
-    app.get("/vec", |_ctx| async { vec![1, 2, 3].status(StatusCode::CREATED) });
-
-    app.get("/String", |_ctx| {
-        async { "<h1>This is a String</h1>".to_string() }
+    app.get("/vec", |_ctx| async {
+        vec![1, 2, 3].with_status(StatusCode::CREATED)
     });
 
-    app.get("/test/radix", |_ctx| {
-        async { "<h1>Test radix</h1>".to_string() }
+    app.get("/String", |_ctx| async {
+        "<h1>This is a String</h1>".to_string()
     });
 
-    app.get("/team/radix", |_ctx| {
-        async { "Team radix".to_string() }
+    app.get("/test/radix", |_ctx| async {
+        "<h1>Test radix</h1>".to_string()
     });
 
-    app.get("/test/radix2", |_ctx| {
-        async { "<h1>Test radix2</h1>".to_string() }
+    app.get("/team/radix", |_ctx| async { "Team radix".to_string() });
+
+    app.get("/test/radix2", |_ctx| async {
+        "<h1>Test radix2</h1>".to_string()
     });
 
-    app.get("/jsontest", |_ctx| {
-        async { response::file("./testjson.html").await }
+    app.get("/jsontest", |_ctx| async {
+        Response::file("./testjson.html").await
     });
 
-    app.get("/jsan", |_ctx: Context| {
-        async { "<h1>jsan</h1>".to_string() }
+    app.get("/jsan", |_ctx: Context| async {
+        "<h1>jsan</h1>".to_string()
     });
 
     // app.post("/jsontestapi", |mut ctx: Context| {
@@ -111,38 +123,36 @@ async fn main() {
 
     // app.post("/jsonteststructapi", responder_obsidian_error);
 
-    app.get("/test/wildcard/*", |ctx: Context| {
-        async move {
-            format!(
-                "{}<br>{}",
-                "<h1>Test wildcard</h1>".to_string(),
-                ctx.uri().path()
-            )
-        }
+    app.get("/test/wildcard/*", |ctx: Context| async move {
+        format!(
+            "{}<br>{}",
+            "<h1>Test wildcard</h1>".to_string(),
+            ctx.uri().path()
+        )
     });
 
-    app.get("router/test", |ctx: Context| async move{
+    app.get("router/test", |ctx: Context| async move {
         format!(
             "{}<br>{}",
             "<h1>router test get</h1>".to_string(),
             ctx.uri().path()
         )
     });
-    app.post("router/test", |ctx: Context| async move{
+    app.post("router/test", |ctx: Context| async move {
         format!(
             "{}<br>{}",
             "<h1>router test post</h1>".to_string(),
             ctx.uri().path()
         )
     });
-    app.put("router/test", |ctx: Context| async move{
+    app.put("router/test", |ctx: Context| async move {
         format!(
             "{}<br>{}",
             "<h1>router test put</h1>".to_string(),
             ctx.uri().path()
         )
     });
-    app.delete("router/test", |ctx: Context| async move{
+    app.delete("router/test", |ctx: Context| async move {
         format!(
             "{}<br>{}",
             "<h1>router test delete</h1>".to_string(),
@@ -150,7 +160,7 @@ async fn main() {
         )
     });
 
-    app.get("route/diff_route", |ctx: Context| async move{
+    app.get("route/diff_route", |ctx: Context| async move {
         format!(
             "{}<br>{}",
             "<h1>route diff get</h1>".to_string(),
@@ -160,7 +170,7 @@ async fn main() {
 
     let mut form_router = Router::new();
 
-    form_router.get("/formtest", |_ctx| response::file("./test.html"));
+    form_router.get("/formtest", |_ctx| Response::file("./test.html"));
 
     // form_router.post("/formtest", |mut ctx: Context| async move{
     //     let param_test: ParamTest = ctx.form().await?;
@@ -198,7 +208,7 @@ async fn main() {
     param_router.get("/*", |_ctx| async {
         "<h1>404 Not Found</h1>"
             .to_string()
-            .status(StatusCode::NOT_FOUND)
+            .with_status(StatusCode::NOT_FOUND)
     });
 
     app.use_router("/params/", param_router);
@@ -207,5 +217,6 @@ async fn main() {
 
     app.listen(&addr, || {
         println!("server is listening to {}", &addr);
-    }).await;
+    })
+    .await;
 }
