@@ -1,4 +1,4 @@
-use super::{Responder, ResponseBody};
+use super::ResponseBody;
 
 use async_std::fs;
 use http::StatusCode;
@@ -112,7 +112,7 @@ impl Response {
     // }
 
     pub fn html(self, body: impl ResponseBody) -> Self {
-        self.set_content_type("text/html")
+        self.set_content_type("text/html").set_body(body)
     }
 
     pub fn json(self, body: impl Serialize) -> Self {

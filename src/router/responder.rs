@@ -1,6 +1,6 @@
 use super::Response;
 use super::ResponseBody;
-use hyper::{header, Body, StatusCode};
+use hyper::{header, StatusCode};
 
 pub trait Responder {
     fn respond_to(self) -> Response;
