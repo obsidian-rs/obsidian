@@ -86,6 +86,26 @@ Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut icon\" href=
             .json(point)
     });
 
+    app.get("/json-with-headers", |_ctx| async {
+        let point = Point { x: 1, y: 2 };
+
+        let custom_headers = vec![
+            ("X-Custom-Header-1", "Custom header 1"),
+            ("X-Custom-Header-2", "Custom header 2"),
+            ("X-Custom-Header-3", "Custom header 3"),
+        ];
+
+        let standard_headers = vec![
+            (header::AUTHORIZATION, "token"),
+            (header::ACCEPT_CHARSET, "utf-8"),
+        ];
+
+        Response::created()
+            .set_headers(standard_headers)
+            .set_headers_str(custom_headers)
+            .json(point)
+    });
+
     app.get("/empty-body", |_ctx| async { StatusCode::OK });
 
     app.get("/vec", |_ctx| async {

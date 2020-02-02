@@ -88,6 +88,19 @@ impl Response {
         self
     }
 
+    pub fn set_headers_str(mut self, headers: Vec<(&'static str, &'static str)>) -> Self {
+        let values: Vec<(header::HeaderName, &'static str)> = headers
+            .iter()
+            .map(|(k, v)| (header::HeaderName::from_bytes(k.as_bytes()).unwrap(), *v))
+            .collect();
+
+        match self.headers {
+            Some(ref mut x) => x.extend_from_slice(&values),
+            None => self.headers = Some(values),
+        };
+        self
+    }
+
     // pub fn set_headers(mut self, headers: Vec<(header::HeaderName, &'static str)>) -> Self {
     //     let response_headers = self.res.headers_mut();
 
