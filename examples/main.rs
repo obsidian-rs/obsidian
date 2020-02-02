@@ -101,9 +101,26 @@ Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut icon\" href=
         ];
 
         Response::created()
-            .set_headers(standard_headers)
-            .set_headers_str(custom_headers)
+            .with_headers(standard_headers)
+            .with_headers_str(custom_headers)
             .json(point)
+    });
+
+    app.get("/string-with-headers", |_ctx| async {
+        let custom_headers = vec![
+            ("X-Custom-Header-1", "Custom header 1"),
+            ("X-Custom-Header-2", "Custom header 2"),
+            ("X-Custom-Header-3", "Custom header 3"),
+        ];
+
+        let standard_headers = vec![
+            (header::AUTHORIZATION, "token"),
+            (header::ACCEPT_CHARSET, "utf-8"),
+        ];
+
+        "Hello World"
+            .with_headers(standard_headers)
+            .with_headers_str(custom_headers)
     });
 
     app.get("/empty-body", |_ctx| async { StatusCode::OK });

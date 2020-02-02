@@ -11,58 +11,27 @@ pub trait Responder {
         Response::new(self).set_status(status)
     }
 
-    fn header(self, key: header::HeaderName, value: &'static str) -> Response
+    fn with_header(self, key: header::HeaderName, value: &'static str) -> Response
     where
         Self: Responder + ResponseBody + Sized,
     {
         Response::new(self).set_header(key, value)
     }
 
-    fn set_headers(self, headers: Vec<(header::HeaderName, &'static str)>) -> Response
+    fn with_headers(self, headers: Vec<(header::HeaderName, &'static str)>) -> Response
     where
         Self: Responder + ResponseBody + Sized,
     {
         Response::new(self).set_headers(headers)
     }
+
+    fn with_headers_str(self, headers: Vec<(&'static str, &'static str)>) -> Response
+    where
+        Self: Responder + ResponseBody + Sized,
+    {
+        Response::new(self).set_headers_str(headers)
+    }
 }
-
-// impl<T> Responder for CustomResponder<T>
-// where
-//     T: ResponseBody,
-// {
-//     fn respond_to(self) -> Response {
-//         let status = match self.status {
-//             Some(status) => status,
-//             None => StatusCode::OK,
-//         };
-
-//         let mut res = Response::new(status);
-
-//         if let Some(headers) = self.headers {
-//             res.set_headers(headers).set_body(self.body);
-//         }
-
-//         res
-//     }
-// }
-
-// enum Either<A, B> {
-//     Left(A),
-//     Right(B),
-// }
-
-// impl<A, B> Responder for Either<A, B>
-// where
-//     A: Responder,
-//     B: Responder,
-// {
-//     fn respond_to(self) -> ResponseResult {
-//         match self {
-//             Either::Left(a) => a.respond_to(),
-//             Either::Right(b) => b.respond_to(),
-//         }
-//     }
-// }
 
 impl Responder for Response {
     fn respond_to(self) -> Response {

@@ -6,7 +6,6 @@ use hyper::{header, Body};
 use serde::ser::Serialize;
 use serde_json;
 
-// Response::new(200).json()
 pub struct Response {
     body: Body,
     status: StatusCode,
@@ -21,11 +20,6 @@ impl Response {
             headers: None,
         }
     }
-
-    // pub fn json(body: Body) -> Self {
-    //     self.set_content_type("application/json");
-    //     self.set_body(body)
-    // }
 
     pub fn status(&self) -> StatusCode {
         self.status
@@ -69,11 +63,21 @@ impl Response {
         self
     }
 
+    // Alias set_header method
+    pub fn with_header(self, key: header::HeaderName, value: &'static str) -> Self {
+        self.set_header(key, value)
+    }
+
     pub fn set_header_str(self, key: &'static str, value: &'static str) -> Self {
         self.set_header(
             header::HeaderName::from_bytes(key.as_bytes()).unwrap(),
             value,
         )
+    }
+
+    // Alias set_header_str method
+    pub fn with_header_str(self, key: &'static str, value: &'static str) -> Self {
+        self.set_header_str(key, value)
     }
 
     pub fn set_content_type(self, content_type: &'static str) -> Self {
@@ -86,6 +90,11 @@ impl Response {
             None => self.headers = Some(headers),
         };
         self
+    }
+
+    // Alias set_headers method
+    pub fn with_headers(self, headers: Vec<(header::HeaderName, &'static str)>) -> Self {
+        self.set_headers(headers)
     }
 
     pub fn set_headers_str(mut self, headers: Vec<(&'static str, &'static str)>) -> Self {
@@ -101,15 +110,10 @@ impl Response {
         self
     }
 
-    // pub fn set_headers(mut self, headers: Vec<(header::HeaderName, &'static str)>) -> Self {
-    //     let response_headers = self.res.headers_mut();
-
-    //     headers.iter().for_each(move |(key, value)| {
-    //         response_headers.insert(key, header::HeaderValue::from_static(value));
-    //     });
-
-    //     self
-    // }
+    // Alias set_headers_str method
+    pub fn with_headers_str(self, headers: Vec<(&'static str, &'static str)>) -> Self {
+        self.set_headers_str(headers)
+    }
 
     pub fn html(self, body: impl ResponseBody) -> Self {
         self.set_content_type("text/html").set_body(body)
@@ -148,26 +152,3 @@ impl Response {
         Response::new(()).with_status(StatusCode::INTERNAL_SERVER_ERROR)
     }
 }
-
-// pub fn json(body: impl Serialize) -> CustomResponder<String> {
-//     match serde_json::to_string(&body) {
-//         Ok(val) => val
-//             .status(StatusCode::OK)
-//             .header(header::CONTENT_TYPE, "application/json"),
-//         Err(err) => std::error::Error::description(&err)
-//             .to_string()
-//             .status(StatusCode::INTERNAL_SERVER_ERROR),
-//     }
-// }
-
-// pub async fn file(file_path: &str) -> impl Responder {
-//     match fs::read_to_string(file_path.to_string()).await {
-//         Ok(content) => content.status(StatusCode::OK),
-//         Err(err) => {
-//             dbg!(&err);
-//             std::error::Error::description(&err)
-//                 .to_string()
-//                 .status(StatusCode::NOT_FOUND)
-//         }
-//     }
-// }
