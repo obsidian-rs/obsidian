@@ -152,3 +152,56 @@ impl Response {
         Response::new(()).with_status(StatusCode::INTERNAL_SERVER_ERROR)
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use hyper::StatusCode;
+    use serde::*;
+
+    #[test]
+    fn test_response() {
+        let response = Response::new("Hello World");
+        assert_eq!(response.status(), StatusCode::OK);
+        // TODO: add testing for body once the Responder is refactored
+    }
+
+    #[test]
+    fn test_response_utilities_status() {
+        assert_eq!(Response::ok().status(), StatusCode::OK);
+        assert_eq!(Response::created().status(), StatusCode::CREATED);
+        assert_eq!(
+            Response::internal_server_error().status(),
+            StatusCode::INTERNAL_SERVER_ERROR
+        );
+    }
+
+    #[test]
+    fn test_complete_response() {
+        #[derive(Serialize, Deserialize, Debug)]
+        struct Person {
+            name: String,
+            age: i8,
+        };
+
+        let person = Person {
+            name: String::from("Jun Kai"),
+            age: 27,
+        };
+        let response = Response::created()
+            .set_header(header::AUTHORIZATION, "token")
+            .json(person);
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+        assert!(response
+            .headers()
+            .as_ref()
+            .unwrap()
+            .contains(&(header::CONTENT_TYPE, "application/json")));
+        assert!(response
+            .headers()
+            .as_ref()
+            .unwrap()
+            .contains(&(header::AUTHORIZATION, "token")));
+    }
+}
