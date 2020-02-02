@@ -175,20 +175,16 @@ mod test {
 
     #[test]
     fn test_str_responder() {
-        let result = "Hello World".respond_to();
-        if let Ok(response) = result {
-            assert_eq!(response.status(), StatusCode::OK);
-            // TODO: add testing for body once the Responder is refactored
-        }
+        let response = "Hello World".respond_to();
+        assert_eq!(response.status(), StatusCode::OK);
+        // TODO: add testing for body once the Responder is refactored
     }
 
     #[test]
     fn test_string_responder() {
-        let result = "Hello World".to_string().respond_to();
-        if let Ok(response) = result {
-            assert_eq!(response.status(), StatusCode::OK);
-            // TODO: add testing for body once the Responder is refactored
-        }
+        let response = "Hello World".to_string().respond_to();
+        assert_eq!(response.status(), StatusCode::OK);
+        // TODO: add testing for body once the Responder is refactored
     }
 
     // #[test]
@@ -223,20 +219,20 @@ mod test {
 
     #[test]
     fn test_responder_with_custom_status() {
-        let result = "Test".status(StatusCode::CREATED).respond_to();
-        if let Ok(response) = result {
-            assert_eq!(response.status(), StatusCode::CREATED);
-        }
+        let response = "Test".with_status(StatusCode::CREATED).respond_to();
+        assert_eq!(response.status(), StatusCode::CREATED);
     }
 
     #[test]
     fn test_responder_with_custom_header() {
-        let result = "Test"
-            .header(header::CONTENT_TYPE, "application/json")
+        let response = "Test"
+            .with_header(header::CONTENT_TYPE, "application/json")
             .respond_to();
-        if let Ok(response) = result {
-            assert_eq!(response.status(), StatusCode::OK);
-            assert!(response.headers().contains_key("Content-Type"));
-        }
+        assert_eq!(response.status(), StatusCode::OK);
+        assert!(response
+            .headers()
+            .as_ref()
+            .unwrap()
+            .contains(&(header::CONTENT_TYPE, "application/json")));
     }
 }
