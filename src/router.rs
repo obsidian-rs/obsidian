@@ -152,7 +152,7 @@ impl Router {
 mod tests {
     use super::*;
     use crate::context::Context;
-    use crate::middleware::Logger;
+    use crate::middleware::logger::Logger;
 
     async fn handler(_ctx: Context) -> impl Responder {
         "test"
@@ -178,9 +178,7 @@ mod tests {
                 assert_eq!(middlewares.len(), 0);
                 assert_eq!(route_value.method, Method::GET);
             }
-            _ => {
-                panic!()
-            }
+            _ => panic!(),
         }
     }
 
@@ -204,9 +202,7 @@ mod tests {
                 assert_eq!(middlewares.len(), 0);
                 assert_eq!(route_value.method, Method::POST);
             }
-            _ => {
-                panic!()
-            }
+            _ => panic!(),
         }
     }
 
@@ -230,9 +226,7 @@ mod tests {
                 assert_eq!(middlewares.len(), 0);
                 assert_eq!(route_value.method, Method::PUT);
             }
-            _ => {
-                panic!()
-            }
+            _ => panic!(),
         }
     }
 
@@ -256,9 +250,7 @@ mod tests {
                 assert_eq!(middlewares.len(), 0);
                 assert_eq!(route_value.method, Method::DELETE);
             }
-            _ => {
-                panic!()
-            }
+            _ => panic!(),
         }
     }
 
@@ -281,9 +273,7 @@ mod tests {
 
                 assert_eq!(middlewares.len(), 1);
             }
-            _ => {
-                panic!()
-            }
+            _ => panic!(),
         }
     }
 
@@ -306,9 +296,7 @@ mod tests {
 
                 assert_eq!(middlewares.len(), 1);
             }
-            _ => {
-                panic!()
-            }
+            _ => panic!(),
         }
     }
 
@@ -354,9 +342,7 @@ mod tests {
                 assert_eq!(middlewares.len(), 0);
                 assert_eq!(route_value.method, Method::DELETE);
             }
-            _ => {
-                panic!()
-            }
+            _ => panic!(),
         }
 
         match diff_result {
@@ -367,9 +353,7 @@ mod tests {
                 assert_eq!(middlewares.len(), 0);
                 assert_eq!(route_value.method, Method::GET);
             }
-            _ => {
-                panic!()
-            }
+            _ => panic!(),
         }
     }
 
@@ -403,9 +387,7 @@ mod tests {
                 assert_eq!(middlewares.len(), 0);
                 assert_eq!(route_value.method, Method::GET);
             }
-            _ => {
-                panic!()
-            }
+            _ => panic!(),
         }
 
         match sub_result {
@@ -416,9 +398,7 @@ mod tests {
                 assert_eq!(middlewares.len(), 1);
                 assert_eq!(route_value.method, Method::GET);
             }
-            _ => {
-                panic!()
-            }
+            _ => panic!(),
         }
     }
 
