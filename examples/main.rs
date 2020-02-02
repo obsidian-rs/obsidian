@@ -80,7 +80,10 @@ Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut icon\" href=
     app.get("/json", |_ctx| async {
         let point = Point { x: 1, y: 2 };
 
-        Response::created().json(point)
+        Response::created()
+            .set_header(header::AUTHORIZATION, "token")
+            .set_header_str("X-Custom-Header", "Custom header value")
+            .json(point)
     });
 
     app.get("/empty-body", |_ctx| async { StatusCode::OK });

@@ -47,7 +47,7 @@ impl Response {
         &mut self.headers
     }
 
-    pub fn with_status(mut self, status: StatusCode) -> Self {
+    pub fn with_status(self, status: StatusCode) -> Self {
         self.set_status(status)
     }
 
@@ -67,6 +67,13 @@ impl Response {
             None => self.headers = Some(vec![(key, value)]),
         };
         self
+    }
+
+    pub fn set_header_str(self, key: &'static str, value: &'static str) -> Self {
+        self.set_header(
+            header::HeaderName::from_bytes(key.as_bytes()).unwrap(),
+            value,
+        )
     }
 
     pub fn set_content_type(self, content_type: &'static str) -> Self {
