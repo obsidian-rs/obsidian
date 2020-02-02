@@ -91,27 +91,41 @@ impl Response {
     //     self
     // }
 
-    pub fn html(body: impl ResponseBody) -> Self {
-        Response::new(body).set_content_type("text/html")
+    pub fn html(self, body: impl ResponseBody) -> Self {
+        self.set_content_type("text/html")
     }
 
-    pub fn json(body: impl Serialize) -> Self {
+    pub fn json(self, body: impl Serialize) -> Self {
         match serde_json::to_string(&body) {
-            Ok(val) => Response::new(val).set_content_type("application/json"),
-            Err(err) => Response::new(std::error::Error::description(&err).to_string())
+            Ok(val) => self.set_content_type("application/json").set_body(val),
+            Err(err) => self
+                .set_body(std::error::Error::description(&err).to_string())
                 .set_status(StatusCode::INTERNAL_SERVER_ERROR),
         }
     }
 
-    pub async fn file(file_path: &str) -> Self {
+    pub async fn file(self, file_path: &str) -> Self {
         match fs::read_to_string(file_path.to_string()).await {
-            Ok(content) => Response::new(content),
+            Ok(content) => self.set_body(content),
             Err(err) => {
                 dbg!(&err);
-                Response::new(std::error::Error::description(&err).to_string())
+                self.set_body(std::error::Error::description(&err).to_string())
                     .set_status(StatusCode::NOT_FOUND)
             }
         }
+    }
+
+    // Utilities
+    pub fn ok() -> Self {
+        Response::new(()).with_status(StatusCode::OK)
+    }
+
+    pub fn created() -> Self {
+        Response::new(()).with_status(StatusCode::CREATED)
+    }
+
+    pub fn internal_server_error() -> Self {
+        Response::new(()).with_status(StatusCode::INTERNAL_SERVER_ERROR)
     }
 }
 

@@ -133,7 +133,7 @@ impl Router {
 
             dir_path.append(&mut relative_path);
 
-            Box::pin(async move { Response::file(&dir_path.join("/")).await })
+            Box::pin(async move { Response::ok().file(&dir_path.join("/")).await })
         }
     }
 
@@ -146,7 +146,7 @@ impl Router {
             .map(|x| x.to_string())
             .collect::<Vec<String>>();
 
-        Response::file(&relative_path.join("/")).await
+        Response::ok().file(&relative_path.join("/")).await
     }
 }
 

@@ -74,13 +74,13 @@ async fn main() {
     let addr = ([127, 0, 0, 1], 3000).into();
 
     app.get("/", |_ctx| async {
-Response::html("<!DOCTYPE html><html><head><link rel=\"shotcut icon\" href=\"favicon.ico\" type=\"image/x-icon\" sizes=\"32x32\" /></head> <h1>Hello Obsidian</h1></html>")
+Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut icon\" href=\"favicon.ico\" type=\"image/x-icon\" sizes=\"32x32\" /></head> <h1>Hello Obsidian</h1></html>")
     });
 
     app.get("/json", |_ctx| async {
         let point = Point { x: 1, y: 2 };
 
-        Response::json(point).with_status(StatusCode::CREATED)
+        Response::created().json(point)
     });
 
     app.get("/empty-body", |_ctx| async { StatusCode::OK });
@@ -104,7 +104,7 @@ Response::html("<!DOCTYPE html><html><head><link rel=\"shotcut icon\" href=\"fav
     });
 
     app.get("/jsontest", |_ctx| async {
-        Response::file("./testjson.html").await
+        Response::ok().file("./testjson.html").await
     });
 
     app.get("/jsan", |_ctx: Context| async {
@@ -170,7 +170,7 @@ Response::html("<!DOCTYPE html><html><head><link rel=\"shotcut icon\" href=\"fav
 
     let mut form_router = Router::new();
 
-    form_router.get("/formtest", |_ctx| Response::file("./test.html"));
+    form_router.get("/formtest", |_ctx| Response::ok().file("./test.html"));
 
     // form_router.post("/formtest", |mut ctx: Context| async move{
     //     let param_test: ParamTest = ctx.form().await?;
