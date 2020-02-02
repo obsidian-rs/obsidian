@@ -24,13 +24,10 @@ where
 
         let mut res = Response::builder();
         if let Some(headers) = response.headers() {
-            match res.headers_mut() {
-                Some(response_headers) => {
-                    headers.iter().for_each(move |(key, value)| {
-                        response_headers.insert(key, header::HeaderValue::from_static(value));
-                    });
-                }
-                None => {}
+            if let Some(response_headers) = res.headers_mut() {
+                headers.iter().for_each(move |(key, value)| {
+                    response_headers.insert(key, header::HeaderValue::from_static(value));
+                });
             }
         }
 
