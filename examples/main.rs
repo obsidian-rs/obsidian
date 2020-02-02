@@ -74,7 +74,7 @@ async fn main() {
     let addr = ([127, 0, 0, 1], 3000).into();
 
     app.get("/", |_ctx| async {
-"<!DOCTYPE html><html><head><link rel=\"shotcut icon\" href=\"favicon.ico\" type=\"image/x-icon\" sizes=\"32x32\" /></head> <h1>Hello Obsidian</h1></html>"
+Response::html("<!DOCTYPE html><html><head><link rel=\"shotcut icon\" href=\"favicon.ico\" type=\"image/x-icon\" sizes=\"32x32\" /></head> <h1>Hello Obsidian</h1></html>")
     });
 
     app.get("/json", |_ctx| async {

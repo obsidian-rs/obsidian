@@ -91,6 +91,10 @@ impl Response {
     //     self
     // }
 
+    pub fn html(body: impl ResponseBody) -> Self {
+        Response::new(body).set_content_type("text/html")
+    }
+
     pub fn json(body: impl Serialize) -> Self {
         match serde_json::to_string(&body) {
             Ok(val) => Response::new(val).set_content_type("application/json"),
