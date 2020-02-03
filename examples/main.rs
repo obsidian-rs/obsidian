@@ -7,7 +7,7 @@ use std::{fmt, fmt::Display};
 use obsidian::{
     context::Context,
     middleware::logger::Logger,
-    router::{response, Responder, Response, Router},
+    router::{header, Responder, Response, Router},
     App, StatusCode,
 };
 
@@ -235,7 +235,7 @@ Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut icon\" href=
 
     //     Ok(response::json(param_test, StatusCode::OK))
     // });
-  
+
     let logger_example = middleware::logger_example::LoggerExample::new();
     app.use_service(logger_example);
 
