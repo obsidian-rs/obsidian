@@ -4,7 +4,6 @@ use async_std::fs;
 use http::StatusCode;
 use hyper::{header, Body};
 use serde::ser::Serialize;
-use serde_json;
 
 pub struct Response {
     body: Body,
@@ -123,7 +122,7 @@ impl Response {
         match serde_json::to_string(&body) {
             Ok(val) => self.set_content_type("application/json").set_body(val),
             Err(err) => self
-                .set_body(std::error::Error::description(&err).to_string())
+                .set_body(err.to_string())
                 .set_status(StatusCode::INTERNAL_SERVER_ERROR),
         }
     }
@@ -133,7 +132,7 @@ impl Response {
             Ok(content) => self.set_body(content),
             Err(err) => {
                 dbg!(&err);
-                self.set_body(std::error::Error::description(&err).to_string())
+                self.set_body(err.to_string())
                     .set_status(StatusCode::NOT_FOUND)
             }
         }

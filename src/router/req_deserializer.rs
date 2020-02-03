@@ -477,7 +477,10 @@ mod tests {
             form_urlencoded::parse(buf.bytes())
                 .into_owned()
                 .for_each(|(key, val)| {
-                    parsed_form_map.entry(key).or_insert_with(|| vec![]).push(val);
+                    parsed_form_map
+                        .entry(key)
+                        .or_insert_with(|| vec![])
+                        .push(val);
                 });
             // Wrap vec with cow pointer
             parsed_form_map.iter().for_each(|(key, val)| {
@@ -511,7 +514,10 @@ mod tests {
             form_urlencoded::parse(buf.bytes())
                 .into_owned()
                 .for_each(|(key, val)| {
-                    parsed_form_map.entry(key).or_insert_with(|| vec![]).push(val);
+                    parsed_form_map
+                        .entry(key)
+                        .or_insert_with(|| vec![])
+                        .push(val);
                 });
             // Wrap vec with cow pointer
             parsed_form_map.iter().for_each(|(key, val)| {
@@ -542,7 +548,10 @@ mod tests {
             form_urlencoded::parse(buf.bytes())
                 .into_owned()
                 .for_each(|(key, val)| {
-                    parsed_form_map.entry(key).or_insert_with(||vec![]).push(val);
+                    parsed_form_map
+                        .entry(key)
+                        .or_insert_with(|| vec![])
+                        .push(val);
                 });
             // Wrap vec with cow pointer
             parsed_form_map.iter().for_each(|(key, val)| {
@@ -573,7 +582,10 @@ mod tests {
             form_urlencoded::parse(buf.bytes())
                 .into_owned()
                 .for_each(|(key, val)| {
-                    parsed_form_map.entry(key).or_insert_with(|| vec![]).push(val);
+                    parsed_form_map
+                        .entry(key)
+                        .or_insert_with(|| vec![])
+                        .push(val);
                 });
             // Wrap vec with cow pointer
             parsed_form_map.iter().for_each(|(key, val)| {
@@ -607,7 +619,10 @@ mod tests {
             form_urlencoded::parse(buf.bytes())
                 .into_owned()
                 .for_each(|(key, val)| {
-                    parsed_form_map.entry(key).or_insert_with(|| vec![]).push(val);
+                    parsed_form_map
+                        .entry(key)
+                        .or_insert_with(|| vec![])
+                        .push(val);
                 });
             // Wrap vec with cow pointer
             parsed_form_map.iter().for_each(|(key, val)| {

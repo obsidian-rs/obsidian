@@ -73,7 +73,7 @@ impl Responder for Vec<u8> {
             Ok(json) => json.with_status(StatusCode::OK).respond_to(),
             Err(e) => {
                 eprintln!("serializing failed: {}", e);
-                let error = std::error::Error::description(&e).to_string();
+                let error = e.to_string();
                 error
                     .with_status(StatusCode::INTERNAL_SERVER_ERROR)
                     .respond_to()
@@ -88,85 +88,29 @@ impl Responder for StatusCode {
     }
 }
 
-// impl Responder for Option<String> {
-//     fn respond_to(self) -> ResponseResult {
-//         match self {
-//             Some(resp) => resp.respond_to(),
-//             None => "Not Found"
-//                 .to_string()
-//                 .status(StatusCode::NOT_FOUND)
-//                 .respond_to(),
-//         }
-//     }
-// }
+impl Responder for Option<String> {
+    fn respond_to(self) -> Response {
+        match self {
+            Some(resp) => resp.respond_to(),
+            None => "Not Found"
+                .to_string()
+                .with_status(StatusCode::NOT_FOUND)
+                .respond_to(),
+        }
+    }
+}
 
-// impl Responder for Option<&'static str> {
-//     fn respond_to(self) -> ResponseResult {
-//         match self {
-//             Some(resp) => resp.respond_to(),
-//             None => "Not Found"
-//                 .to_string()
-//                 .status(StatusCode::NOT_FOUND)
-//                 .respond_to(),
-//         }
-//     }
-// }
-
-// impl Responder for Option<Vec<u8>> {
-//     fn respond_to(self) -> ResponseResult {
-//         match self {
-//             Some(resp) => resp.respond_to(),
-//             None => "Not Found"
-//                 .to_string()
-//                 .status(StatusCode::NOT_FOUND)
-//                 .respond_to(),
-//         }
-//     }
-// }
-
-// impl<T, E> Responder for Result<T, E>
-// where
-//     T: ResponseBody,
-//     E: ResponseBody,
-// {
-//     fn respond_to(self) -> ResponseResult {
-//         match self {
-//             Ok(resp_body) => Response::builder()
-//                 .status(StatusCode::OK)
-//                 .body(resp_body.into_body()),
-//             Err(error) => Response::builder()
-//                 .status(StatusCode::INTERNAL_SERVER_ERROR)
-//                 .body(error.into_body()),
-//         }
-//     }
-// }
-
-// impl<T> Responder for Result<T, ObsidianError>
-// where
-//     T: ResponseBody,
-// {
-//     fn respond_to(self) -> ResponseResult {
-//         match self {
-//             Ok(_) => Response::builder()
-//                 .status(StatusCode::OK)
-//                 .body(().into_body()),
-//             Err(e) => Response::builder()
-//                 .status(StatusCode::INTERNAL_SERVER_ERROR)
-//                 .body(e.description().to_string().into_body()),
-//         }
-//     }
-// }
-
-// impl Responder for Result<ResponseResult, ObsidianError> {
-//     fn respond_to(self) -> ResponseResult {
-//         match self {
-//             Ok(x) => x,
-//             Err(e) => Response::builder()
-//                 .status(StatusCode::INTERNAL_SERVER_ERROR)
-//                 .body(e.description().to_string().into_body()),
-//         }
-//     }
-// }
+impl Responder for Option<&'static str> {
+    fn respond_to(self) -> Response {
+        match self {
+            Some(resp) => resp.respond_to(),
+            None => "Not Found"
+                .to_string()
+                .with_status(StatusCode::NOT_FOUND)
+                .respond_to(),
+        }
+    }
+}
 
 #[cfg(test)]
 mod test {

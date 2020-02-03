@@ -28,7 +28,7 @@ struct ParamTest {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct Person {
+struct User {
     name: String,
     age: i8,
 }
