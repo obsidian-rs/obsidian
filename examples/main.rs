@@ -1,10 +1,13 @@
+mod middleware;
+
+use middleware::logger_example::*;
 use serde::*;
 use std::{fmt, fmt::Display};
 
 use obsidian::{
     context::Context,
-    middleware::Logger,
-    router::{header, Responder, Response, Router},
+    middleware::logger::Logger,
+    router::{response, Responder, Response, Router},
     App, StatusCode,
 };
 
@@ -151,18 +154,6 @@ Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut icon\" href=
         "<h1>jsan</h1>".to_string()
     });
 
-    // app.post("/jsontestapi", |mut ctx: Context| {
-    //     async move {
-    //         let json: serde_json::Value = ctx.json().await?;
-
-    //         println!("{}", json);
-
-    //         Ok(response::json(json, StatusCode::OK))
-    //     }
-    // });
-
-    // app.post("/jsonteststructapi", responder_obsidian_error);
-
     app.get("/test/wildcard/*", |ctx: Context| async move {
         format!(
             "{}<br>{}",
@@ -172,11 +163,15 @@ Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut icon\" href=
     });
 
     app.get("router/test", |ctx: Context| async move {
-        format!(
+        let result = ctx.extensions().get::<LoggerExampleData>()?;
+
+        dbg!(&result.0);
+
+        Some(format!(
             "{}<br>{}",
             "<h1>router test get</h1>".to_string(),
             ctx.uri().path()
-        )
+        ))
     });
     app.post("router/test", |ctx: Context| async move {
         format!(
@@ -240,6 +235,9 @@ Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut icon\" href=
 
     //     Ok(response::json(param_test, StatusCode::OK))
     // });
+  
+    let logger_example = middleware::logger_example::LoggerExample::new();
+    app.use_service(logger_example);
 
     param_router.get("/test-next-wild/*", |_ctx| async {
         "<h1>test next wild</h1>".to_string()

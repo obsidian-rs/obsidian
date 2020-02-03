@@ -467,8 +467,8 @@ mod tests {
             let body = Request::new(Body::from("field1=abc&field1=xyz&field2=12")).into_body();
             let buf = match body::aggregate(body).await {
                 Ok(buf) => buf,
-                Err(_e) => {
-                    panic!("Body parsing fail");
+                Err(e) => {
+                    panic!("Body parsing fail {}", e);
                 }
             };
             let mut parsed_form_map: HashMap<String, Vec<String>> = HashMap::default();
@@ -504,8 +504,8 @@ mod tests {
             let body = Request::new(Body::from("field1=1&field1=2")).into_body();
             let buf = match body::aggregate(body).await {
                 Ok(buf) => buf,
-                Err(_e) => {
-                    panic!("Body parsing fail");
+                Err(e) => {
+                    panic!("Body parsing fail {}", e);
                 }
             };
             let mut parsed_form_map: HashMap<String, Vec<String>> = HashMap::default();
@@ -538,8 +538,8 @@ mod tests {
             let body = Request::new(Body::from("field1=1&field1=2&field2=12")).into_body();
             let buf = match body::aggregate(body).await {
                 Ok(buf) => buf,
-                Err(_e) => {
-                    panic!("Body parsing fail");
+                Err(e) => {
+                    panic!("Body parsing fail {}", e);
                 }
             };
             let mut parsed_form_map: HashMap<String, Vec<String>> = HashMap::default();
@@ -572,8 +572,8 @@ mod tests {
             let body = Request::new(Body::from("field1=1&field1=2")).into_body();
             let buf = match body::aggregate(body).await {
                 Ok(buf) => buf,
-                Err(_e) => {
-                    panic!("Body parsing fail");
+                Err(e) => {
+                    panic!("Body parsing fail {}", e);
                 }
             };
             let mut parsed_form_map: HashMap<String, Vec<String>> = HashMap::default();
@@ -609,8 +609,8 @@ mod tests {
             let body = Request::new(Body::from("field1=1&field1=2&field2=3")).into_body();
             let buf = match body::aggregate(body).await {
                 Ok(buf) => buf,
-                Err(_e) => {
-                    panic!("Body parsing fail");
+                Err(e) => {
+                    panic!("Body parsing fail {}", e);
                 }
             };
             let mut parsed_form_map: HashMap<String, Vec<String>> = HashMap::default();

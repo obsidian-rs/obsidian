@@ -1,3 +1,4 @@
+use http::Extensions;
 use hyper::{body, body::Buf};
 use serde::de::DeserializeOwned;
 use url::form_urlencoded;
@@ -45,6 +46,31 @@ impl Context {
     /// Access request uri
     pub fn uri(&self) -> &Uri {
         self.request.uri()
+    }
+
+    /// Access request extensions
+    pub fn extensions(&self) -> &Extensions {
+        self.request.extensions()
+    }
+
+    /// Access mutable request extensions
+    pub fn extensions_mut(&mut self) -> &mut Extensions {
+        self.request.extensions_mut()
+    }
+
+    /// Add dynamic data into request extensions
+    pub fn add<T: Send + Sync + 'static>(&mut self, ctx_data: T) {
+        self.extensions_mut().insert(ctx_data);
+    }
+
+    /// Get dynamic data from request extensions
+    pub fn get<T: Send + Sync + 'static>(&mut self) {
+        self.extensions().get::<T>();
+    }
+
+    /// Get mutable dynamic data from request extensions
+    pub fn get_mut<T: Send + Sync + 'static>(&mut self) {
+        self.extensions_mut().get_mut::<T>();
     }
 
     /// Method to get the params value according to key.

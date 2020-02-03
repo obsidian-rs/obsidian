@@ -154,7 +154,7 @@ impl Router {
 mod tests {
     use super::*;
     use crate::context::Context;
-    use crate::middleware::Logger;
+    use crate::middleware::logger::Logger;
 
     async fn handler(_ctx: Context) -> impl Responder {
         "test"

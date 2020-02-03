@@ -1,6 +1,4 @@
-mod logger;
-
-pub use self::logger::Logger;
+pub mod logger;
 
 use async_trait::async_trait;
 
