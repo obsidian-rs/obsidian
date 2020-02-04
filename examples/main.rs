@@ -173,27 +173,6 @@ Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut icon\" href=
             ctx.uri().path()
         ))
     });
-    app.post("router/test", |ctx: Context| async move {
-        format!(
-            "{}<br>{}",
-            "<h1>router test post</h1>".to_string(),
-            ctx.uri().path()
-        )
-    });
-    app.put("router/test", |ctx: Context| async move {
-        format!(
-            "{}<br>{}",
-            "<h1>router test put</h1>".to_string(),
-            ctx.uri().path()
-        )
-    });
-    app.delete("router/test", |ctx: Context| async move {
-        format!(
-            "{}<br>{}",
-            "<h1>router test delete</h1>".to_string(),
-            ctx.uri().path()
-        )
-    });
 
     app.get("route/diff_route", |ctx: Context| async move {
         format!(
@@ -201,6 +180,14 @@ Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut icon\" href=
             "<h1>route diff get</h1>".to_string(),
             ctx.uri().path()
         )
+    });
+
+    app.get("/user", |mut ctx: Context| async move {
+        let user: User = ctx.json().await?;
+
+        println!("name: {}, age: {}", user.name, user.age);
+
+        Ok(Response::ok().json(user))
     });
 
     let mut form_router = Router::new();
@@ -236,8 +223,8 @@ Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut icon\" href=
     //     Ok(response::json(param_test, StatusCode::OK))
     // });
 
-    let logger_example = middleware::logger_example::LoggerExample::new();
-    app.use_service(logger_example);
+    // let logger_example = middleware::logger_example::LoggerExample::new();
+    // app.use_service(logger_example);
 
     param_router.get("/test-next-wild/*", |_ctx| async {
         "<h1>test next wild</h1>".to_string()
