@@ -47,6 +47,7 @@ serde_json = '1.0.44'
 url = '2.1.0'
 async-std = '1.4.0'
 async-trait = '0.1.22'
+cookie = "0.13.3"
 
 [dependencies.serde]
 version = '1.0.104'

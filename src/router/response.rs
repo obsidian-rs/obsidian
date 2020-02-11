@@ -1,6 +1,7 @@
 use super::ResponseBody;
 
 use async_std::fs;
+use cookie::Cookie;
 use http::StatusCode;
 use hyper::{header, Body};
 use serde::ser::Serialize;
@@ -9,7 +10,8 @@ use serde::ser::Serialize;
 pub struct Response {
     body: Body,
     status: StatusCode,
-    headers: Option<Vec<(header::HeaderName, &'static str)>>,
+    headers: Option<Vec<(header::HeaderName, String)>>,
+    cookies: Option<Vec<Cookie<'static>>>,
 }
 
 impl Response {
@@ -18,6 +20,7 @@ impl Response {
             body: body.into_body(),
             status: StatusCode::OK,
             headers: None,
+            cookies: None,
         }
     }
 
@@ -33,11 +36,15 @@ impl Response {
         self.body
     }
 
-    pub fn headers(&self) -> &Option<Vec<(header::HeaderName, &'static str)>> {
+    pub fn headers(&self) -> &Option<Vec<(header::HeaderName, String)>> {
         &self.headers
     }
 
-    pub fn headers_mut(&mut self) -> &mut Option<Vec<(header::HeaderName, &'static str)>> {
+    pub fn cookies(&self) -> &Option<Vec<Cookie>> {
+        &self.cookies
+    }
+
+    pub fn headers_mut(&mut self) -> &mut Option<Vec<(header::HeaderName, String)>> {
         &mut self.headers
     }
 
@@ -55,20 +62,20 @@ impl Response {
         self
     }
 
-    pub fn set_header(mut self, key: header::HeaderName, value: &'static str) -> Self {
+    pub fn set_header(mut self, key: header::HeaderName, value: &str) -> Self {
         match self.headers {
-            Some(ref mut x) => x.push((key, value)),
-            None => self.headers = Some(vec![(key, value)]),
+            Some(ref mut x) => x.push((key, value.to_string())),
+            None => self.headers = Some(vec![(key, value.to_string())]),
         };
         self
     }
 
     // Alias set_header method
-    pub fn with_header(self, key: header::HeaderName, value: &'static str) -> Self {
+    pub fn with_header(self, key: header::HeaderName, value: &str) -> Self {
         self.set_header(key, value)
     }
 
-    pub fn set_header_str(self, key: &'static str, value: &'static str) -> Self {
+    pub fn set_header_str(self, key: &'static str, value: &str) -> Self {
         self.set_header(
             header::HeaderName::from_bytes(key.as_bytes()).unwrap(),
             value,
@@ -76,15 +83,48 @@ impl Response {
     }
 
     // Alias set_header_str method
-    pub fn with_header_str(self, key: &'static str, value: &'static str) -> Self {
+    pub fn with_header_str(self, key: &'static str, value: &str) -> Self {
         self.set_header_str(key, value)
     }
 
-    pub fn set_content_type(self, content_type: &'static str) -> Self {
+    pub fn set_content_type(self, content_type: &str) -> Self {
         self.set_header(header::CONTENT_TYPE, content_type)
     }
 
-    pub fn set_headers(mut self, headers: Vec<(header::HeaderName, &'static str)>) -> Self {
+    pub fn with_cookie(self, cookie: Cookie<'static>) -> Self {
+        self.set_cookie(cookie)
+    }
+
+    pub fn with_cookies(self, cookies: Vec<Cookie<'static>>) -> Self {
+        self.set_cookies(cookies)
+    }
+
+    pub fn with_cookie_raw(self, cookie: &str) -> Self {
+        self.set_header(header::SET_COOKIE, cookie)
+    }
+
+    pub fn set_cookie(mut self, cookie: Cookie<'static>) -> Self {
+        match self.cookies {
+            Some(ref mut x) => x.push(cookie),
+            None => self.cookies = Some(vec![cookie]),
+        }
+        self
+    }
+
+    pub fn set_cookies(mut self, mut cookies: Vec<Cookie<'static>>) -> Self {
+        match self.cookies {
+            Some(ref mut x) => x.append(&mut cookies),
+            None => self.cookies = Some(cookies),
+        }
+        self
+    }
+
+    pub fn set_headers(mut self, headers: Vec<(header::HeaderName, &str)>) -> Self {
+        let headers: Vec<(header::HeaderName, String)> = headers
+            .iter()
+            .map(|(k, v)| (header::HeaderName::from(k), (*v).to_string()))
+            .collect();
+
         match self.headers {
             Some(ref mut x) => x.extend_from_slice(&headers),
             None => self.headers = Some(headers),
@@ -98,9 +138,14 @@ impl Response {
     }
 
     pub fn set_headers_str(mut self, headers: Vec<(&'static str, &'static str)>) -> Self {
-        let values: Vec<(header::HeaderName, &'static str)> = headers
+        let values: Vec<(header::HeaderName, String)> = headers
             .iter()
-            .map(|(k, v)| (header::HeaderName::from_bytes(k.as_bytes()).unwrap(), *v))
+            .map(|(k, v)| {
+                (
+                    header::HeaderName::from_bytes(k.as_bytes()).unwrap(),
+                    (*v).to_string(),
+                )
+            })
             .collect();
 
         match self.headers {
@@ -197,11 +242,11 @@ mod test {
             .headers()
             .as_ref()
             .unwrap()
-            .contains(&(header::CONTENT_TYPE, "application/json")));
+            .contains(&(header::CONTENT_TYPE, "application/json".to_string())));
         assert!(response
             .headers()
             .as_ref()
             .unwrap()
-            .contains(&(header::AUTHORIZATION, "token")));
+            .contains(&(header::AUTHORIZATION, "token".to_string())));
     }
 }
