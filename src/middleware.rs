@@ -1,3 +1,4 @@
+pub mod cookie_parser;
 pub mod logger;
 
 use async_trait::async_trait;

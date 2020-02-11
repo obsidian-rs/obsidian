@@ -1,3 +1,4 @@
+use cookie::Cookie;
 use http::Extensions;
 use hyper::{body, body::Buf};
 use serde::de::DeserializeOwned;
@@ -9,6 +10,7 @@ use std::collections::HashMap;
 use std::convert::From;
 use std::str::FromStr;
 
+use crate::middleware::cookie_parser::CookieParserData;
 use crate::router::{from_cow_map, ContextResult, Responder, Response};
 use crate::ObsidianError;
 use crate::{
@@ -273,6 +275,16 @@ impl Context {
     /// Json value merged with Params
     pub fn json_with_param<T: DeserializeOwned>(&mut self) -> Result<T, ObsidianError> {
         unimplemented!()
+    }
+
+    pub fn cookie(&self, name: &str) -> Option<&Cookie> {
+        if let Some(cookie_data) = self.get::<CookieParserData>() {
+            if let Some(ref cookie) = cookie_data.cookie_jar().get(name) {
+                return Some(*cookie);
+            }
+        }
+
+        None
     }
 
     /// Consumes body of the request and replace it with empty body.
