@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::convert::From;
 use std::str::FromStr;
 
-use crate::router::from_cow_map;
+use crate::router::{from_cow_map, ContextResult, Responder, Response};
 use crate::ObsidianError;
 use crate::{header::HeaderValue, Body, HeaderMap, Method, Request, Uri};
 
@@ -18,6 +18,7 @@ use crate::{header::HeaderValue, Body, HeaderMap, Method, Request, Uri};
 pub struct Context {
     request: Request<Body>,
     params_data: HashMap<String, String>,
+    response: Option<Response>,
 }
 
 impl Context {
@@ -25,6 +26,7 @@ impl Context {
         Context {
             request,
             params_data,
+            response: None,
         }
     }
 
@@ -272,6 +274,16 @@ impl Context {
     /// Consumes body of the request and replace it with empty body.
     pub fn take_body(&mut self) -> Body {
         std::mem::replace(self.request.body_mut(), Body::empty())
+    }
+
+    /// Take response
+    pub fn take_response(self) -> Option<Response> {
+        self.response
+    }
+
+    pub fn build(mut self, res: impl Responder) -> ContextResult {
+        self.response = Some(res.respond_to());
+        Ok(self)
     }
 
     fn parse_queries<T: DeserializeOwned>(query: &[u8]) -> Result<T, ObsidianError> {

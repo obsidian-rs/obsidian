@@ -8,7 +8,7 @@ use obsidian::{
     context::Context,
     middleware::logger::Logger,
     router::{header, Responder, Response, Router},
-    App, StatusCode,
+    App, ObsidianError, StatusCode,
 };
 
 // Testing example
@@ -56,7 +56,7 @@ impl Display for JsonTest {
 //     Ok(response::json(json, StatusCode::OK))
 // }
 
-// fn responder_with_header(_ctx: Context) -> impl Responder {
+// fn responder_with_header(ctx: Context: Context) -> impl Responder {
 //     let headers = vec![
 //         ("X-Custom-Header-4", "custom-value-4"),
 //         ("X-Custom-Header-5", "custom-value-5"),
@@ -76,20 +76,22 @@ async fn main() {
     let mut app = App::new();
     let addr = ([127, 0, 0, 1], 3000).into();
 
-    app.get("/", |_ctx| async {
-Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut icon\" href=\"favicon.ico\" type=\"image/x-icon\" sizes=\"32x32\" /></head> <h1>Hello Obsidian</h1></html>")
+    app.get("/", |ctx: Context| async {
+ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut icon\" href=\"favicon.ico\" type=\"image/x-icon\" sizes=\"32x32\" /></head> <h1>Hello Obsidian</h1></html>"))
     });
 
-    app.get("/json", |_ctx| async {
+    app.get("/json", |ctx: Context| async {
         let point = Point { x: 1, y: 2 };
 
-        Response::created()
-            .set_header(header::AUTHORIZATION, "token")
-            .set_header_str("X-Custom-Header", "Custom header value")
-            .json(point)
+        ctx.build(
+            Response::created()
+                .set_header(header::AUTHORIZATION, "token")
+                .set_header_str("X-Custom-Header", "Custom header value")
+                .json(point),
+        )
     });
 
-    app.get("/json-with-headers", |_ctx| async {
+    app.get("/json-with-headers", |ctx: Context| async {
         let point = Point { x: 1, y: 2 };
 
         let custom_headers = vec![
@@ -103,13 +105,15 @@ Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut icon\" href=
             (header::ACCEPT_CHARSET, "utf-8"),
         ];
 
-        Response::created()
-            .with_headers(standard_headers)
-            .with_headers_str(custom_headers)
-            .json(point)
+        ctx.build(
+            Response::created()
+                .with_headers(standard_headers)
+                .with_headers_str(custom_headers)
+                .json(point),
+        )
     });
 
-    app.get("/string-with-headers", |_ctx| async {
+    app.get("/string-with-headers", |ctx: Context| async {
         let custom_headers = vec![
             ("X-Custom-Header-1", "Custom header 1"),
             ("X-Custom-Header-2", "Custom header 2"),
@@ -121,91 +125,114 @@ Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut icon\" href=
             (header::ACCEPT_CHARSET, "utf-8"),
         ];
 
-        "Hello World"
-            .with_headers(standard_headers)
-            .with_headers_str(custom_headers)
+        ctx.build(
+            "Hello World"
+                .with_headers(standard_headers)
+                .with_headers_str(custom_headers),
+        )
     });
 
-    app.get("/empty-body", |_ctx| async { StatusCode::OK });
-
-    app.get("/vec", |_ctx| async {
-        vec![1, 2, 3].with_status(StatusCode::CREATED)
+    app.get("/empty-body", |ctx: Context| async {
+        ctx.build(StatusCode::OK)
     });
 
-    app.get("/String", |_ctx| async {
-        "<h1>This is a String</h1>".to_string()
+    app.get("/vec", |ctx: Context| async {
+        ctx.build(vec![1, 2, 3].with_status(StatusCode::CREATED))
     });
 
-    app.get("/test/radix", |_ctx| async {
-        "<h1>Test radix</h1>".to_string()
+    app.get("/String", |ctx: Context| async {
+        ctx.build("<h1>This is a String</h1>".to_string())
     });
 
-    app.get("/team/radix", |_ctx| async { "Team radix".to_string() });
-
-    app.get("/test/radix2", |_ctx| async {
-        "<h1>Test radix2</h1>".to_string()
+    app.get("/test/radix", |ctx: Context| async {
+        ctx.build("<h1>Test radix</h1>".to_string())
     });
 
-    app.get("/jsontest", |_ctx| async {
-        Response::ok().file("./testjson.html").await
+    app.get("/team/radix", |ctx: Context| async {
+        ctx.build("Team radix".to_string())
     });
 
-    app.get("/jsan", |_ctx: Context| async {
-        "<h1>jsan</h1>".to_string()
+    app.get("/test/radix2", |ctx: Context| async {
+        ctx.build("<h1>Test radix2</h1>".to_string())
+    });
+
+    app.get("/jsontest", |ctx: Context| async {
+        ctx.build(Response::ok().file("./testjson.html").await)
+    });
+
+    app.get("/jsan", |ctx: Context| async {
+        ctx.build("<h1>jsan</h1>".to_string())
     });
 
     app.get("/test/wildcard/*", |ctx: Context| async move {
-        format!(
+        let res = format!(
             "{}<br>{}",
             "<h1>Test wildcard</h1>".to_string(),
             ctx.uri().path()
-        )
+        );
+
+        ctx.build(res)
     });
 
     app.get("router/test", |ctx: Context| async move {
-        let result = ctx.extensions().get::<LoggerExampleData>()?;
+        let result = ctx
+            .extensions()
+            .get::<LoggerExampleData>()
+            .ok_or(ObsidianError::NoneError)?;
 
         dbg!(&result.0);
 
-        Some(format!(
+        let res = Some(format!(
             "{}<br>{}",
             "<h1>router test get</h1>".to_string(),
             ctx.uri().path()
-        ))
+        ));
+
+        ctx.build(res)
     });
     app.post("router/test", |ctx: Context| async move {
-        format!(
+        let res = format!(
             "{}<br>{}",
             "<h1>router test post</h1>".to_string(),
             ctx.uri().path()
-        )
+        );
+
+        ctx.build(res)
     });
     app.put("router/test", |ctx: Context| async move {
-        format!(
+        let res = format!(
             "{}<br>{}",
             "<h1>router test put</h1>".to_string(),
             ctx.uri().path()
-        )
+        );
+
+        ctx.build(res)
     });
     app.delete("router/test", |ctx: Context| async move {
-        format!(
+        let res = format!(
             "{}<br>{}",
             "<h1>router test delete</h1>".to_string(),
             ctx.uri().path()
-        )
+        );
+
+        ctx.build(res)
     });
 
     app.get("route/diff_route", |ctx: Context| async move {
-        format!(
+        let res = format!(
             "{}<br>{}",
             "<h1>route diff get</h1>".to_string(),
             ctx.uri().path()
-        )
+        );
+
+        ctx.build(res)
     });
 
     let mut form_router = Router::new();
 
-    form_router.get("/formtest", |_ctx| Response::ok().file("./test.html"));
+    form_router.get("/formtest", |ctx: Context| async move {
+        ctx.build(Response::ok().file("./test.html").await)
+    });
 
     // form_router.post("/formtest", |mut ctx: Context| async move{
     //     let param_test: ParamTest = ctx.form().await?;
@@ -239,14 +266,16 @@ Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut icon\" href=
     let logger_example = middleware::logger_example::LoggerExample::new();
     app.use_service(logger_example);
 
-    param_router.get("/test-next-wild/*", |_ctx| async {
-        "<h1>test next wild</h1>".to_string()
+    param_router.get("/test-next-wild/*", |ctx: Context| async {
+        ctx.build("<h1>test next wild</h1>".to_string())
     });
 
-    param_router.get("/*", |_ctx| async {
-        "<h1>404 Not Found</h1>"
-            .to_string()
-            .with_status(StatusCode::NOT_FOUND)
+    param_router.get("/*", |ctx: Context| async {
+        ctx.build(
+            "<h1>404 Not Found</h1>"
+                .to_string()
+                .with_status(StatusCode::NOT_FOUND),
+        )
     });
 
     app.use_router("/params/", param_router);

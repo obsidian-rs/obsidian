@@ -1,7 +1,7 @@
-use obsidian::{context::Context, router::Responder, App};
+use obsidian::{context::Context, App, ContextResult};
 
-async fn hello_world(_ctx: Context) -> impl Responder {
-    "Hello World"
+async fn hello_world(ctx: Context) -> ContextResult {
+    ctx.build("Hello World")
 }
 
 #[tokio::main]

@@ -1,3 +1,4 @@
+use std::error::Error;
 use std::fmt;
 use std::fmt::Display;
 
@@ -38,5 +39,11 @@ impl From<FormError> for ObsidianError {
 impl From<JsonError> for ObsidianError {
     fn from(error: JsonError) -> Self {
         ObsidianError::JsonError(error)
+    }
+}
+
+impl Error for ObsidianError {
+    fn description(&self) -> &str {
+        "Obsidian Error"
     }
 }
