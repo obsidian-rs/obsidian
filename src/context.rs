@@ -10,7 +10,10 @@ use std::str::FromStr;
 
 use crate::router::{from_cow_map, ContextResult, Responder, Response};
 use crate::ObsidianError;
-use crate::{header::HeaderValue, Body, HeaderMap, Method, Request, Uri};
+use crate::{
+    header::{HeaderName, HeaderValue},
+    Body, HeaderMap, Method, Request, StatusCode, Uri,
+};
 
 /// Context contains the data for current http connection context.
 /// For example, request information, params, method, and path.
@@ -281,9 +284,12 @@ impl Context {
         self.response
     }
 
-    pub fn build(mut self, res: impl Responder) -> ContextResult {
-        self.response = Some(res.respond_to());
-        Ok(self)
+    pub fn response_mut(&mut self) -> &mut Option<Response> {
+        &mut self.response
+    }
+
+    pub fn build(self, res: impl Responder) -> ResponseBuilder {
+        ResponseBuilder::new(self, res.respond_to())
     }
 
     fn parse_queries<T: DeserializeOwned>(query: &[u8]) -> Result<T, ObsidianError> {
@@ -310,6 +316,42 @@ impl Context {
         });
 
         Ok(from_cow_map(&cow_form_map)?)
+    }
+}
+
+pub struct ResponseBuilder {
+    ctx: Context,
+    response: Response,
+}
+
+impl ResponseBuilder {
+    pub fn new(ctx: Context, response: Response) -> Self {
+        ResponseBuilder { ctx, response }
+    }
+
+    pub fn with_status(mut self, status: StatusCode) -> Self {
+        self.response = self.response.set_status(status);
+        self
+    }
+
+    pub fn with_header(mut self, key: HeaderName, value: &'static str) -> Self {
+        self.response = self.response.set_header(key, value);
+        self
+    }
+
+    pub fn with_headers(mut self, headers: Vec<(HeaderName, &'static str)>) -> Self {
+        self.response = self.response.set_headers(headers);
+        self
+    }
+
+    pub fn with_headers_str(mut self, headers: Vec<(&'static str, &'static str)>) -> Self {
+        self.response = self.response.set_headers_str(headers);
+        self
+    }
+
+    pub fn ok(mut self) -> ContextResult {
+        *self.ctx.response_mut() = Some(self.response);
+        Ok(self.ctx)
     }
 }
 

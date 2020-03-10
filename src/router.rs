@@ -133,7 +133,10 @@ impl Router {
 
             dir_path.append(&mut relative_path);
 
-            Box::pin(async move { ctx.build(Response::ok().file(&dir_path.join("/")).await) })
+            Box::pin(async move {
+                ctx.build(Response::ok().file(&dir_path.join("/")).await)
+                    .ok()
+            })
         }
     }
 
@@ -147,6 +150,7 @@ impl Router {
             .collect::<Vec<String>>();
 
         ctx.build(Response::ok().file(&relative_path.join("/")).await)
+            .ok()
     }
 }
 

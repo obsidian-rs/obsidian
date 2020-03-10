@@ -77,7 +77,7 @@ async fn main() {
     let addr = ([127, 0, 0, 1], 3000).into();
 
     app.get("/", |ctx: Context| async {
-ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut icon\" href=\"favicon.ico\" type=\"image/x-icon\" sizes=\"32x32\" /></head> <h1>Hello Obsidian</h1></html>"))
+ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut icon\" href=\"favicon.ico\" type=\"image/x-icon\" sizes=\"32x32\" /></head> <h1>Hello Obsidian</h1></html>")).ok()
     });
 
     app.get("/json", |ctx: Context| async {
@@ -89,6 +89,7 @@ ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut ic
                 .set_header_str("X-Custom-Header", "Custom header value")
                 .json(point),
         )
+        .ok()
     });
 
     app.get("/json-with-headers", |ctx: Context| async {
@@ -111,6 +112,7 @@ ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut ic
                 .with_headers_str(custom_headers)
                 .json(point),
         )
+        .ok()
     });
 
     app.get("/string-with-headers", |ctx: Context| async {
@@ -125,43 +127,44 @@ ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut ic
             (header::ACCEPT_CHARSET, "utf-8"),
         ];
 
-        ctx.build(
-            "Hello World"
-                .with_headers(standard_headers)
-                .with_headers_str(custom_headers),
-        )
+        ctx.build("Hello World")
+            .with_headers(standard_headers)
+            .with_headers_str(custom_headers)
+            .ok()
     });
 
     app.get("/empty-body", |ctx: Context| async {
-        ctx.build(StatusCode::OK)
+        ctx.build(StatusCode::OK).ok()
     });
 
     app.get("/vec", |ctx: Context| async {
-        ctx.build(vec![1, 2, 3].with_status(StatusCode::CREATED))
+        ctx.build(vec![1, 2, 3])
+            .with_status(StatusCode::CREATED)
+            .ok()
     });
 
     app.get("/String", |ctx: Context| async {
-        ctx.build("<h1>This is a String</h1>".to_string())
+        ctx.build("<h1>This is a String</h1>".to_string()).ok()
     });
 
     app.get("/test/radix", |ctx: Context| async {
-        ctx.build("<h1>Test radix</h1>".to_string())
+        ctx.build("<h1>Test radix</h1>".to_string()).ok()
     });
 
     app.get("/team/radix", |ctx: Context| async {
-        ctx.build("Team radix".to_string())
+        ctx.build("Team radix".to_string()).ok()
     });
 
     app.get("/test/radix2", |ctx: Context| async {
-        ctx.build("<h1>Test radix2</h1>".to_string())
+        ctx.build("<h1>Test radix2</h1>".to_string()).ok()
     });
 
     app.get("/jsontest", |ctx: Context| async {
-        ctx.build(Response::ok().file("./testjson.html").await)
+        ctx.build(Response::ok().file("./testjson.html").await).ok()
     });
 
     app.get("/jsan", |ctx: Context| async {
-        ctx.build("<h1>jsan</h1>".to_string())
+        ctx.build("<h1>jsan</h1>".to_string()).ok()
     });
 
     app.get("/test/wildcard/*", |ctx: Context| async move {
@@ -171,7 +174,7 @@ ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut ic
             ctx.uri().path()
         );
 
-        ctx.build(res)
+        ctx.build(res).ok()
     });
 
     app.get("router/test", |ctx: Context| async move {
@@ -188,7 +191,7 @@ ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut ic
             ctx.uri().path()
         ));
 
-        ctx.build(res)
+        ctx.build(res).ok()
     });
     app.post("router/test", |ctx: Context| async move {
         let res = format!(
@@ -197,7 +200,7 @@ ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut ic
             ctx.uri().path()
         );
 
-        ctx.build(res)
+        ctx.build(res).ok()
     });
     app.put("router/test", |ctx: Context| async move {
         let res = format!(
@@ -206,7 +209,7 @@ ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut ic
             ctx.uri().path()
         );
 
-        ctx.build(res)
+        ctx.build(res).ok()
     });
     app.delete("router/test", |ctx: Context| async move {
         let res = format!(
@@ -215,7 +218,7 @@ ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut ic
             ctx.uri().path()
         );
 
-        ctx.build(res)
+        ctx.build(res).ok()
     });
 
     app.get("route/diff_route", |ctx: Context| async move {
@@ -225,13 +228,13 @@ ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut ic
             ctx.uri().path()
         );
 
-        ctx.build(res)
+        ctx.build(res).ok()
     });
 
     let mut form_router = Router::new();
 
     form_router.get("/formtest", |ctx: Context| async move {
-        ctx.build(Response::ok().file("./test.html").await)
+        ctx.build(Response::ok().file("./test.html").await).ok()
     });
 
     // form_router.post("/formtest", |mut ctx: Context| async move{
@@ -267,7 +270,7 @@ ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut ic
     app.use_service(logger_example);
 
     param_router.get("/test-next-wild/*", |ctx: Context| async {
-        ctx.build("<h1>test next wild</h1>".to_string())
+        ctx.build("<h1>test next wild</h1>".to_string()).ok()
     });
 
     param_router.get("/*", |ctx: Context| async {
@@ -276,6 +279,7 @@ ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut ic
                 .to_string()
                 .with_status(StatusCode::NOT_FOUND),
         )
+        .ok()
     });
 
     app.use_router("/params/", param_router);

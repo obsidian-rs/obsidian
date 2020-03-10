@@ -1,7 +1,7 @@
 use obsidian::{context::Context, App, ContextResult};
 
 async fn hello_world(ctx: Context) -> ContextResult {
-    ctx.build("Hello World")
+    ctx.build("Hello World").ok()
 }
 
 #[tokio::main]
