@@ -142,11 +142,11 @@ impl AppServer {
                     }
                 };
 
-                Ok::<_, hyper::Error>(route_response.unwrap_or(internal_server_error(
-                    ObsidianError::GeneralError(
+                Ok::<_, hyper::Error>(route_response.unwrap_or_else(|_| {
+                    internal_server_error(ObsidianError::GeneralError(
                         "Error while constructing response body".to_string(),
-                    ),
-                )))
+                    ))
+                }))
             }
             _ => Ok::<_, hyper::Error>(page_not_found()),
         }
@@ -190,74 +190,64 @@ impl<'a> EndpointExecutor<'a> {
             current.handle(context, self).await
         } else {
             self.route_endpoint.call(context).await
-            /* match route_response {
-                Ok(ctx) => ctx,
-                Err(err) => {
-                    let body = Body::from(err.to_string());
-                    Response::builder()
-                        .status(StatusCode::INTERNAL_SERVER_ERROR)
-                        .body(body)
-                        .unwrap()
-                }
-            } */
         }
     }
 }
 
-// #[cfg(test)]
-// mod test {
-//     use super::*;
-//     use async_std::task;
-//     use hyper::{body, body::Buf, StatusCode};
+#[cfg(test)]
+mod test {
+    use super::*;
+    use async_std::task;
+    use hyper::{body, body::Buf, StatusCode};
 
-//     #[test]
-//     fn test_app_server_resolve_endpoint() {
-//         task::block_on(async {
-//             let mut router = Router::new();
+    #[test]
+    fn test_app_server_resolve_endpoint() {
+        task::block_on(async {
+            let mut router = Router::new();
 
-//             router.get("/", |mut context: Context| async move {
-//                 let body = context.take_body();
+            router.get("/", |mut ctx: Context| async move {
+                let body = ctx.take_body();
 
-//                 let request_body = match body::aggregate(body).await {
-//                     Ok(buf) => String::from_utf8(buf.bytes().to_vec()),
-//                     _ => {
-//                         panic!();
-//                     }
-//                 };
+                let request_body = match body::aggregate(body).await {
+                    Ok(buf) => String::from_utf8(buf.bytes().to_vec()),
+                    _ => {
+                        panic!();
+                    }
+                };
 
-//                 assert_eq!(context.uri().path(), "/");
-//                 assert_eq!(request_body.unwrap(), "test_app_server");
-//                 "test_app_server"
-//             });
+                assert_eq!(ctx.uri().path(), "/");
+                assert_eq!(request_body.unwrap(), "test_app_server");
+                ctx.build("test_app_server").ok()
+            });
 
-//             let app_server = AppServer { router };
+            let app_server = AppServer { router };
 
-//             let req_builder = Request::builder();
+            let req_builder = Request::builder();
 
-//             let req = req_builder
-//                 .uri("/")
-//                 .body(Body::from("test_app_server"))
-//                 .unwrap();
+            let req = req_builder
+                .uri("/")
+                .body(Body::from("test_app_server"))
+                .unwrap();
 
-//             let route_value = app_server.router.search_route(req.uri().path());
-//             let actual_response = AppServer::resolve_endpoint(req, route_value).await.unwrap();
+            let route_value = app_server.router.search_route(req.uri().path());
+            let actual_response = AppServer::resolve_endpoint(req, route_value).await.unwrap();
 
-//             let mut expected_response = Response::new(Body::from("test_app_server"));
-//             *expected_response.status_mut() = StatusCode::OK;
+            let mut expected_response = Response::new(Body::from("test_app_server"));
+            *expected_response.status_mut() = StatusCode::OK;
 
-//             assert_eq!(actual_response.status(), expected_response.status());
+            assert_eq!(actual_response.status(), expected_response.status());
 
-//             let actual_res_body = match body::aggregate(actual_response).await {
-//                 Ok(buf) => String::from_utf8(buf.bytes().to_vec()),
-//                 _ => panic!(),
-//             };
+            let actual_res_body = match body::aggregate(actual_response).await {
+                Ok(buf) => String::from_utf8(buf.bytes().to_vec()),
+                _ => panic!(),
+            };
 
-//             let expected_res_body = match body::aggregate(expected_response).await {
-//                 Ok(buf) => String::from_utf8(buf.bytes().to_vec()),
-//                 _ => panic!(),
-//             };
+            let expected_res_body = match body::aggregate(expected_response).await {
+                Ok(buf) => String::from_utf8(buf.bytes().to_vec()),
+                _ => panic!(),
+            };
 
-//             assert_eq!(actual_res_body.unwrap(), expected_res_body.unwrap());
-//         })
-//     }
-// }
+            assert_eq!(actual_res_body.unwrap(), expected_res_body.unwrap());
+        })
+    }
+}

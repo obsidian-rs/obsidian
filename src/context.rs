@@ -289,14 +289,17 @@ impl Context {
         &mut self.response
     }
 
+    /// Build any kind of response which implemented Responder trait
     pub fn build(self, res: impl Responder) -> ResponseBuilder {
         ResponseBuilder::new(self, res.respond_to())
     }
 
+    /// Build data into json format. The data must implement Serialize trait
     pub fn build_json(self, body: impl Serialize) -> ResponseBuilder {
         ResponseBuilder::new(self, Response::ok().json(body))
     }
 
+    /// Build response from static file.
     pub async fn build_file(self, file_path: &str) -> ResponseBuilder {
         ResponseBuilder::new(self, Response::ok().file(file_path).await)
     }

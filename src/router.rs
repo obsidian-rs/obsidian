@@ -154,291 +154,291 @@ impl Router {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use crate::context::Context;
-//     use crate::middleware::logger::Logger;
-
-//     async fn handler(_ctx: Context) -> impl Responder {
-//         "test"
-//     }
-
-//     #[test]
-//     fn router_get_test() {
-//         let mut router = Router::new();
-
-//         router.get("router/test", handler);
-
-//         let result = router.search_route("router/test");
-//         let fail_result = router.search_route("failed");
-
-//         assert!(result.is_some());
-//         assert!(fail_result.is_none());
-
-//         match result {
-//             Some(route) => {
-//                 let middlewares = route.get_middlewares();
-//                 let route_value = route.get_route(&Method::GET).unwrap();
-
-//                 assert_eq!(middlewares.len(), 0);
-//                 assert_eq!(route_value.method, Method::GET);
-//             }
-//             _ => panic!(),
-//         }
-//     }
-
-//     #[test]
-//     fn router_post_test() {
-//         let mut router = Router::new();
-
-//         router.post("router/test", handler);
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::context::Context;
+    use crate::middleware::logger::Logger;
+
+    async fn handler(ctx: Context) -> ContextResult {
+        ctx.build("test").ok()
+    }
+
+    #[test]
+    fn router_get_test() {
+        let mut router = Router::new();
+
+        router.get("router/test", handler);
+
+        let result = router.search_route("router/test");
+        let fail_result = router.search_route("failed");
+
+        assert!(result.is_some());
+        assert!(fail_result.is_none());
+
+        match result {
+            Some(route) => {
+                let middlewares = route.get_middlewares();
+                let route_value = route.get_route(&Method::GET).unwrap();
+
+                assert_eq!(middlewares.len(), 0);
+                assert_eq!(route_value.method, Method::GET);
+            }
+            _ => panic!(),
+        }
+    }
+
+    #[test]
+    fn router_post_test() {
+        let mut router = Router::new();
+
+        router.post("router/test", handler);
 
-//         let result = router.search_route("router/test");
-//         let fail_result = router.search_route("failed");
+        let result = router.search_route("router/test");
+        let fail_result = router.search_route("failed");
 
-//         assert!(result.is_some());
-//         assert!(fail_result.is_none());
-
-//         match result {
-//             Some(route) => {
-//                 let middlewares = route.get_middlewares();
-//                 let route_value = route.get_route(&Method::POST).unwrap();
-
-//                 assert_eq!(middlewares.len(), 0);
-//                 assert_eq!(route_value.method, Method::POST);
-//             }
-//             _ => panic!(),
-//         }
-//     }
-
-//     #[test]
-//     fn router_put_test() {
-//         let mut router = Router::new();
-
-//         router.put("router/test", handler);
+        assert!(result.is_some());
+        assert!(fail_result.is_none());
+
+        match result {
+            Some(route) => {
+                let middlewares = route.get_middlewares();
+                let route_value = route.get_route(&Method::POST).unwrap();
+
+                assert_eq!(middlewares.len(), 0);
+                assert_eq!(route_value.method, Method::POST);
+            }
+            _ => panic!(),
+        }
+    }
+
+    #[test]
+    fn router_put_test() {
+        let mut router = Router::new();
+
+        router.put("router/test", handler);
 
-//         let result = router.search_route("router/test");
-//         let fail_result = router.search_route("failed");
-
-//         assert!(result.is_some());
-//         assert!(fail_result.is_none());
-
-//         match result {
-//             Some(route) => {
-//                 let middlewares = route.get_middlewares();
-//                 let route_value = route.get_route(&Method::PUT).unwrap();
-
-//                 assert_eq!(middlewares.len(), 0);
-//                 assert_eq!(route_value.method, Method::PUT);
-//             }
-//             _ => panic!(),
-//         }
-//     }
+        let result = router.search_route("router/test");
+        let fail_result = router.search_route("failed");
+
+        assert!(result.is_some());
+        assert!(fail_result.is_none());
+
+        match result {
+            Some(route) => {
+                let middlewares = route.get_middlewares();
+                let route_value = route.get_route(&Method::PUT).unwrap();
+
+                assert_eq!(middlewares.len(), 0);
+                assert_eq!(route_value.method, Method::PUT);
+            }
+            _ => panic!(),
+        }
+    }
 
-//     #[test]
-//     fn router_delete_test() {
-//         let mut router = Router::new();
+    #[test]
+    fn router_delete_test() {
+        let mut router = Router::new();
 
-//         router.delete("router/test", handler);
+        router.delete("router/test", handler);
 
-//         let result = router.search_route("router/test");
-//         let fail_result = router.search_route("failed");
+        let result = router.search_route("router/test");
+        let fail_result = router.search_route("failed");
 
-//         assert!(result.is_some());
-//         assert!(fail_result.is_none());
+        assert!(result.is_some());
+        assert!(fail_result.is_none());
 
-//         match result {
-//             Some(route) => {
-//                 let middlewares = route.get_middlewares();
-//                 let route_value = route.get_route(&Method::DELETE).unwrap();
+        match result {
+            Some(route) => {
+                let middlewares = route.get_middlewares();
+                let route_value = route.get_route(&Method::DELETE).unwrap();
 
-//                 assert_eq!(middlewares.len(), 0);
-//                 assert_eq!(route_value.method, Method::DELETE);
-//             }
-//             _ => panic!(),
-//         }
-//     }
+                assert_eq!(middlewares.len(), 0);
+                assert_eq!(route_value.method, Method::DELETE);
+            }
+            _ => panic!(),
+        }
+    }
 
-//     #[test]
-//     fn router_root_middleware_test() {
-//         let mut router = Router::new();
-//         let logger = Logger::new();
+    #[test]
+    fn router_root_middleware_test() {
+        let mut router = Router::new();
+        let logger = Logger::new();
 
-//         router.use_service(logger);
+        router.use_service(logger);
 
-//         let result = router.search_route("/");
-//         let fail_result = router.search_route("failed");
+        let result = router.search_route("/");
+        let fail_result = router.search_route("failed");
 
-//         assert!(result.is_some());
-//         assert!(fail_result.is_none());
+        assert!(result.is_some());
+        assert!(fail_result.is_none());
 
-//         match result {
-//             Some(route) => {
-//                 let middlewares = route.get_middlewares();
+        match result {
+            Some(route) => {
+                let middlewares = route.get_middlewares();
 
-//                 assert_eq!(middlewares.len(), 1);
-//             }
-//             _ => panic!(),
-//         }
-//     }
+                assert_eq!(middlewares.len(), 1);
+            }
+            _ => panic!(),
+        }
+    }
 
-//     #[test]
-//     fn router_relative_middleware_test() {
-//         let mut router = Router::new();
-//         let logger = Logger::new();
+    #[test]
+    fn router_relative_middleware_test() {
+        let mut router = Router::new();
+        let logger = Logger::new();
 
-//         router.use_service_to("middleware/child", logger);
+        router.use_service_to("middleware/child", logger);
 
-//         let result = router.search_route("/middleware/child");
-//         let fail_result = router.search_route("/");
+        let result = router.search_route("/middleware/child");
+        let fail_result = router.search_route("/");
 
-//         assert!(result.is_some());
-//         assert!(fail_result.is_none());
+        assert!(result.is_some());
+        assert!(fail_result.is_none());
 
-//         match result {
-//             Some(route) => {
-//                 let middlewares = route.get_middlewares();
+        match result {
+            Some(route) => {
+                let middlewares = route.get_middlewares();
 
-//                 assert_eq!(middlewares.len(), 1);
-//             }
-//             _ => panic!(),
-//         }
-//     }
+                assert_eq!(middlewares.len(), 1);
+            }
+            _ => panic!(),
+        }
+    }
 
-//     #[test]
-//     fn router_search_test() {
-//         let mut router = Router::new();
+    #[test]
+    fn router_search_test() {
+        let mut router = Router::new();
 
-//         router.get("router/test", handler);
-//         router.post("router/test", handler);
-//         router.put("router/test", handler);
-//         router.delete("router/test", handler);
+        router.get("router/test", handler);
+        router.post("router/test", handler);
+        router.put("router/test", handler);
+        router.delete("router/test", handler);
 
-//         router.get("route/diff_route", handler);
-
-//         let result = router.search_route("router/test");
-//         let diff_result = router.search_route("route/diff_route");
-//         let fail_result = router.search_route("failed");
-
-//         assert!(result.is_some());
-//         assert!(diff_result.is_some());
-//         assert!(fail_result.is_none());
-
-//         match result {
-//             Some(route) => {
-//                 let middlewares = route.get_middlewares();
-//                 let route_value = route.get_route(&Method::GET).unwrap();
-
-//                 assert_eq!(middlewares.len(), 0);
-//                 assert_eq!(route_value.method, Method::GET);
-
-//                 let route_value = route.get_route(&Method::POST).unwrap();
-
-//                 assert_eq!(middlewares.len(), 0);
-//                 assert_eq!(route_value.method, Method::POST);
+        router.get("route/diff_route", handler);
+
+        let result = router.search_route("router/test");
+        let diff_result = router.search_route("route/diff_route");
+        let fail_result = router.search_route("failed");
+
+        assert!(result.is_some());
+        assert!(diff_result.is_some());
+        assert!(fail_result.is_none());
+
+        match result {
+            Some(route) => {
+                let middlewares = route.get_middlewares();
+                let route_value = route.get_route(&Method::GET).unwrap();
+
+                assert_eq!(middlewares.len(), 0);
+                assert_eq!(route_value.method, Method::GET);
+
+                let route_value = route.get_route(&Method::POST).unwrap();
+
+                assert_eq!(middlewares.len(), 0);
+                assert_eq!(route_value.method, Method::POST);
 
-//                 let route_value = route.get_route(&Method::PUT).unwrap();
+                let route_value = route.get_route(&Method::PUT).unwrap();
 
-//                 assert_eq!(middlewares.len(), 0);
-//                 assert_eq!(route_value.method, Method::PUT);
+                assert_eq!(middlewares.len(), 0);
+                assert_eq!(route_value.method, Method::PUT);
 
-//                 let route_value = route.get_route(&Method::DELETE).unwrap();
+                let route_value = route.get_route(&Method::DELETE).unwrap();
 
-//                 assert_eq!(middlewares.len(), 0);
-//                 assert_eq!(route_value.method, Method::DELETE);
-//             }
-//             _ => panic!(),
-//         }
+                assert_eq!(middlewares.len(), 0);
+                assert_eq!(route_value.method, Method::DELETE);
+            }
+            _ => panic!(),
+        }
 
-//         match diff_result {
-//             Some(route) => {
-//                 let middlewares = route.get_middlewares();
-//                 let route_value = route.get_route(&Method::GET).unwrap();
+        match diff_result {
+            Some(route) => {
+                let middlewares = route.get_middlewares();
+                let route_value = route.get_route(&Method::GET).unwrap();
 
-//                 assert_eq!(middlewares.len(), 0);
-//                 assert_eq!(route_value.method, Method::GET);
-//             }
-//             _ => panic!(),
-//         }
-//     }
+                assert_eq!(middlewares.len(), 0);
+                assert_eq!(route_value.method, Method::GET);
+            }
+            _ => panic!(),
+        }
+    }
 
-//     #[test]
-//     fn router_merge_test() {
-//         let mut main_router = Router::new();
-//         let mut sub_router = Router::new();
+    #[test]
+    fn router_merge_test() {
+        let mut main_router = Router::new();
+        let mut sub_router = Router::new();
 
-//         main_router.get("router/test", handler);
-//         sub_router.get("router/test", handler);
+        main_router.get("router/test", handler);
+        sub_router.get("router/test", handler);
 
-//         let logger = Logger::new();
+        let logger = Logger::new();
 
-//         sub_router.use_service(logger);
+        sub_router.use_service(logger);
 
-//         main_router.use_router("sub_router", sub_router);
+        main_router.use_router("sub_router", sub_router);
 
-//         let result = main_router.search_route("router/test");
-//         let sub_result = main_router.search_route("sub_router/router/test");
-//         let fail_result = main_router.search_route("failed");
+        let result = main_router.search_route("router/test");
+        let sub_result = main_router.search_route("sub_router/router/test");
+        let fail_result = main_router.search_route("failed");
 
-//         assert!(result.is_some());
-//         assert!(sub_result.is_some());
-//         assert!(fail_result.is_none());
+        assert!(result.is_some());
+        assert!(sub_result.is_some());
+        assert!(fail_result.is_none());
 
-//         match result {
-//             Some(route) => {
-//                 let middlewares = route.get_middlewares();
-//                 let route_value = route.get_route(&Method::GET).unwrap();
+        match result {
+            Some(route) => {
+                let middlewares = route.get_middlewares();
+                let route_value = route.get_route(&Method::GET).unwrap();
 
-//                 assert_eq!(middlewares.len(), 0);
-//                 assert_eq!(route_value.method, Method::GET);
-//             }
-//             _ => panic!(),
-//         }
+                assert_eq!(middlewares.len(), 0);
+                assert_eq!(route_value.method, Method::GET);
+            }
+            _ => panic!(),
+        }
 
-//         match sub_result {
-//             Some(route) => {
-//                 let middlewares = route.get_middlewares();
-//                 let route_value = route.get_route(&Method::GET).unwrap();
+        match sub_result {
+            Some(route) => {
+                let middlewares = route.get_middlewares();
+                let route_value = route.get_route(&Method::GET).unwrap();
 
-//                 assert_eq!(middlewares.len(), 1);
-//                 assert_eq!(route_value.method, Method::GET);
-//             }
-//             _ => panic!(),
-//         }
-//     }
+                assert_eq!(middlewares.len(), 1);
+                assert_eq!(route_value.method, Method::GET);
+            }
+            _ => panic!(),
+        }
+    }
 
-//     #[should_panic]
-//     #[test]
-//     fn router_duplicate_path_test() {
-//         let mut router = Router::new();
+    #[should_panic]
+    #[test]
+    fn router_duplicate_path_test() {
+        let mut router = Router::new();
 
-//         router.get("router/test", handler);
-//         router.get("router/test", handler);
-//     }
+        router.get("router/test", handler);
+        router.get("router/test", handler);
+    }
 
-//     #[should_panic]
-//     #[test]
-//     fn router_ambiguous_path_test() {
-//         let mut router = Router::new();
+    #[should_panic]
+    #[test]
+    fn router_ambiguous_path_test() {
+        let mut router = Router::new();
 
-//         router.get("router/:test", handler);
-//         router.get("router/test", handler);
-//     }
+        router.get("router/:test", handler);
+        router.get("router/test", handler);
+    }
 
-//     #[should_panic]
-//     #[test]
-//     fn router_duplicate_merge_test() {
-//         let mut main_router = Router::new();
-//         let mut sub_router = Router::new();
+    #[should_panic]
+    #[test]
+    fn router_duplicate_merge_test() {
+        let mut main_router = Router::new();
+        let mut sub_router = Router::new();
 
-//         main_router.get("sub_router/test", handler);
-//         sub_router.get("test", handler);
+        main_router.get("sub_router/test", handler);
+        sub_router.get("test", handler);
 
-//         let logger = Logger::new();
+        let logger = Logger::new();
 
-//         sub_router.use_service(logger);
+        sub_router.use_service(logger);
 
-//         main_router.use_router("sub_router", sub_router);
-//     }
-// }
+        main_router.use_router("sub_router", sub_router);
+    }
+}
