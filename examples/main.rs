@@ -160,7 +160,7 @@ ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut ic
     });
 
     app.get("/jsontest", |ctx: Context| async {
-        ctx.build(Response::ok().file("./testjson.html").await).ok()
+        ctx.build_file("./testjson.html").await.ok()
     });
 
     app.get("/jsan", |ctx: Context| async {
@@ -234,7 +234,7 @@ ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut ic
     let mut form_router = Router::new();
 
     form_router.get("/formtest", |ctx: Context| async move {
-        ctx.build(Response::ok().file("./test.html").await).ok()
+        ctx.build_file("./test.html").await.ok()
     });
 
     // form_router.post("/formtest", |mut ctx: Context| async move{

@@ -1,6 +1,7 @@
 use http::Extensions;
 use hyper::{body, body::Buf};
 use serde::de::DeserializeOwned;
+use serde::ser::Serialize;
 use url::form_urlencoded;
 
 use std::borrow::Cow;
@@ -290,6 +291,14 @@ impl Context {
 
     pub fn build(self, res: impl Responder) -> ResponseBuilder {
         ResponseBuilder::new(self, res.respond_to())
+    }
+
+    pub fn build_json(self, body: impl Serialize) -> ResponseBuilder {
+        ResponseBuilder::new(self, Response::ok().json(body))
+    }
+
+    pub async fn build_file(self, file_path: &str) -> ResponseBuilder {
+        ResponseBuilder::new(self, Response::ok().file(file_path).await)
     }
 
     fn parse_queries<T: DeserializeOwned>(query: &[u8]) -> Result<T, ObsidianError> {
