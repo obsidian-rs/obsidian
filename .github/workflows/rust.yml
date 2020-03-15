@@ -3,13 +3,13 @@ name: Obsidian Action
 on:
   push:
     branches:
-        - master
-        - develop
-        - release/*
+      - master
+      - develop
+      - release/*
   pull_request:
     branches:
-    - master
-    - develop
+      - master
+      - develop
 
 jobs:
   build_stable:
@@ -21,19 +21,19 @@ jobs:
         rust: [stable]
 
     steps:
-    - uses: hecrj/setup-rust-action@v1
-      with:
-        rust-version: ${{ matrix.rust }}
-    - uses: actions/checkout@v1
-    - name: Build
-      run: cargo build --verbose
-    - name: Install clippy
-      run: rustup component add clippy
-    - name: Run clippy
-      run: cargo clippy --all-targets --all-features -- -D warnings
-    - name: Run tests
-      run: cargo test --verbose
-      
+      - uses: hecrj/setup-rust-action@v1
+        with:
+          rust-version: ${{ matrix.rust }}
+      - uses: actions/checkout@v1
+      - name: Build
+        run: cargo build --verbose
+      - name: Install clippy
+        run: rustup component add clippy
+      - name: Run clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+      - name: Run tests
+        run: cargo test --verbose
+
   build_nightly:
     name: Nightly
     runs-on: ${{ matrix.os }}
@@ -43,15 +43,15 @@ jobs:
         rust: [nightly]
 
     steps:
-    - uses: hecrj/setup-rust-action@v1
-      with:
-        rust-version: ${{ matrix.rust }}
-    - uses: actions/checkout@v1
-    - name: Build
-      run: cargo +nightly build --verbose
-    - name: Install clippy
-      run: rustup component add clippy
-    - name: Run clippy
-      run: cargo clippy --all-targets --all-features -- -D warnings
-    - name: Run tests
-      run: cargo +nightly test --verbose
+      - uses: hecrj/setup-rust-action@v1
+        with:
+          rust-version: ${{ matrix.rust }}
+      - uses: actions/checkout@v1
+      - name: Build
+        run: cargo +nightly build --verbose
+      #    - name: Install clippy
+      #      run: rustup component add clippy
+      #    - name: Run clippy
+      #      run: cargo clippy --all-targets --all-features -- -D warnings
+      - name: Run tests
+        run: cargo +nightly test --verbose
