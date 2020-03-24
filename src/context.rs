@@ -1,6 +1,7 @@
 use http::Extensions;
 use hyper::{body, body::Buf};
 use serde::de::DeserializeOwned;
+use serde::ser::Serialize;
 use url::form_urlencoded;
 
 use std::borrow::Cow;
@@ -8,9 +9,12 @@ use std::collections::HashMap;
 use std::convert::From;
 use std::str::FromStr;
 
-use crate::router::from_cow_map;
+use crate::router::{from_cow_map, ContextResult, Responder, Response};
 use crate::ObsidianError;
-use crate::{header::HeaderValue, Body, HeaderMap, Method, Request, Uri};
+use crate::{
+    header::{HeaderName, HeaderValue},
+    Body, HeaderMap, Method, Request, StatusCode, Uri,
+};
 
 /// Context contains the data for current http connection context.
 /// For example, request information, params, method, and path.
@@ -18,6 +22,7 @@ use crate::{header::HeaderValue, Body, HeaderMap, Method, Request, Uri};
 pub struct Context {
     request: Request<Body>,
     params_data: HashMap<String, String>,
+    response: Option<Response>,
 }
 
 impl Context {
@@ -25,6 +30,7 @@ impl Context {
         Context {
             request,
             params_data,
+            response: None,
         }
     }
 
@@ -274,6 +280,30 @@ impl Context {
         std::mem::replace(self.request.body_mut(), Body::empty())
     }
 
+    /// Take response
+    pub fn take_response(self) -> Option<Response> {
+        self.response
+    }
+
+    pub fn response_mut(&mut self) -> &mut Option<Response> {
+        &mut self.response
+    }
+
+    /// Build any kind of response which implemented Responder trait
+    pub fn build(self, res: impl Responder) -> ResponseBuilder {
+        ResponseBuilder::new(self, res.respond_to())
+    }
+
+    /// Build data into json format. The data must implement Serialize trait
+    pub fn build_json(self, body: impl Serialize) -> ResponseBuilder {
+        ResponseBuilder::new(self, Response::ok().json(body))
+    }
+
+    /// Build response from static file.
+    pub async fn build_file(self, file_path: &str) -> ResponseBuilder {
+        ResponseBuilder::new(self, Response::ok().file(file_path).await)
+    }
+
     fn parse_queries<T: DeserializeOwned>(query: &[u8]) -> Result<T, ObsidianError> {
         let mut parsed_form_map: HashMap<String, Vec<String>> = HashMap::default();
         let mut cow_form_map = HashMap::<Cow<str>, Cow<[String]>>::default();
@@ -298,6 +328,42 @@ impl Context {
         });
 
         Ok(from_cow_map(&cow_form_map)?)
+    }
+}
+
+pub struct ResponseBuilder {
+    ctx: Context,
+    response: Response,
+}
+
+impl ResponseBuilder {
+    pub fn new(ctx: Context, response: Response) -> Self {
+        ResponseBuilder { ctx, response }
+    }
+
+    pub fn with_status(mut self, status: StatusCode) -> Self {
+        self.response = self.response.set_status(status);
+        self
+    }
+
+    pub fn with_header(mut self, key: HeaderName, value: &'static str) -> Self {
+        self.response = self.response.set_header(key, value);
+        self
+    }
+
+    pub fn with_headers(mut self, headers: Vec<(HeaderName, &'static str)>) -> Self {
+        self.response = self.response.set_headers(headers);
+        self
+    }
+
+    pub fn with_headers_str(mut self, headers: Vec<(&'static str, &'static str)>) -> Self {
+        self.response = self.response.set_headers_str(headers);
+        self
+    }
+
+    pub fn ok(mut self) -> ContextResult {
+        *self.ctx.response_mut() = Some(self.response);
+        Ok(self.ctx)
     }
 }
 

@@ -613,10 +613,10 @@ mod tests {
     use super::*;
     use crate::context::Context;
     use crate::middleware::logger::Logger;
-    use crate::router::Responder;
+    use crate::router::ContextResult;
 
-    async fn handler(_ctx: Context) -> impl Responder {
-        "test"
+    async fn handler(ctx: Context) -> ContextResult {
+        ctx.build("test").ok()
     }
 
     #[test]

@@ -2,13 +2,15 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 
 use hyper::{
+    header,
     service::{make_service_fn, service_fn},
     Body, Request, Response, Server, StatusCode,
 };
 
 use crate::context::Context;
+use crate::error::ObsidianError;
 use crate::middleware::Middleware;
-use crate::router::{Handler, Router, RouteValueResult};
+use crate::router::{ContextResult, Handler, RouteValueResult, Router};
 
 pub struct App {
     router: Router,
@@ -97,21 +99,56 @@ struct AppServer {
 }
 
 impl AppServer {
-    pub async fn resolve_endpoint(req: Request<Body>, route_value: Option<RouteValueResult>) -> Result<Response<Body>, hyper::Error> {
+    pub async fn resolve_endpoint(
+        req: Request<Body>,
+        route_value: Option<RouteValueResult>,
+    ) -> Result<Response<Body>, hyper::Error> {
         match route_value {
             Some(route_value) => {
                 let route = match route_value.get_route(req.method()) {
                     Some(r) => r,
-                    None => return Ok::<_, hyper::Error>(page_not_found())
+                    None => return Ok::<_, hyper::Error>(page_not_found()),
                 };
                 let middlewares = route_value.get_middlewares();
                 let params = route_value.get_params();
                 let context = Context::new(req, params);
                 let executor = EndpointExecutor::new(&route.handler, middlewares);
 
-                Ok::<_, hyper::Error>(executor.next(context).await)
+                let route_result = executor.next(context).await;
+
+                let route_response = match route_result {
+                    Ok(ctx) => {
+                        let mut res = Response::builder();
+                        if let Some(response) = ctx.take_response() {
+                            if let Some(headers) = response.headers() {
+                                if let Some(response_headers) = res.headers_mut() {
+                                    headers.iter().for_each(move |(key, value)| {
+                                        response_headers
+                                            .insert(key, header::HeaderValue::from_static(value));
+                                    });
+                                }
+                            }
+                            res.status(response.status()).body(response.body())
+                        } else {
+                            // No response found
+                            res.status(StatusCode::OK).body(Body::from(""))
+                        }
+                    }
+                    Err(err) => {
+                        let body = Body::from(err.to_string());
+                        Response::builder()
+                            .status(StatusCode::INTERNAL_SERVER_ERROR)
+                            .body(body)
+                    }
+                };
+
+                Ok::<_, hyper::Error>(route_response.unwrap_or_else(|_| {
+                    internal_server_error(ObsidianError::GeneralError(
+                        "Error while constructing response body".to_string(),
+                    ))
+                }))
             }
-            _ => Ok::<_, hyper::Error>(page_not_found())
+            _ => Ok::<_, hyper::Error>(page_not_found()),
         }
     }
 }
@@ -121,6 +158,14 @@ fn page_not_found() -> Response<Body> {
     *server_response.status_mut() = StatusCode::NOT_FOUND;
 
     server_response
+}
+
+fn internal_server_error(err: impl std::error::Error) -> Response<Body> {
+    let body = Body::from(err.to_string());
+    Response::builder()
+        .status(StatusCode::INTERNAL_SERVER_ERROR)
+        .body(body)
+        .unwrap()
 }
 
 pub struct EndpointExecutor<'a> {
@@ -139,22 +184,12 @@ impl<'a> EndpointExecutor<'a> {
         }
     }
 
-    pub async fn next(mut self, context: Context) -> Response<Body> {
+    pub async fn next(mut self, context: Context) -> ContextResult {
         if let Some((current, all_next)) = self.middleware.split_first() {
             self.middleware = all_next;
             current.handle(context, self).await
         } else {
-            let route_response = self.route_endpoint.call(context).await;
-            match route_response {
-                Ok(res) => res,
-                Err(err) => {
-                    let body = Body::from(err.to_string());
-                    Response::builder()
-                        .status(StatusCode::INTERNAL_SERVER_ERROR)
-                        .body(body)
-                        .unwrap()
-                }
-            }
+            self.route_endpoint.call(context).await
         }
     }
 }
@@ -170,21 +205,19 @@ mod test {
         task::block_on(async {
             let mut router = Router::new();
 
-            router.get("/", |mut context: Context| {
-                async move {
-                    let body = context.take_body();
+            router.get("/", |mut ctx: Context| async move {
+                let body = ctx.take_body();
 
-                    let request_body = match body::aggregate(body).await {
-                        Ok(buf) => String::from_utf8(buf.bytes().to_vec()),
-                        _ => {
-                            panic!();
-                        }
-                    };
+                let request_body = match body::aggregate(body).await {
+                    Ok(buf) => String::from_utf8(buf.bytes().to_vec()),
+                    _ => {
+                        panic!();
+                    }
+                };
 
-                    assert_eq!(context.uri().path(), "/");
-                    assert_eq!(request_body.unwrap(), "test_app_server");
-                    "test_app_server"
-                }
+                assert_eq!(ctx.uri().path(), "/");
+                assert_eq!(request_body.unwrap(), "test_app_server");
+                ctx.build("test_app_server").ok()
             });
 
             let app_server = AppServer { router };
@@ -218,4 +251,3 @@ mod test {
         })
     }
 }
-

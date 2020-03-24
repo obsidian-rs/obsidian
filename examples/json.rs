@@ -1,11 +1,7 @@
-use obsidian::{
-    context::Context,
-    router::{Responder, Response},
-    App,
-};
+use obsidian::{context::Context, App, ContextResult};
 use serde::*;
 
-async fn get_user(_ctx: Context) -> impl Responder {
+async fn get_user(ctx: Context) -> ContextResult {
     #[derive(Serialize, Deserialize)]
     struct User {
         name: String,
@@ -14,7 +10,7 @@ async fn get_user(_ctx: Context) -> impl Responder {
     let user = User {
         name: String::from("Obsidian"),
     };
-    Response::ok().json(user)
+    ctx.build_json(user).ok()
 }
 
 #[tokio::main]

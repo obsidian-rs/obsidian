@@ -13,7 +13,7 @@ use crate::middleware::Middleware;
 use crate::Method;
 pub use hyper::header;
 
-pub use self::handler::Handler;
+pub use self::handler::{ContextResult, Handler};
 pub use self::req_deserializer::{from_cow_map, Error as FormError};
 pub use self::resource::Resource;
 pub use self::responder::Responder;
@@ -133,11 +133,14 @@ impl Router {
 
             dir_path.append(&mut relative_path);
 
-            Box::pin(async move { Response::ok().file(&dir_path.join("/")).await })
+            Box::pin(async move {
+                ctx.build(Response::ok().file(&dir_path.join("/")).await)
+                    .ok()
+            })
         }
     }
 
-    async fn static_dir_file_handler(ctx: Context) -> impl Responder {
+    async fn static_dir_file_handler(ctx: Context) -> ContextResult {
         let relative_path = ctx
             .uri()
             .path()
@@ -146,7 +149,8 @@ impl Router {
             .map(|x| x.to_string())
             .collect::<Vec<String>>();
 
-        Response::ok().file(&relative_path.join("/")).await
+        ctx.build(Response::ok().file(&relative_path.join("/")).await)
+            .ok()
     }
 }
 
@@ -156,8 +160,8 @@ mod tests {
     use crate::context::Context;
     use crate::middleware::logger::Logger;
 
-    async fn handler(_ctx: Context) -> impl Responder {
-        "test"
+    async fn handler(ctx: Context) -> ContextResult {
+        ctx.build("test").ok()
     }
 
     #[test]

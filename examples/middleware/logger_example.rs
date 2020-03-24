@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use obsidian::{context::Context, middleware::Middleware, Body, EndpointExecutor, Response};
+use obsidian::{context::Context, middleware::Middleware, ContextResult, EndpointExecutor};
 
 #[derive(Default)]
 pub struct LoggerExample {}
@@ -19,7 +19,7 @@ impl Middleware for LoggerExample {
         &'a self,
         mut context: Context,
         ep_executor: EndpointExecutor<'a>,
-    ) -> Response<Body> {
+    ) -> ContextResult {
         println!(
             "{} {} \n{}",
             context.method(),

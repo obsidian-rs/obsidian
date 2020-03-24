@@ -5,6 +5,7 @@ use http::StatusCode;
 use hyper::{header, Body};
 use serde::ser::Serialize;
 
+#[derive(Debug)]
 pub struct Response {
     body: Body,
     status: StatusCode,

@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use crate::app::EndpointExecutor;
 use crate::context::Context;
 use crate::middleware::Middleware;
-use crate::{Body, Response};
+use crate::router::ContextResult;
 
 #[derive(Default)]
 pub struct Logger {}
@@ -20,7 +20,7 @@ impl Middleware for Logger {
         &'a self,
         context: Context,
         ep_executor: EndpointExecutor<'a>,
-    ) -> Response<Body> {
+    ) -> ContextResult {
         println!(
             "{} {} \n{}",
             context.method(),
