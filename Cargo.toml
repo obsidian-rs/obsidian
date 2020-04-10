@@ -14,6 +14,10 @@ path = 'examples/hello_handler.rs'
 name = 'json'
 path = 'examples/json.rs'
 
+[[example]]
+name = 'app_state'
+path = 'examples/app_state.rs'
+
 [package]
 name = 'obsidian'
 version = '0.1.0-alpha.1'
