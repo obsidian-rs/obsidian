@@ -70,13 +70,13 @@ impl Context {
     }
 
     /// Get dynamic data from request extensions
-    pub fn get<T: Send + Sync + 'static>(&mut self) {
-        self.extensions().get::<T>();
+    pub fn get<T: Send + Sync + 'static>(&self) -> Option<&T> {
+        self.extensions().get::<T>()
     }
 
     /// Get mutable dynamic data from request extensions
-    pub fn get_mut<T: Send + Sync + 'static>(&mut self) {
-        self.extensions_mut().get_mut::<T>();
+    pub fn get_mut<T: Send + Sync + 'static>(&mut self) -> Option<&mut T> {
+        self.extensions_mut().get_mut::<T>()
     }
 
     /// Method to get the params value according to key.
