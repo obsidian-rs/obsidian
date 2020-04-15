@@ -1,7 +1,6 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-use http::Extensions;
 use hyper::{
     header,
     service::{make_service_fn, service_fn},
@@ -14,9 +13,7 @@ use crate::middleware::Middleware;
 use crate::router::{ContextResult, Handler, RouteValueResult, Router};
 
 #[derive(Clone)]
-pub struct DefaultAppState {
-    states: Arc<Extensions>,
-}
+pub struct DefaultAppState {}
 
 #[derive(Default)]
 pub struct App<T = DefaultAppState>
@@ -79,6 +76,23 @@ where
         self.router.use_static(dir_path);
     }
 
+    /// Set app state. The app state must impl Clone.
+    /// The app state will be passed into endpoint handler context dynamic data.
+    ///
+    /// # Example
+    /// ```
+    /// use obsidian::App;
+    ///
+    /// #[derive(Clone)]
+    /// struct AppState {
+    ///     db_connection: String,
+    /// }
+    ///
+    /// let mut app: App<AppState> = App::new();
+    /// app.set_app_state(AppState{
+    ///     db_connection: "localhost:1433".to_string(),
+    /// });
+    /// ```
     pub fn set_app_state(&mut self, app_state: T) {
         self.app_state = Some(app_state);
     }
