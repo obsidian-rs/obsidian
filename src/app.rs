@@ -18,6 +18,7 @@ pub struct DefaultAppState {
     states: Arc<Extensions>,
 }
 
+#[derive(Default)]
 pub struct App<T = DefaultAppState>
 where
     T: Clone + Send + Sync + 'static,
