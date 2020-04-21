@@ -12,20 +12,26 @@ use crate::error::ObsidianError;
 use crate::middleware::Middleware;
 use crate::router::{ContextResult, Handler, RouteValueResult, Router};
 
-pub struct App {
+#[derive(Clone)]
+pub struct DefaultAppState {}
+
+#[derive(Default)]
+pub struct App<T = DefaultAppState>
+where
+    T: Clone + Send + Sync + 'static,
+{
     router: Router,
+    app_state: Option<T>,
 }
 
-impl Default for App {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl App {
+impl<T> App<T>
+where
+    T: Clone + Send + Sync + 'static,
+{
     pub fn new() -> Self {
         App {
             router: Router::new(),
+            app_state: None,
         }
     }
 
@@ -70,17 +76,42 @@ impl App {
         self.router.use_static(dir_path);
     }
 
+    /// Set app state. The app state must impl Clone.
+    /// The app state will be passed into endpoint handler context dynamic data.
+    ///
+    /// # Example
+    /// ```
+    /// use obsidian::App;
+    ///
+    /// #[derive(Clone)]
+    /// struct AppState {
+    ///     db_connection: String,
+    /// }
+    ///
+    /// let mut app: App<AppState> = App::new();
+    /// app.set_app_state(AppState{
+    ///     db_connection: "localhost:1433".to_string(),
+    /// });
+    /// ```
+    pub fn set_app_state(&mut self, app_state: T) {
+        self.app_state = Some(app_state);
+    }
+
     pub async fn listen(self, addr: &SocketAddr, callback: impl Fn()) {
-        let app_server = AppServer {
+        let app_server: AppServer = AppServer {
             router: self.router,
         };
+        let app_state = self.app_state;
 
-        let service = make_service_fn(|_| {
+        let service = make_service_fn(move |_| {
             let server_clone = app_server.clone();
+            let app_state = app_state.clone();
+
             async {
                 Ok::<_, hyper::Error>(service_fn(move |req| {
                     let route_value = server_clone.router.search_route(req.uri().path());
-                    AppServer::resolve_endpoint(req, route_value)
+
+                    AppServer::resolve_endpoint(req, route_value, app_state.clone())
                 }))
             }
         });
@@ -99,10 +130,14 @@ struct AppServer {
 }
 
 impl AppServer {
-    pub async fn resolve_endpoint(
+    pub async fn resolve_endpoint<T>(
         req: Request<Body>,
         route_value: Option<RouteValueResult>,
-    ) -> Result<Response<Body>, hyper::Error> {
+        app_state: Option<T>,
+    ) -> Result<Response<Body>, hyper::Error>
+    where
+        T: Send + Sync + 'static,
+    {
         match route_value {
             Some(route_value) => {
                 let route = match route_value.get_route(req.method()) {
@@ -111,8 +146,12 @@ impl AppServer {
                 };
                 let middlewares = route_value.get_middlewares();
                 let params = route_value.get_params();
-                let context = Context::new(req, params);
+                let mut context = Context::new(req, params);
                 let executor = EndpointExecutor::new(&route.handler, middlewares);
+
+                if let Some(state) = app_state {
+                    context.add::<T>(state);
+                }
 
                 let route_result = executor.next(context).await;
 
@@ -230,7 +269,10 @@ mod test {
                 .unwrap();
 
             let route_value = app_server.router.search_route(req.uri().path());
-            let actual_response = AppServer::resolve_endpoint(req, route_value).await.unwrap();
+            let actual_response =
+                AppServer::resolve_endpoint::<DefaultAppState>(req, route_value, None)
+                    .await
+                    .unwrap();
 
             let mut expected_response = Response::new(Body::from("test_app_server"));
             *expected_response.status_mut() = StatusCode::OK;
