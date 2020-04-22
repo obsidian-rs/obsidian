@@ -2,22 +2,26 @@ mod handler;
 mod req_deserializer;
 mod resource;
 mod responder;
-pub mod response;
+mod response;
 mod response_body;
 mod route;
 mod route_trie;
 
-use self::route_trie::{RouteTrie, RouteValueResult};
+use self::route_trie::RouteTrie;
 use crate::context::Context;
 use crate::middleware::Middleware;
 use crate::Method;
+pub use hyper::header;
 
-pub use self::handler::Handler;
+pub use self::handler::{ContextResult, Handler};
 pub use self::req_deserializer::{from_cow_map, Error as FormError};
 pub use self::resource::Resource;
-pub use self::responder::{Responder, ResponseResult};
+pub use self::responder::Responder;
+pub use self::response::Response;
 pub use self::response_body::ResponseBody;
 pub use self::route::Route;
+
+pub(crate) use self::route_trie::RouteValueResult;
 
 pub struct Router {
     routes: RouteTrie,
@@ -86,7 +90,7 @@ impl Router {
         let mut path = String::from(dir_path);
         path.push_str("/*");
 
-        self.get(&path, Self::static_dir_file_handler());
+        self.get(&path, Self::static_dir_file_handler);
     }
 
     /// Apply route handler in current relative route
@@ -129,22 +133,24 @@ impl Router {
 
             dir_path.append(&mut relative_path);
 
-            response::file(&dir_path.join("/"))
+            Box::pin(async move {
+                ctx.build(Response::ok().file(&dir_path.join("/")).await)
+                    .ok()
+            })
         }
     }
 
-    fn static_dir_file_handler() -> impl Handler {
-        move |ctx: Context| {
-            let relative_path = ctx
-                .uri()
-                .path()
-                .split('/')
-                .filter(|key| !key.is_empty())
-                .map(|x| x.to_string())
-                .collect::<Vec<String>>();
+    async fn static_dir_file_handler(ctx: Context) -> ContextResult {
+        let relative_path = ctx
+            .uri()
+            .path()
+            .split('/')
+            .filter(|key| !key.is_empty())
+            .map(|x| x.to_string())
+            .collect::<Vec<String>>();
 
-            response::file(&relative_path.join("/"))
-        }
+        ctx.build(Response::ok().file(&relative_path.join("/")).await)
+            .ok()
     }
 }
 
@@ -152,10 +158,10 @@ impl Router {
 mod tests {
     use super::*;
     use crate::context::Context;
-    use crate::middleware::Logger;
+    use crate::middleware::logger::Logger;
 
-    fn handler(_ctx: Context) -> impl Responder {
-        "test"
+    async fn handler(ctx: Context) -> ContextResult {
+        ctx.build("test").ok()
     }
 
     #[test]
@@ -178,9 +184,7 @@ mod tests {
                 assert_eq!(middlewares.len(), 0);
                 assert_eq!(route_value.method, Method::GET);
             }
-            _ => {
-                assert!(false);
-            }
+            _ => panic!(),
         }
     }
 
@@ -204,9 +208,7 @@ mod tests {
                 assert_eq!(middlewares.len(), 0);
                 assert_eq!(route_value.method, Method::POST);
             }
-            _ => {
-                assert!(false);
-            }
+            _ => panic!(),
         }
     }
 
@@ -230,9 +232,7 @@ mod tests {
                 assert_eq!(middlewares.len(), 0);
                 assert_eq!(route_value.method, Method::PUT);
             }
-            _ => {
-                assert!(false);
-            }
+            _ => panic!(),
         }
     }
 
@@ -256,9 +256,7 @@ mod tests {
                 assert_eq!(middlewares.len(), 0);
                 assert_eq!(route_value.method, Method::DELETE);
             }
-            _ => {
-                assert!(false);
-            }
+            _ => panic!(),
         }
     }
 
@@ -281,9 +279,7 @@ mod tests {
 
                 assert_eq!(middlewares.len(), 1);
             }
-            _ => {
-                assert!(false);
-            }
+            _ => panic!(),
         }
     }
 
@@ -306,9 +302,7 @@ mod tests {
 
                 assert_eq!(middlewares.len(), 1);
             }
-            _ => {
-                assert!(false);
-            }
+            _ => panic!(),
         }
     }
 
@@ -354,9 +348,7 @@ mod tests {
                 assert_eq!(middlewares.len(), 0);
                 assert_eq!(route_value.method, Method::DELETE);
             }
-            _ => {
-                assert!(false);
-            }
+            _ => panic!(),
         }
 
         match diff_result {
@@ -367,9 +359,7 @@ mod tests {
                 assert_eq!(middlewares.len(), 0);
                 assert_eq!(route_value.method, Method::GET);
             }
-            _ => {
-                assert!(false);
-            }
+            _ => panic!(),
         }
     }
 
@@ -403,9 +393,7 @@ mod tests {
                 assert_eq!(middlewares.len(), 0);
                 assert_eq!(route_value.method, Method::GET);
             }
-            _ => {
-                assert!(false);
-            }
+            _ => panic!(),
         }
 
         match sub_result {
@@ -416,9 +404,7 @@ mod tests {
                 assert_eq!(middlewares.len(), 1);
                 assert_eq!(route_value.method, Method::GET);
             }
-            _ => {
-                assert!(false);
-            }
+            _ => panic!(),
         }
     }
 

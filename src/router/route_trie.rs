@@ -611,13 +611,18 @@ impl ActionPayload {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::middleware::Logger;
+    use crate::context::Context;
+    use crate::middleware::logger::Logger;
+    use crate::router::ContextResult;
+
+    async fn handler(ctx: Context) -> ContextResult {
+        ctx.build("test").ok()
+    }
 
     #[test]
     fn radix_trie_head_test() {
         let mut route_trie = RouteTrie::new();
         let logger = Logger::new();
-        let handler = |_x| "test";
 
         route_trie.insert_default_middleware(logger);
         route_trie.insert_route("/", Route::new(Method::GET, handler));
@@ -634,9 +639,7 @@ mod tests {
                 assert_eq!(middlewares.len(), 1);
                 assert!(route_value);
             }
-            _ => {
-                assert!(false);
-            }
+            _ => panic!(),
         }
     }
 
@@ -645,7 +648,6 @@ mod tests {
         let mut route_trie = RouteTrie::new();
         let logger = Logger::new();
         let logger2 = Logger::new();
-        let handler = |_x| "test";
 
         route_trie.insert_default_middleware(logger);
         route_trie.insert_route("/normal/test/", Route::new(Method::GET, handler));
@@ -664,9 +666,7 @@ mod tests {
                 assert_eq!(middlewares.len(), 1);
                 assert!(route_value);
             }
-            _ => {
-                assert!(false);
-            }
+            _ => panic!(),
         }
 
         let result = route_trie.search_route("/ノーマル/テスト/");
@@ -681,9 +681,7 @@ mod tests {
                 assert_eq!(middlewares.len(), 2);
                 assert!(route_value);
             }
-            _ => {
-                assert!(false);
-            }
+            _ => panic!(),
         }
     }
 
@@ -691,7 +689,6 @@ mod tests {
     fn radix_trie_not_found_test() {
         let mut route_trie = RouteTrie::new();
         let logger = Logger::new();
-        let handler = |_x| "test";
 
         route_trie.insert_default_middleware(logger);
         route_trie.insert_route("/normal/test/", Route::new(Method::GET, handler));
@@ -707,7 +704,6 @@ mod tests {
         let logger = Logger::new();
         let logger2 = Logger::new();
         let logger3 = Logger::new();
-        let handler = |_x| "test";
 
         route_trie.insert_default_middleware(logger);
         route_trie.insert_route("/normal/test/", Route::new(Method::GET, handler));
@@ -737,9 +733,7 @@ mod tests {
                     assert_eq!(middlewares.len(), case.1);
                     assert!(route_value);
                 }
-                _ => {
-                    assert!(false);
-                }
+                _ => panic!(),
             }
         }
     }
@@ -747,7 +741,6 @@ mod tests {
     #[test]
     fn radix_trie_wildcard_test() {
         let mut route_trie = RouteTrie::new();
-        let handler = |_x| "test";
         let logger = Logger::new();
         let logger2 = Logger::new();
         let logger3 = Logger::new();
@@ -777,9 +770,7 @@ mod tests {
                     assert_eq!(middlewares.len(), 3);
                     assert!(route_value);
                 }
-                _ => {
-                    assert!(false);
-                }
+                _ => panic!(),
             }
         }
     }
@@ -788,7 +779,6 @@ mod tests {
     #[test]
     fn radix_trie_wildcard_param_conflict_test() {
         let mut route_trie = RouteTrie::new();
-        let handler = |_x| "test";
 
         route_trie.insert_route("/normal/test/*", Route::new(Method::GET, handler));
         route_trie.insert_route("/normal/test/:param", Route::new(Method::GET, handler));
@@ -798,7 +788,6 @@ mod tests {
     #[test]
     fn radix_trie_param_wildcard_conflict_test() {
         let mut route_trie = RouteTrie::new();
-        let handler = |_x| "test";
 
         route_trie.insert_route("/normal/test/:param", Route::new(Method::GET, handler));
         route_trie.insert_route("/normal/test/*", Route::new(Method::GET, handler));

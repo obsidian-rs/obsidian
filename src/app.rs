@@ -1,27 +1,37 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-use futures::{future, Future, Stream};
-use hyper::{service::service_fn, Body, Request, Response, Server, StatusCode};
+use hyper::{
+    header,
+    service::{make_service_fn, service_fn},
+    Body, Request, Response, Server, StatusCode,
+};
 
 use crate::context::Context;
+use crate::error::ObsidianError;
 use crate::middleware::Middleware;
-use crate::router::{Handler, Router};
+use crate::router::{ContextResult, Handler, RouteValueResult, Router};
 
-pub struct App {
+#[derive(Clone)]
+pub struct DefaultAppState {}
+
+#[derive(Default)]
+pub struct App<T = DefaultAppState>
+where
+    T: Clone + Send + Sync + 'static,
+{
     router: Router,
+    app_state: Option<T>,
 }
 
-impl Default for App {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl App {
+impl<T> App<T>
+where
+    T: Clone + Send + Sync + 'static,
+{
     pub fn new() -> Self {
         App {
             router: Router::new(),
+            app_state: None,
         }
     }
 
@@ -66,29 +76,51 @@ impl App {
         self.router.use_static(dir_path);
     }
 
-    pub fn listen(self, addr: &SocketAddr, callback: impl Fn()) {
-        let app_server = AppServer {
+    /// Set app state. The app state must impl Clone.
+    /// The app state will be passed into endpoint handler context dynamic data.
+    ///
+    /// # Example
+    /// ```
+    /// use obsidian::App;
+    ///
+    /// #[derive(Clone)]
+    /// struct AppState {
+    ///     db_connection: String,
+    /// }
+    ///
+    /// let mut app: App<AppState> = App::new();
+    /// app.set_app_state(AppState{
+    ///     db_connection: "localhost:1433".to_string(),
+    /// });
+    /// ```
+    pub fn set_app_state(&mut self, app_state: T) {
+        self.app_state = Some(app_state);
+    }
+
+    pub async fn listen(self, addr: &SocketAddr, callback: impl Fn()) {
+        let app_server: AppServer = AppServer {
             router: self.router,
         };
+        let app_state = self.app_state;
 
-        let service = move || {
+        let service = make_service_fn(move |_| {
             let server_clone = app_server.clone();
+            let app_state = app_state.clone();
 
-            service_fn(
-                move |req| -> Box<dyn Future<Item = Response<Body>, Error = hyper::Error> + Send> {
-                    // Resolve the route endpoint
-                    server_clone.resolve_endpoint(req)
-                },
-            )
-        };
+            async {
+                Ok::<_, hyper::Error>(service_fn(move |req| {
+                    let route_value = server_clone.router.search_route(req.uri().path());
 
-        let server = Server::bind(&addr)
-            .serve(service)
-            .map_err(|e| eprintln!("server error: {}", e));
+                    AppServer::resolve_endpoint(req, route_value, app_state.clone())
+                }))
+            }
+        });
+
+        let server = Server::bind(&addr).serve(service);
 
         callback();
 
-        hyper::rt::run(server);
+        server.await.map_err(|_| println!("Server error")).unwrap();
     }
 }
 
@@ -98,40 +130,81 @@ struct AppServer {
 }
 
 impl AppServer {
-    pub fn resolve_endpoint(
-        &self,
+    pub async fn resolve_endpoint<T>(
         req: Request<Body>,
-    ) -> Box<dyn Future<Item = Response<Body>, Error = hyper::Error> + Send> {
-        let (parts, body) = req.into_parts();
-
-        // Currently support only one router until radix tree complete.
-        if let Some(path) = self.router.search_route(parts.uri.path()) {
-            // Temporary used as the hyper stream thread block. async will be used soon
-            Box::new(body.concat2().and_then(move |b| {
-                let route = match path.get_route(&parts.method) {
+        route_value: Option<RouteValueResult>,
+        app_state: Option<T>,
+    ) -> Result<Response<Body>, hyper::Error>
+    where
+        T: Send + Sync + 'static,
+    {
+        match route_value {
+            Some(route_value) => {
+                let route = match route_value.get_route(req.method()) {
                     Some(r) => r,
-                    None => return page_not_found(),
+                    None => return Ok::<_, hyper::Error>(page_not_found()),
                 };
-                let middlewares = path.get_middlewares();
-                let params = path.get_params();
-                let req = Request::from_parts(parts, Body::from(b));
-                let context = Context::new(req, params);
-
+                let middlewares = route_value.get_middlewares();
+                let params = route_value.get_params();
+                let mut context = Context::new(req, params);
                 let executor = EndpointExecutor::new(&route.handler, middlewares);
 
-                executor.next(context)
-            }))
-        } else {
-            page_not_found()
+                if let Some(state) = app_state {
+                    context.add::<T>(state);
+                }
+
+                let route_result = executor.next(context).await;
+
+                let route_response = match route_result {
+                    Ok(ctx) => {
+                        let mut res = Response::builder();
+                        if let Some(response) = ctx.take_response() {
+                            if let Some(headers) = response.headers() {
+                                if let Some(response_headers) = res.headers_mut() {
+                                    headers.iter().for_each(move |(key, value)| {
+                                        response_headers
+                                            .insert(key, header::HeaderValue::from_static(value));
+                                    });
+                                }
+                            }
+                            res.status(response.status()).body(response.body())
+                        } else {
+                            // No response found
+                            res.status(StatusCode::OK).body(Body::from(""))
+                        }
+                    }
+                    Err(err) => {
+                        let body = Body::from(err.to_string());
+                        Response::builder()
+                            .status(StatusCode::INTERNAL_SERVER_ERROR)
+                            .body(body)
+                    }
+                };
+
+                Ok::<_, hyper::Error>(route_response.unwrap_or_else(|_| {
+                    internal_server_error(ObsidianError::GeneralError(
+                        "Error while constructing response body".to_string(),
+                    ))
+                }))
+            }
+            _ => Ok::<_, hyper::Error>(page_not_found()),
         }
     }
 }
 
-fn page_not_found() -> Box<dyn Future<Item = Response<Body>, Error = hyper::Error> + Send> {
+fn page_not_found() -> Response<Body> {
     let mut server_response = Response::new(Body::from("404 Not Found"));
     *server_response.status_mut() = StatusCode::NOT_FOUND;
 
-    Box::new(future::ok(server_response))
+    server_response
+}
+
+fn internal_server_error(err: impl std::error::Error) -> Response<Body> {
+    let body = Body::from(err.to_string());
+    Response::builder()
+        .status(StatusCode::INTERNAL_SERVER_ERROR)
+        .body(body)
+        .unwrap()
 }
 
 pub struct EndpointExecutor<'a> {
@@ -150,27 +223,12 @@ impl<'a> EndpointExecutor<'a> {
         }
     }
 
-    pub fn next(
-        mut self,
-        context: Context,
-    ) -> Box<dyn Future<Item = Response<Body>, Error = hyper::Error> + Send> {
+    pub async fn next(mut self, context: Context) -> ContextResult {
         if let Some((current, all_next)) = self.middleware.split_first() {
             self.middleware = all_next;
-            current.handle(context, self)
+            current.handle(context, self).await
         } else {
-            let route_response = self.route_endpoint.call(context);
-            match route_response {
-                Ok(res) => Box::new(future::ok(res)),
-                Err(err) => {
-                    let body = Body::from(std::error::Error::description(&err).to_string());
-                    let response = Response::builder()
-                        .status(StatusCode::INTERNAL_SERVER_ERROR)
-                        .body(body)
-                        .unwrap();
-
-                    Box::new(future::ok(response))
-                }
-            }
+            self.route_endpoint.call(context).await
         }
     }
 }
@@ -178,66 +236,60 @@ impl<'a> EndpointExecutor<'a> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use futures::Stream;
-    use hyper::StatusCode;
+    use async_std::task;
+    use hyper::{body, body::Buf, StatusCode};
 
     #[test]
     fn test_app_server_resolve_endpoint() {
-        let mut router = Router::new();
+        task::block_on(async {
+            let mut router = Router::new();
 
-        router.get("/", |mut context: Context| {
-            let body = context.take_body();
+            router.get("/", |mut ctx: Context| async move {
+                let body = ctx.take_body();
 
-            let request_body = body
-                .map_err(|_| ())
-                .fold(vec![], |mut acc, chunk| {
-                    acc.extend_from_slice(&chunk);
-                    Ok(acc)
-                })
-                .and_then(|v| String::from_utf8(v).map_err(|_| ()));
+                let request_body = match body::aggregate(body).await {
+                    Ok(buf) => String::from_utf8(buf.bytes().to_vec()),
+                    _ => {
+                        panic!();
+                    }
+                };
 
-            assert_eq!(context.uri().path(), "/");
-            assert_eq!(request_body.wait().unwrap(), "test_app_server");
-            "test_app_server"
-        });
+                assert_eq!(ctx.uri().path(), "/");
+                assert_eq!(request_body.unwrap(), "test_app_server");
+                ctx.build("test_app_server").ok()
+            });
 
-        let app_server = AppServer { router };
+            let app_server = AppServer { router };
 
-        let mut req_builder = Request::builder();
+            let req_builder = Request::builder();
 
-        let req = req_builder
-            .uri("/")
-            .body(Body::from("test_app_server"))
-            .unwrap();
+            let req = req_builder
+                .uri("/")
+                .body(Body::from("test_app_server"))
+                .unwrap();
 
-        let actual_response = app_server.resolve_endpoint(req).wait().unwrap();
+            let route_value = app_server.router.search_route(req.uri().path());
+            let actual_response =
+                AppServer::resolve_endpoint::<DefaultAppState>(req, route_value, None)
+                    .await
+                    .unwrap();
 
-        let mut expected_response = Response::new(Body::from("test_app_server"));
-        *expected_response.status_mut() = StatusCode::OK;
+            let mut expected_response = Response::new(Body::from("test_app_server"));
+            *expected_response.status_mut() = StatusCode::OK;
 
-        assert_eq!(actual_response.status(), expected_response.status());
+            assert_eq!(actual_response.status(), expected_response.status());
 
-        let actual_res_body = actual_response
-            .into_body()
-            .map_err(|_| ())
-            .fold(vec![], |mut acc, chunk| {
-                acc.extend_from_slice(&chunk);
-                Ok(acc)
-            })
-            .and_then(|v| String::from_utf8(v).map_err(|_| ()));
+            let actual_res_body = match body::aggregate(actual_response).await {
+                Ok(buf) => String::from_utf8(buf.bytes().to_vec()),
+                _ => panic!(),
+            };
 
-        let expected_res_body = expected_response
-            .into_body()
-            .map_err(|_| ())
-            .fold(vec![], |mut acc, chunk| {
-                acc.extend_from_slice(&chunk);
-                Ok(acc)
-            })
-            .and_then(|v| String::from_utf8(v).map_err(|_| ()));
+            let expected_res_body = match body::aggregate(expected_response).await {
+                Ok(buf) => String::from_utf8(buf.bytes().to_vec()),
+                _ => panic!(),
+            };
 
-        assert_eq!(
-            actual_res_body.wait().unwrap(),
-            expected_res_body.wait().unwrap()
-        );
+            assert_eq!(actual_res_body.unwrap(), expected_res_body.unwrap());
+        })
     }
 }

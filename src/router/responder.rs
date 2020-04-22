@@ -1,212 +1,116 @@
+use super::Response;
 use super::ResponseBody;
-use crate::error::ObsidianError;
-use hyper::{Body, Response, StatusCode};
-use std::error::Error;
-
-// use serde::ser::Serialize;
-
-pub type ResponseResult<T = Response<Body>> = http::Result<T>;
+use hyper::{header, StatusCode};
 
 pub trait Responder {
-    fn respond_to(self) -> ResponseResult;
-    fn with_status(self, status: StatusCode) -> CustomResponder<Self>
+    fn respond_to(self) -> Response;
+    fn with_status(self, status: StatusCode) -> Response
     where
-        Self: ResponseBody + Sized,
+        Self: Responder + ResponseBody + Sized,
     {
-        CustomResponder::new(self).with_status(status)
+        Response::new(self).set_status(status)
+    }
+
+    fn with_header(self, key: header::HeaderName, value: &'static str) -> Response
+    where
+        Self: Responder + ResponseBody + Sized,
+    {
+        Response::new(self).set_header(key, value)
+    }
+
+    fn with_headers(self, headers: Vec<(header::HeaderName, &'static str)>) -> Response
+    where
+        Self: Responder + ResponseBody + Sized,
+    {
+        Response::new(self).set_headers(headers)
+    }
+
+    fn with_headers_str(self, headers: Vec<(&'static str, &'static str)>) -> Response
+    where
+        Self: Responder + ResponseBody + Sized,
+    {
+        Response::new(self).set_headers_str(headers)
     }
 }
 
-/// Allows to override status code and headers for a responder.
-pub struct CustomResponder<T> {
-    body: T,
-    status: Option<StatusCode>,
-}
-
-impl<T> CustomResponder<T>
-where
-    T: ResponseBody,
-{
-    fn new(body: T) -> Self {
-        CustomResponder { body, status: None }
-    }
-
-    pub fn with_status(mut self, status: StatusCode) -> Self {
-        self.status = Some(status);
+impl Responder for Response {
+    fn respond_to(self) -> Response {
         self
     }
 }
 
-impl<T> Responder for CustomResponder<T>
-where
-    T: ResponseBody,
-{
-    fn respond_to(self) -> ResponseResult {
-        let status = match self.status {
-            Some(status) => status,
-            None => StatusCode::OK,
-        };
-
-        Response::builder()
-            .status(status)
-            .body(self.body.into_body())
-    }
-}
-
 impl Responder for String {
-    fn respond_to(self) -> ResponseResult {
-        Response::builder()
-            .status(StatusCode::OK)
-            .body(self.into_body())
+    fn respond_to(self) -> Response {
+        Response::new(self).set_content_type("text/plain; charset=utf-8")
     }
 }
 
 impl Responder for &'static str {
-    fn respond_to(self) -> ResponseResult {
-        Response::builder()
-            .status(StatusCode::OK)
-            .body(self.into_body())
-    }
-}
-
-impl<T> Responder for Option<T>
-where
-    T: ResponseBody,
-{
-    fn respond_to(self) -> ResponseResult {
-        match self {
-            Some(resp) => Response::builder()
-                .status(StatusCode::OK)
-                .body(resp.into_body()),
-            None => Response::builder()
-                .status(StatusCode::NOT_FOUND)
-                .body(().into_body()),
-        }
-    }
-}
-
-impl<T, E> Responder for Result<T, E>
-where
-    T: ResponseBody,
-    E: ResponseBody,
-{
-    fn respond_to(self) -> ResponseResult {
-        match self {
-            Ok(resp_body) => Response::builder()
-                .status(StatusCode::OK)
-                .body(resp_body.into_body()),
-            Err(error) => Response::builder()
-                .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body(error.into_body()),
-        }
-    }
-}
-
-impl<T> Responder for Result<T, ObsidianError>
-where
-    T: ResponseBody,
-{
-    fn respond_to(self) -> ResponseResult {
-        match self {
-            Ok(_) => Response::builder()
-                .status(StatusCode::OK)
-                .body(().into_body()),
-            Err(e) => Response::builder()
-                .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body(e.description().to_string().into_body()),
-        }
-    }
-}
-
-impl Responder for Result<ResponseResult, ObsidianError> {
-    fn respond_to(self) -> ResponseResult {
-        match self {
-            Ok(x) => x,
-            Err(e) => Response::builder()
-                .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body(e.description().to_string().into_body()),
-        }
+    fn respond_to(self) -> Response {
+        self.to_string().respond_to()
     }
 }
 
 impl Responder for () {
-    fn respond_to(self) -> ResponseResult {
-        Response::builder()
-            .status(StatusCode::OK)
-            .body(().into_body())
+    fn respond_to(self) -> Response {
+        Response::new(())
     }
 }
 
 impl<T> Responder for (StatusCode, T)
 where
-    T: ResponseBody,
+    T: Responder + ResponseBody,
 {
-    fn respond_to(self) -> ResponseResult {
-        Response::builder().status(self.0).body(self.1.into_body())
+    fn respond_to(self) -> Response {
+        let (status_code, body) = self;
+        Response::new(body).set_status(status_code)
     }
 }
 
 impl Responder for Vec<u8> {
-    fn respond_to(self) -> ResponseResult {
-        Response::builder()
-            .status(StatusCode::OK)
-            .body(self.into_body())
+    fn respond_to(self) -> Response {
+        match serde_json::to_string(&self) {
+            Ok(json) => json.with_status(StatusCode::OK).respond_to(),
+            Err(e) => {
+                eprintln!("serializing failed: {}", e);
+                let error = e.to_string();
+                error
+                    .with_status(StatusCode::INTERNAL_SERVER_ERROR)
+                    .respond_to()
+            }
+        }
     }
 }
 
 impl Responder for StatusCode {
-    fn respond_to(self) -> ResponseResult {
-        Response::builder().status(self).body(().into_body())
+    fn respond_to(self) -> Response {
+        ().with_status(self).respond_to()
     }
 }
 
-impl Responder for ResponseResult {
-    fn respond_to(self) -> ResponseResult {
-        self
+impl Responder for Option<String> {
+    fn respond_to(self) -> Response {
+        match self {
+            Some(resp) => resp.respond_to(),
+            None => "Not Found"
+                .to_string()
+                .with_status(StatusCode::NOT_FOUND)
+                .respond_to(),
+        }
     }
 }
 
-// impl<T> Responder for ResponseType<T>
-// where
-//     T: Serialize,
-// {
-//     fn respond_to(self) -> ResponseResult {
-//         match self {
-//             ResponseType::JSON(body) => response::json(body, StatusCode::OK),
-//         }
-//     }
-// }
-
-// impl<T> Responder for (StatusCode, ResponseType<T>)
-// where
-//     T: Serialize,
-// {
-//     fn respond_to(self) -> ResponseResult {
-//         match self.1 {
-//             ResponseType::JSON(body) => response::json(body, self.0),
-//         }
-//     }
-// }
-
-// impl<T> Responder for (u16, ResponseType<T>)
-// where
-//     T: Serialize,
-// {
-//     fn respond_to(self) -> ResponseResult {
-//         let status_code = match StatusCode::from_u16(self.0) {
-//             Ok(status_code) => status_code,
-//             Err(_) => {
-//                 return Response::builder()
-//                     .status(StatusCode::INTERNAL_SERVER_ERROR)
-//                     .body("Invalid Status Code".into_body())
-//             }
-//         };
-
-//         match self.1 {
-//             ResponseType::JSON(body) => response::json(body, status_code),
-//         }
-//     }
-// }
+impl Responder for Option<&'static str> {
+    fn respond_to(self) -> Response {
+        match self {
+            Some(resp) => resp.respond_to(),
+            None => "Not Found"
+                .to_string()
+                .with_status(StatusCode::NOT_FOUND)
+                .respond_to(),
+        }
+    }
+}
 
 #[cfg(test)]
 mod test {
@@ -214,10 +118,65 @@ mod test {
     use hyper::StatusCode;
 
     #[test]
-    fn test_custom_responder() {
-        let result = "Test".with_status(StatusCode::CREATED).respond_to();
-        if let Ok(response) = result {
-            assert_eq!(response.status(), StatusCode::CREATED);
-        }
+    fn test_str_responder() {
+        let response = "Hello World".respond_to();
+        assert_eq!(response.status(), StatusCode::OK);
+        // TODO: add testing for body once the Responder is refactored
+    }
+
+    #[test]
+    fn test_string_responder() {
+        let response = "Hello World".to_string().respond_to();
+        assert_eq!(response.status(), StatusCode::OK);
+        // TODO: add testing for body once the Responder is refactored
+    }
+
+    // #[test]
+    // fn test_option_responder() {
+    //     let some_result = Some("Hello World").respond_to();
+    //     if let Ok(response) = some_result {
+    //         assert_eq!(response.status(), StatusCode::OK);
+    //         // TODO: add testing for body once the Responder is refactored
+    //     }
+
+    //     let none_result = None::<String>.respond_to();
+    //     if let Ok(response) = none_result {
+    //         assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    //         // TODO: add testing for body once the Responder is refactored
+    //     }
+    // }
+
+    // #[test]
+    // fn test_result_responder() {
+    //     let ok_result = Ok::<&str, &str>("Hello World").respond_to();
+    //     if let Ok(response) = ok_result {
+    //         assert_eq!(response.status(), StatusCode::OK);
+    //         // TODO: add testing for body once the Responder is refactored
+    //     }
+
+    //     let err_result = Err::<&str, &str>("Some error").respond_to();
+    //     if let Ok(response) = err_result {
+    //         assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    //         // TODO: add testing for body once the Responder is refactored
+    //     }
+    // }
+
+    #[test]
+    fn test_responder_with_custom_status() {
+        let response = "Test".with_status(StatusCode::CREATED).respond_to();
+        assert_eq!(response.status(), StatusCode::CREATED);
+    }
+
+    #[test]
+    fn test_responder_with_custom_header() {
+        let response = "Test"
+            .with_header(header::CONTENT_TYPE, "application/json")
+            .respond_to();
+        assert_eq!(response.status(), StatusCode::OK);
+        assert!(response
+            .headers()
+            .as_ref()
+            .unwrap()
+            .contains(&(header::CONTENT_TYPE, "application/json")));
     }
 }

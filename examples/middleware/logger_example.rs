@@ -1,24 +1,23 @@
 use async_trait::async_trait;
 
-use crate::app::EndpointExecutor;
-use crate::context::Context;
-use crate::middleware::Middleware;
-use crate::router::ContextResult;
+use obsidian::{context::Context, middleware::Middleware, ContextResult, EndpointExecutor};
 
 #[derive(Default)]
-pub struct Logger {}
+pub struct LoggerExample {}
 
-impl Logger {
+pub struct LoggerExampleData(pub String);
+
+impl LoggerExample {
     pub fn new() -> Self {
-        Logger {}
+        LoggerExample {}
     }
 }
 
 #[async_trait]
-impl Middleware for Logger {
+impl Middleware for LoggerExample {
     async fn handle<'a>(
         &'a self,
-        context: Context,
+        mut context: Context,
         ep_executor: EndpointExecutor<'a>,
     ) -> ContextResult {
         println!(
@@ -27,6 +26,8 @@ impl Middleware for Logger {
             context.uri(),
             context.headers().get("host").unwrap().to_str().unwrap()
         );
+
+        context.add(LoggerExampleData("This is logger data".to_string()));
 
         ep_executor.next(context).await
     }

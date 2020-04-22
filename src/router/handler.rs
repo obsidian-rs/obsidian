@@ -1,16 +1,23 @@
-use super::{Responder, ResponseResult};
 use crate::context::Context;
+use crate::error::ObsidianError;
 
+use async_trait::async_trait;
+use std::future::Future;
+
+pub type ContextResult<T = ObsidianError> = Result<Context, T>;
+
+#[async_trait]
 pub trait Handler: Send + Sync + 'static {
-    fn call(&self, ctx: Context) -> ResponseResult;
+    async fn call(&self, ctx: Context) -> ContextResult;
 }
 
-impl<T, R> Handler for T
+#[async_trait]
+impl<T, F> Handler for T
 where
-    T: Fn(Context) -> R + Send + Sync + 'static,
-    R: Responder,
+    T: Fn(Context) -> F + Send + Sync + 'static,
+    F: Future<Output = ContextResult> + Send + 'static,
 {
-    fn call(&self, ctx: Context) -> ResponseResult {
-        (self)(ctx).respond_to()
+    async fn call(&self, ctx: Context) -> ContextResult {
+        (self)(ctx).await
     }
 }

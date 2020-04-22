@@ -1,17 +1,16 @@
-mod logger;
+pub mod logger;
 
-use futures::future::Future;
-
-pub use self::logger::Logger;
+use async_trait::async_trait;
 
 use crate::app::EndpointExecutor;
 use crate::context::Context;
-use crate::{Body, Response};
+use crate::router::ContextResult;
 
+#[async_trait]
 pub trait Middleware: Send + Sync + 'static {
-    fn handle<'a>(
+    async fn handle<'a>(
         &'a self,
         context: Context,
         ep_executor: EndpointExecutor<'a>,
-    ) -> Box<dyn Future<Item = Response<Body>, Error = hyper::Error> + Send>;
+    ) -> ContextResult;
 }

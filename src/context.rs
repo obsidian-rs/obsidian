@@ -1,5 +1,7 @@
-use futures::{Future, Stream};
+use http::Extensions;
+use hyper::{body, body::Buf};
 use serde::de::DeserializeOwned;
+use serde::ser::Serialize;
 use url::form_urlencoded;
 
 use std::borrow::Cow;
@@ -7,9 +9,12 @@ use std::collections::HashMap;
 use std::convert::From;
 use std::str::FromStr;
 
-use crate::router::from_cow_map;
+use crate::router::{from_cow_map, ContextResult, Responder, Response};
 use crate::ObsidianError;
-use crate::{header::HeaderValue, Body, HeaderMap, Method, Request, Uri};
+use crate::{
+    header::{HeaderName, HeaderValue},
+    Body, HeaderMap, Method, Request, StatusCode, Uri,
+};
 
 /// Context contains the data for current http connection context.
 /// For example, request information, params, method, and path.
@@ -17,6 +22,7 @@ use crate::{header::HeaderValue, Body, HeaderMap, Method, Request, Uri};
 pub struct Context {
     request: Request<Body>,
     params_data: HashMap<String, String>,
+    response: Option<Response>,
 }
 
 impl Context {
@@ -24,6 +30,7 @@ impl Context {
         Context {
             request,
             params_data,
+            response: None,
         }
     }
 
@@ -45,6 +52,31 @@ impl Context {
     /// Access request uri
     pub fn uri(&self) -> &Uri {
         self.request.uri()
+    }
+
+    /// Access request extensions
+    pub fn extensions(&self) -> &Extensions {
+        self.request.extensions()
+    }
+
+    /// Access mutable request extensions
+    pub fn extensions_mut(&mut self) -> &mut Extensions {
+        self.request.extensions_mut()
+    }
+
+    /// Add dynamic data into request extensions
+    pub fn add<T: Send + Sync + 'static>(&mut self, ctx_data: T) {
+        self.extensions_mut().insert(ctx_data);
+    }
+
+    /// Get dynamic data from request extensions
+    pub fn get<T: Send + Sync + 'static>(&self) -> Option<&T> {
+        self.extensions().get::<T>()
+    }
+
+    /// Get mutable dynamic data from request extensions
+    pub fn get_mut<T: Send + Sync + 'static>(&mut self) -> Option<&mut T> {
+        self.extensions_mut().get_mut::<T>()
     }
 
     /// Method to get the params value according to key.
@@ -83,7 +115,7 @@ impl Context {
     ///
     /// # Example
     /// ```
-    /// # use serde_derive::*;
+    /// # use serde::*;
     ///
     /// # use obsidian::context::Context;
     /// # use obsidian::router::Responder;
@@ -121,7 +153,7 @@ impl Context {
     ///
     /// # Example
     /// ```
-    /// # use serde_derive::*;
+    /// # use serde::*;
     ///
     /// # use obsidian::context::Context;
     /// # use obsidian::router::Responder;
@@ -134,8 +166,13 @@ impl Context {
     /// }
     ///
     /// // Assume ctx contains form query with data {id=1&mode=edit}
-    /// fn get_handler(mut ctx: Context) -> impl Responder {
-    ///     let result: FormResult = ctx.form().unwrap();
+    /// async fn get_handler(mut ctx: Context) -> impl Responder {
+    ///     let result: FormResult = match ctx.form().await {
+    ///         Ok(data) => data,
+    ///         _ => {
+    ///             panic!()
+    ///         }
+    ///     };
     ///
     ///     assert_eq!(result.id, 1);
     ///     assert_eq!(result.mode, "edit".to_string());
@@ -143,18 +180,17 @@ impl Context {
     ///     StatusCode::OK
     /// }
     /// ```
-    pub fn form<T: DeserializeOwned>(&mut self) -> Result<T, ObsidianError> {
+    pub async fn form<T: DeserializeOwned>(&mut self) -> Result<T, ObsidianError> {
         let body = self.take_body();
 
-        let chunks = match body.concat2().wait() {
-            Ok(chunk) => chunk,
-            Err(e) => {
-                println!("{}", e);
-                hyper::Chunk::default()
+        let buf = match body::aggregate(body).await {
+            Ok(buf) => buf,
+            _ => {
+                return Err(ObsidianError::NoneError);
             }
         };
 
-        Self::parse_queries(&chunks)
+        Self::parse_queries(buf.bytes())
     }
 
     /// Form value merge with Params
@@ -170,7 +206,7 @@ impl Context {
     ///
     /// ### Handle by static type
     /// ```
-    /// # use serde_derive::*;
+    /// # use serde::*;
     ///
     /// # use obsidian::context::Context;
     /// # use obsidian::router::Responder;
@@ -183,8 +219,13 @@ impl Context {
     /// }
     ///
     /// // Assume ctx contains json with data {id:1, mode:'edit'}
-    /// fn get_handler(mut ctx: Context) -> impl Responder {
-    ///     let result: JsonResult = ctx.json().unwrap();
+    /// async fn get_handler(mut ctx: Context) -> impl Responder {
+    ///     let result: JsonResult = match ctx.json().await {
+    ///         Ok(data) => data,
+    ///         _ => {
+    ///             panic!()
+    ///         }
+    ///     };
     ///
     ///     assert_eq!(result.id, 1);
     ///     assert_eq!(result.mode, "edit".to_string());
@@ -202,8 +243,13 @@ impl Context {
     /// # use obsidian::StatusCode;
     ///
     /// // Assume ctx contains json with data {id:1, mode:'edit'}
-    /// fn get_handler(mut ctx: Context) -> impl Responder {
-    ///     let result: serde_json::Value = ctx.json().unwrap();
+    /// async fn get_handler(mut ctx: Context) -> impl Responder {
+    ///     let result: serde_json::Value = match ctx.json().await {
+    ///         Ok(data) => data,
+    ///         _ => {
+    ///             panic!()
+    ///         }
+    ///     };
     ///
     ///     assert_eq!(result["id"], 1);
     ///     assert_eq!(result["mode"], "edit".to_string());
@@ -211,18 +257,17 @@ impl Context {
     ///     StatusCode::OK
     /// }
     /// ```
-    pub fn json<T: DeserializeOwned>(&mut self) -> Result<T, ObsidianError> {
+    pub async fn json<T: DeserializeOwned>(&mut self) -> Result<T, ObsidianError> {
         let body = self.take_body();
 
-        let chunks = match body.concat2().wait() {
-            Ok(chunk) => chunk,
-            Err(e) => {
-                println!("json error here: {}", e);
-                hyper::Chunk::default()
+        let buf = match body::aggregate(body).await {
+            Ok(buf) => buf,
+            _ => {
+                return Err(ObsidianError::NoneError);
             }
         };
 
-        Ok(serde_json::from_slice(&chunks)?)
+        Ok(serde_json::from_slice(buf.bytes())?)
     }
 
     /// Json value merged with Params
@@ -233,6 +278,30 @@ impl Context {
     /// Consumes body of the request and replace it with empty body.
     pub fn take_body(&mut self) -> Body {
         std::mem::replace(self.request.body_mut(), Body::empty())
+    }
+
+    /// Take response
+    pub fn take_response(self) -> Option<Response> {
+        self.response
+    }
+
+    pub fn response_mut(&mut self) -> &mut Option<Response> {
+        &mut self.response
+    }
+
+    /// Build any kind of response which implemented Responder trait
+    pub fn build(self, res: impl Responder) -> ResponseBuilder {
+        ResponseBuilder::new(self, res.respond_to())
+    }
+
+    /// Build data into json format. The data must implement Serialize trait
+    pub fn build_json(self, body: impl Serialize) -> ResponseBuilder {
+        ResponseBuilder::new(self, Response::ok().json(body))
+    }
+
+    /// Build response from static file.
+    pub async fn build_file(self, file_path: &str) -> ResponseBuilder {
+        ResponseBuilder::new(self, Response::ok().file(file_path).await)
     }
 
     fn parse_queries<T: DeserializeOwned>(query: &[u8]) -> Result<T, ObsidianError> {
@@ -262,11 +331,48 @@ impl Context {
     }
 }
 
+pub struct ResponseBuilder {
+    ctx: Context,
+    response: Response,
+}
+
+impl ResponseBuilder {
+    pub fn new(ctx: Context, response: Response) -> Self {
+        ResponseBuilder { ctx, response }
+    }
+
+    pub fn with_status(mut self, status: StatusCode) -> Self {
+        self.response = self.response.set_status(status);
+        self
+    }
+
+    pub fn with_header(mut self, key: HeaderName, value: &'static str) -> Self {
+        self.response = self.response.set_header(key, value);
+        self
+    }
+
+    pub fn with_headers(mut self, headers: Vec<(HeaderName, &'static str)>) -> Self {
+        self.response = self.response.set_headers(headers);
+        self
+    }
+
+    pub fn with_headers_str(mut self, headers: Vec<(&'static str, &'static str)>) -> Self {
+        self.response = self.response.set_headers_str(headers);
+        self
+    }
+
+    pub fn ok(mut self) -> ContextResult {
+        *self.ctx.response_mut() = Some(self.response);
+        Ok(self.ctx)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
+    use async_std::task;
     use hyper::{Body, Request};
-    use serde_derive::*;
+    use serde::*;
     use serde_json::json;
 
     #[derive(Deserialize, Serialize, Debug, PartialEq)]
@@ -353,84 +459,94 @@ mod test {
 
     #[test]
     fn test_form() -> Result<(), ObsidianError> {
-        let params = HashMap::default();
-        let request = Request::new(Body::from("id=1&mode=edit"));
+        task::block_on(async {
+            let params = HashMap::default();
+            let request = Request::new(Body::from("id=1&mode=edit"));
 
-        let mut ctx = Context::new(request, params);
+            let mut ctx = Context::new(request, params);
 
-        let actual_result: FormResult = ctx.form()?;
-        let expected_result = FormResult {
-            id: 1,
-            mode: "edit".to_string(),
-        };
+            let actual_result: FormResult = ctx.form().await?;
+            let expected_result = FormResult {
+                id: 1,
+                mode: "edit".to_string(),
+            };
 
-        assert_eq!(actual_result, expected_result);
-        Ok(())
+            assert_eq!(actual_result, expected_result);
+            Ok(())
+        })
     }
 
     #[test]
     fn test_form_with_extra_body() -> Result<(), ObsidianError> {
-        let params = HashMap::default();
-        let request = Request::new(Body::from("id=1&mode=edit&extra=true"));
+        task::block_on(async {
+            let params = HashMap::default();
+            let request = Request::new(Body::from("id=1&mode=edit&extra=true"));
 
-        let mut ctx = Context::new(request, params);
+            let mut ctx = Context::new(request, params);
 
-        let actual_result: FormResult = ctx.form()?;
-        let expected_result = FormResult {
-            id: 1,
-            mode: "edit".to_string(),
-        };
+            let actual_result: FormResult = ctx.form().await?;
+            let expected_result = FormResult {
+                id: 1,
+                mode: "edit".to_string(),
+            };
 
-        assert_eq!(actual_result, expected_result);
-        Ok(())
+            assert_eq!(actual_result, expected_result);
+            Ok(())
+        })
     }
 
     #[test]
     fn test_form_with_extra_field() -> Result<(), ObsidianError> {
-        let params = HashMap::default();
-        let request = Request::new(Body::from("id=1&mode=edit"));
+        task::block_on(async {
+            let params = HashMap::default();
+            let request = Request::new(Body::from("id=1&mode=edit"));
 
-        let mut ctx = Context::new(request, params);
+            let mut ctx = Context::new(request, params);
 
-        let actual_result: FormExtraResult = ctx.form()?;
-        let expected_result = FormExtraResult {
-            id: 1,
-            mode: "edit".to_string(),
-            extra: i32::default(),
-        };
+            let actual_result: FormExtraResult = ctx.form().await?;
+            let expected_result = FormExtraResult {
+                id: 1,
+                mode: "edit".to_string(),
+                extra: i32::default(),
+            };
 
-        assert_eq!(actual_result, expected_result);
-        Ok(())
+            assert_eq!(actual_result, expected_result);
+            Ok(())
+        })
     }
 
     #[test]
     fn test_json_struct() -> Result<(), ObsidianError> {
-        let params = HashMap::default();
-        let request = Request::new(Body::from("{\"id\":1,\"mode\":\"edit\"}"));
+        task::block_on(async {
+            let params = HashMap::default();
+            let request = Request::new(Body::from("{\"id\":1,\"mode\":\"edit\"}"));
 
-        let mut ctx = Context::new(request, params);
+            let mut ctx = Context::new(request, params);
 
-        let actual_result: JsonResult = ctx.json()?;
-        let expected_result = JsonResult {
-            id: 1,
-            mode: "edit".to_string(),
-        };
+            let actual_result: JsonResult = ctx.json().await?;
+            let expected_result = JsonResult {
+                id: 1,
+                mode: "edit".to_string(),
+            };
 
-        assert_eq!(actual_result, expected_result);
-        Ok(())
+            assert_eq!(actual_result, expected_result);
+            Ok(())
+        })
     }
 
     #[test]
     fn test_json_value() -> Result<(), ObsidianError> {
-        let params = HashMap::default();
-        let request = Request::new(Body::from("{\"id\":1,\"mode\":\"edit\"}"));
+        task::block_on(async {
+            let params = HashMap::default();
+            let request = Request::new(Body::from("{\"id\":1,\"mode\":\"edit\"}"));
 
-        let mut ctx = Context::new(request, params);
+            let mut ctx = Context::new(request, params);
 
-        let actual_result: serde_json::Value = ctx.json()?;
+            let actual_result: serde_json::Value = ctx.json().await?;
 
-        assert_eq!(actual_result["id"], json!(1));
-        assert_eq!(actual_result["mode"], json!("edit"));
-        Ok(())
+            assert_eq!(actual_result["id"], json!(1));
+            assert_eq!(actual_result["mode"], json!("edit"));
+            Ok(())
+        })
     }
 }

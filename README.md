@@ -1,51 +1,94 @@
-# Obsidian
+<p align="center">
+  <a href="https://obsidian-rs.github.io">
+    <img alt="Obsidian Logo" src=".github/media/logo.png" width="450">
+  </a>
+  <h1 align="center">
+    Obsidian
+  </h1>
+</p>
+<div align="center">
+    <a href="https://crates.io/crates/obsidian">
+      <img alt="Obsidian crate" src="https://img.shields.io/crates/v/obsidian.svg">
+    </a>
+    <a href="https://github.com/obsidian-rs/obsidian/actions">
+      <img alt="GitHub Actions status" src="https://github.com/obsidian-rs/obsidian/workflows/Obsidian%20Action/badge.svg">
+    </a>
+</div>
 
-## What's Obsidian?
-
-`Obsidian` is a web-application framework in Rust with a vision to make Rust web development fun.
-
-## Code Status
-
-|                                    **Version**                                     |                                                                     **Master**                                                                      |
-| :--------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------------------------------------------------: |
-| [![](http://meritbadge.herokuapp.com/obsidian)](https://crates.io/crates/obsidian) | [![Actions Status](https://github.com/obsidian-rs/obsidian/workflows/Obsidian%20Action/badge.svg)](https://github.com/obsidian-rs/obsidian/actions) |
+<p align="center"><strong>Obsidian</strong> is a Rust web framework with a vision to make Rust web development fun.</p>
 
 ## Hello World
 ```rust
 use obsidian::App;
 
-fn main() {
-  let mut app = App::new();
-  let addr = ([127, 0, 0, 1], 3000).into();
+#[tokio::main]
+async fn main() {
+    let mut app = App::new();
+    let addr = ([127, 0, 0, 1], 3000).into();
 
-  app.get("/", |_ctx| {
-    "Hello World"
-  });
+    app.get("/", |ctx: Context| async { ctx.build("Hello World").ok() });
 
-  app.listen(&addr, || {
-    println!("server is listening to {}", &addr);
-  });
+    app.listen(&addr, || {
+        {
+            println!("server is listening to {}", &addr);
+        }
+    }).await;
 }
 ```
 
 ## Hello World (with handler function)
 ```rust
-use obsidian::{App, router::Responder, context::Context};
+use obsidian::{context::Context, App, ContextResult};
 
-fn hello_world(_ctx: Context) -> impl Responder {
-  "Hello World"
+async fn hello_world(ctx: Context) -> ContextResult {
+    ctx.build("Hello World").ok()
 }
 
-fn main() {
-  let mut app = App::new();
-  let addr = ([127, 0, 0, 1], 3000).into();
 
-  app.get("/", hello_world);
+#[tokio::main]
+async fn main() {
+    let mut app = App::new();
+    let addr = ([127, 0, 0, 1], 3000).into();
 
-  app.listen(&addr, || {
-    println!("server is listening to {}", &addr);
-  });
+    app.get("/", hello_world);
+
+    app.listen(&addr, || {
+        println!("server is listening to {}", &addr);
+    })
+    .await;
 }
+```
+
+## JSON Response
+```rust
+use obsidian::{context::Context, App, ContextResult};
+use serde::*;
+
+async fn get_user(ctx: Context) -> ContextResult {
+    #[derive(Serialize, Deserialize)]
+    struct User {
+        name: String,
+    };
+
+    let user = User {
+        name: String::from("Obsidian"),
+    };
+    ctx.build_json(user).ok()
+}
+
+#[tokio::main]
+async fn main() {
+    let mut app: App = App::new();
+    let addr = ([127, 0, 0, 1], 3000).into();
+
+    app.get("/user", get_user);
+
+    app.listen(&addr, || {
+        println!("server is listening to {}", &addr);
+    })
+    .await;
+}
+
 ```
 
 ## Example Files
