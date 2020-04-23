@@ -15,15 +15,16 @@
     </a>
 </div>
 
-<p align="center"><strong>Obsidian</strong> is a Rust web framework with a vision to make Rust web development fun.</p>
+<p align="center"><strong>Obsidian</strong> is an ergonomic Rust async http framework for reliable and efficient web.</p>
 
 ## Hello World
+
 ```rust
 use obsidian::App;
 
 #[tokio::main]
 async fn main() {
-    let mut app = App::new();
+    let mut app: App = App::new();
     let addr = ([127, 0, 0, 1], 3000).into();
 
     app.get("/", |ctx: Context| async { ctx.build("Hello World").ok() });
@@ -37,6 +38,7 @@ async fn main() {
 ```
 
 ## Hello World (with handler function)
+
 ```rust
 use obsidian::{context::Context, App, ContextResult};
 
@@ -47,7 +49,7 @@ async fn hello_world(ctx: Context) -> ContextResult {
 
 #[tokio::main]
 async fn main() {
-    let mut app = App::new();
+    let mut app: App = App::new();
     let addr = ([127, 0, 0, 1], 3000).into();
 
     app.get("/", hello_world);
@@ -60,6 +62,7 @@ async fn main() {
 ```
 
 ## JSON Response
+
 ```rust
 use obsidian::{context::Context, App, ContextResult};
 use serde::*;
@@ -103,4 +106,4 @@ cargo run --example example
 
 ## Current State
 
-NOT READY FOR PRODUCTION!
+NOT READY FOR PRODUCTION YET!
