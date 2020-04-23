@@ -27,8 +27,18 @@ authors = [
 ]
 edition = '2018'
 description = 'A Rust framework'
+readme = "README.md"
+homepage = "https://obsidian-rs.github.io"
 repository = 'https://github.com/obsidian-rs/obsidian'
 license = 'MIT'
+keywords = [
+    'obsidian',
+    'async',
+    'http',
+    'web',
+    'framework'
+]
+categories = ["asynchronous", "web-programming::http-server", "network-programming"]
 
 [dependencies]
 hyper = '0.13.1'
