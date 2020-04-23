@@ -341,13 +341,21 @@ impl ResponseBuilder {
         ResponseBuilder { ctx, response }
     }
 
+    /// set http status code for response
     pub fn with_status(mut self, status: StatusCode) -> Self {
         self.response = self.response.set_status(status);
         self
     }
 
+    /// set http header for response
     pub fn with_header(mut self, key: HeaderName, value: &'static str) -> Self {
         self.response = self.response.set_header(key, value);
+        self
+    }
+
+    /// set custom http header for response with `&str` key
+    pub fn with_header_str(mut self, key: &'static str, value: &'static str) -> Self {
+        self.response = self.response.set_header_str(key, value);
         self
     }
 

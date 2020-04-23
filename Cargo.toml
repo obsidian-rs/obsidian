@@ -20,15 +20,25 @@ path = 'examples/app_state.rs'
 
 [package]
 name = 'obsidian'
-version = '0.2.0-alpha.1'
+version = '0.2.0'
 authors = [
     'Gan Jun Kai <kuhn96@gmail.com>',
     'Wai Pai Lee <pailee.wai@gmail.com>',
 ]
 edition = '2018'
-description = 'A Rust framework'
+description = 'Ergonomic async http framework for amazing, reliable and efficient web'
+readme = "README.md"
+homepage = "https://obsidian-rs.github.io"
 repository = 'https://github.com/obsidian-rs/obsidian'
 license = 'MIT'
+keywords = [
+    'obsidian',
+    'async',
+    'http',
+    'web',
+    'framework'
+]
+categories = ["asynchronous", "web-programming::http-server", "network-programming"]
 
 [dependencies]
 hyper = '0.13.1'

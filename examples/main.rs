@@ -83,13 +83,11 @@ ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut ic
     app.get("/json", |ctx: Context| async {
         let point = Point { x: 1, y: 2 };
 
-        ctx.build(
-            Response::created()
-                .set_header(header::AUTHORIZATION, "token")
-                .set_header_str("X-Custom-Header", "Custom header value")
-                .json(point),
-        )
-        .ok()
+        ctx.build_json(point)
+            .with_status(StatusCode::OK)
+            .with_header(header::AUTHORIZATION, "token")
+            .with_header_str("X-Custom-Header", "Custom header value")
+            .ok()
     });
 
     app.get("/json-with-headers", |ctx: Context| async {
