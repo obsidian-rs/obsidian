@@ -26,7 +26,7 @@ authors = [
     'Wai Pai Lee <pailee.wai@gmail.com>',
 ]
 edition = '2018'
-description = 'A Rust framework'
+description = 'Ergonomic async http framework for amazing, reliable and efficient web'
 readme = "README.md"
 homepage = "https://obsidian-rs.github.io"
 repository = 'https://github.com/obsidian-rs/obsidian'
