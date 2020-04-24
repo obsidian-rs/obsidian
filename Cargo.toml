@@ -41,17 +41,17 @@ keywords = [
 categories = ["asynchronous", "web-programming::http-server", "network-programming"]
 
 [dependencies]
-hyper = '0.13.1'
-http = '0.2.0'
-serde_json = '1.0.44'
+hyper = "0.13.5"
+http = "0.2.1"
+serde_json = "1.0.51"
 url = '2.1.0'
-async-std = '1.4.0'
-async-trait = '0.1.22'
+async-std = "1.5.0"
+async-trait = "0.1.30"
 
 [dependencies.serde]
-version = '1.0.104'
+version = '1.0.106'
 features = ['derive']
 
 [dependencies.tokio]
-version = '0.2.6'
+version = '0.2.18'
 features = ['macros']
