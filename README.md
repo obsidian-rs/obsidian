@@ -6,6 +6,9 @@
     Obsidian
   </h1>
 </p>
+
+<p align="center"><strong>Obsidian</strong> is an ergonomic Rust async http framework for reliable and efficient web.</p>
+
 <div align="center">
     <a href="https://crates.io/crates/obsidian">
       <img alt="Obsidian crate" src="https://img.shields.io/crates/v/obsidian.svg">
@@ -14,8 +17,6 @@
       <img alt="GitHub Actions status" src="https://github.com/obsidian-rs/obsidian/workflows/Obsidian%20Action/badge.svg">
     </a>
 </div>
-
-<p align="center"><strong>Obsidian</strong> is an ergonomic Rust async http framework for reliable and efficient web.</p>
 
 ## Hello World
 
