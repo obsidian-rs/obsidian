@@ -148,7 +148,7 @@ where
 
         #[cfg(debug_assertions)]
         println!(
-            " => {}: {} [{} + {}]",
+            " 🚧  {}: {} [{} + {}]",
             "ENV".green().bold(),
             "dev",
             "unoptimized".red().bold(),
@@ -157,19 +157,19 @@ where
 
         #[cfg(not(debug_assertions))]
         println!(
-            " => {}: {} [{}]",
+            " 🚀  {}: {} [{}]",
             "ENV".green().bold(),
             "release",
             "optimized".green().bold(),
         );
 
         println!(
-            " => {}: {}",
+            " 🔧  {}: {}",
             "Version".green().bold(),
             env!("CARGO_PKG_VERSION")
         );
 
-        println!(" => {}: http://{}", "Served at".green().bold(), addr);
+        println!(" 🎉  {}: http://{}\n", "Served at".green().bold(), addr);
 
         server.await.map_err(|_| println!("Server error")).unwrap();
     }
