@@ -130,11 +130,25 @@ where
             .output()
             .unwrap_or_else(|e| panic!("failed to execute process: {}", e));
 
-        println!("{}", String::from_utf8_lossy(&output.stdout));
+        print!("{}", String::from_utf8_lossy(&output.stdout));
+
+        let logo = r#"
+
+      .oooooo.   oooooooooo.   .oooooo..o ooooo oooooooooo.   ooooo       .o.       ooooo      ooo 
+     d8P'  `Y8b  `888'   `Y8b d8P'    `Y8 `888' `888'   `Y8b  `888'      .888.      `888b.     `8' 
+    888      888  888     888 Y88bo.       888   888      888  888      .8"888.      8 `88b.    8  
+    888      888  888oooo888'  `"Y8888o.   888   888      888  888     .8' `888.     8   `88b.  8  
+    888      888  888    `88b      `"Y88b  888   888      888  888    .88ooo8888.    8     `88b.8  
+    `88b    d88'  888    .88P oo     .d8P  888   888     d88'  888   .8'     `888.   8       `888  
+     `Y8bood8P'  o888bood8P'  8""88888P'  o888o o888bood8P'   o888o o88o     o8888o o8o        `8  
+                                                                                               
+        "#;
+
+        println!("{}", logo);
 
         #[cfg(debug_assertions)]
         println!(
-            "{}: {} [{} + {}]",
+            " => {}: {} [{} + {}]",
             "ENV".green().bold(),
             "dev",
             "unoptimized".red().bold(),
@@ -143,19 +157,19 @@ where
 
         #[cfg(not(debug_assertions))]
         println!(
-            "{}: {} [{}]",
+            " => {}: {} [{}]",
             "ENV".green().bold(),
             "release",
             "optimized".green().bold(),
         );
 
         println!(
-            "{}: {}",
+            " => {}: {}",
             "Version".green().bold(),
             env!("CARGO_PKG_VERSION")
         );
 
-        println!("{}: http://{}", "Served at".green().bold(), addr);
+        println!(" => {}: http://{}", "Served at".green().bold(), addr);
 
         server.await.map_err(|_| println!("Server error")).unwrap();
     }
