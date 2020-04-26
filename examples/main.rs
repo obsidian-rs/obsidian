@@ -288,8 +288,5 @@ ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut ic
     app.use_router("/forms/", form_router);
     app.use_static_to("/files/", "/assets/");
 
-    app.listen(&addr, || {
-        println!("server is listening to {}", &addr);
-    })
-    .await;
+    app.listen(&addr, || {}).await;
 }

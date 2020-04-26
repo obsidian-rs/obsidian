@@ -1,6 +1,8 @@
 use std::net::SocketAddr;
+use std::process::Command;
 use std::sync::Arc;
 
+use colored::*;
 use hyper::{
     header,
     service::{make_service_fn, service_fn},
@@ -123,6 +125,37 @@ where
         let server = Server::bind(&addr).serve(service);
 
         callback();
+
+        let output = Command::new("clear")
+            .output()
+            .unwrap_or_else(|e| panic!("failed to execute process: {}", e));
+
+        println!("{}", String::from_utf8_lossy(&output.stdout));
+
+        #[cfg(debug_assertions)]
+        println!(
+            "{}: {} [{} + {}]",
+            "ENV".green().bold(),
+            "dev",
+            "unoptimized".red().bold(),
+            "debuginfo".blue().bold()
+        );
+
+        #[cfg(not(debug_assertions))]
+        println!(
+            "{}: {} [{}]",
+            "ENV".green().bold(),
+            "release",
+            "optimized".green().bold(),
+        );
+
+        println!(
+            "{}: {}",
+            "Version".green().bold(),
+            env!("CARGO_PKG_VERSION")
+        );
+
+        println!("{}: http://{}", "Served at".green().bold(), addr);
 
         server.await.map_err(|_| println!("Server error")).unwrap();
     }
