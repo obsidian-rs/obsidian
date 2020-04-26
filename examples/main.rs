@@ -90,6 +90,18 @@ ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut ic
             .ok()
     });
 
+    app.get("/user", |mut ctx: Context| async {
+        #[derive(Serialize, Deserialize)]
+        struct User {
+            name: String,
+            age: i8,
+        }
+
+        let user: User = ctx.json().await?;
+
+        ctx.build_json(user).ok()
+    });
+
     app.patch("/patch-here", |ctx: Context| async {
         ctx.build("Here is patch request").ok()
     });
@@ -268,8 +280,8 @@ ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut ic
     //     Ok(response::json(param_test, StatusCode::OK))
     // });
 
-    let logger_example = middleware::logger_example::LoggerExample::new();
-    app.use_service(logger_example);
+    // let logger_example = middleware::logger_example::LoggerExample::new();
+    // app.use_service(logger_example);
 
     param_router.get("/test-next-wild/*", |ctx: Context| async {
         ctx.build("<h1>test next wild</h1>".to_string()).ok()

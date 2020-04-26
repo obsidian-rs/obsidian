@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use std::time::{Duration, Instant};
 
 use crate::app::EndpointExecutor;
 use crate::context::Context;
@@ -21,13 +22,23 @@ impl Middleware for Logger {
         context: Context,
         ep_executor: EndpointExecutor<'a>,
     ) -> ContextResult {
-        println!(
-            "{} {} \n{}",
-            context.method(),
-            context.uri(),
-            context.headers().get("host").unwrap().to_str().unwrap()
-        );
+        let start = Instant::now();
+        println!("[info] {} {}", context.method(), context.uri(),);
 
-        ep_executor.next(context).await
+        match ep_executor.next(context).await {
+            Ok(context_after) => {
+                let duration = start.elapsed();
+                println!(
+                    "[info] Sent {} in {:?}",
+                    context_after.response().as_ref().unwrap().status(),
+                    duration
+                );
+                Ok(context_after)
+            }
+            Err(error) => {
+                println!("[error] {}", error);
+                Err(error)
+            }
+        }
     }
 }
