@@ -1,5 +1,4 @@
 use std::net::SocketAddr;
-use std::process::Command;
 use std::sync::Arc;
 
 use colored::*;
@@ -124,14 +123,6 @@ where
 
         let server = Server::bind(&addr).serve(service);
 
-        callback();
-
-        let output = Command::new("clear")
-            .output()
-            .unwrap_or_else(|e| panic!("failed to execute process: {}", e));
-
-        print!("{}", String::from_utf8_lossy(&output.stdout));
-
         let logo = r#"
 
       .oooooo.   oooooooooo.   .oooooo..o ooooo oooooooooo.   ooooo       .o.       ooooo      ooo 
@@ -170,6 +161,8 @@ where
         );
 
         println!(" 🎉  {}: http://{}\n", "Served at".green().bold(), addr);
+
+        callback();
 
         server.await.map_err(|_| println!("Server error")).unwrap();
     }
