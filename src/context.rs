@@ -285,6 +285,10 @@ impl Context {
         self.response
     }
 
+    pub fn response(&self) -> &Option<Response> {
+        &self.response
+    }
+
     pub fn response_mut(&mut self) -> &mut Option<Response> {
         &mut self.response
     }
