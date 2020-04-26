@@ -90,6 +90,10 @@ ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut ic
             .ok()
     });
 
+    app.patch("/patch-here", |ctx: Context| async {
+        ctx.build("Here is patch request").ok()
+    });
+
     app.get("/json-with-headers", |ctx: Context| async {
         let point = Point { x: 1, y: 2 };
 

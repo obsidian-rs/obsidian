@@ -47,6 +47,10 @@ where
         self.router.put(path, handler);
     }
 
+    pub fn patch(&mut self, path: &str, handler: impl Handler) {
+        self.router.patch(path, handler);
+    }
+
     pub fn delete(&mut self, path: &str, handler: impl Handler) {
         self.router.delete(path, handler);
     }

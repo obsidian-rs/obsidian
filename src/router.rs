@@ -60,6 +60,10 @@ impl Router {
         self.insert_route(Method::PUT, path, handler);
     }
 
+    pub fn patch(&mut self, path: &str, handler: impl Handler) {
+        self.insert_route(Method::PATCH, path, handler);
+    }
+
     pub fn delete(&mut self, path: &str, handler: impl Handler) {
         self.insert_route(Method::DELETE, path, handler);
     }
