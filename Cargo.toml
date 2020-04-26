@@ -20,7 +20,7 @@ path = 'examples/app_state.rs'
 
 [package]
 name = 'obsidian'
-version = '0.2.2'
+version = '0.3.0-alpah.1'
 authors = [
     'Gan Jun Kai <kuhn96@gmail.com>',
     'Wai Pai Lee <pailee.wai@gmail.com>',

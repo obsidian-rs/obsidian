@@ -1,5 +1,8 @@
 use async_trait::async_trait;
 
+#[cfg(debug_assertions)]
+use colored::*;
+
 use obsidian::{context::Context, middleware::Middleware, ContextResult, EndpointExecutor};
 
 #[derive(Default)]
@@ -20,11 +23,14 @@ impl Middleware for LoggerExample {
         mut context: Context,
         ep_executor: EndpointExecutor<'a>,
     ) -> ContextResult {
+        #[cfg(debug_assertions)]
+        println!("{}", "[debug] Inside middleware".blue());
+
         println!(
-            "{} {} \n{}",
+            "{} {}{}",
             context.method(),
+            context.headers().get("host").unwrap().to_str().unwrap(),
             context.uri(),
-            context.headers().get("host").unwrap().to_str().unwrap()
         );
 
         context.add(LoggerExampleData("This is logger data".to_string()));

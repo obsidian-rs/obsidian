@@ -280,8 +280,8 @@ ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut ic
     //     Ok(response::json(param_test, StatusCode::OK))
     // });
 
-    // let logger_example = middleware::logger_example::LoggerExample::new();
-    // app.use_service(logger_example);
+    let logger_example = middleware::logger_example::LoggerExample::new();
+    app.use_service(logger_example);
 
     param_router.get("/test-next-wild/*", |ctx: Context| async {
         ctx.build("<h1>test next wild</h1>".to_string()).ok()
