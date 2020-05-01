@@ -166,11 +166,33 @@ impl AppServer {
                             if let Some(headers) = response.headers() {
                                 if let Some(response_headers) = res.headers_mut() {
                                     headers.iter().for_each(move |(key, value)| {
-                                        response_headers
-                                            .insert(key, header::HeaderValue::from_static(value));
+                                        if let Ok(header_value) =
+                                            header::HeaderValue::from_str(value)
+                                        {
+                                            response_headers.insert(key, header_value);
+                                        }
                                     });
                                 }
                             }
+
+                            if let Some(cookies) = response.cookies() {
+                                if let Some(response_headers) = res.headers_mut() {
+                                    cookies.iter().for_each(move |cookie| {
+                                        if let Ok(header_value) =
+                                            header::HeaderValue::from_str(&cookie.to_string())
+                                        {
+                                            if response_headers.contains_key(header::SET_COOKIE) {
+                                                response_headers
+                                                    .append(header::SET_COOKIE, header_value);
+                                            } else {
+                                                response_headers
+                                                    .insert(header::SET_COOKIE, header_value);
+                                            }
+                                        }
+                                    });
+                                }
+                            }
+
                             res.status(response.status()).body(response.body())
                         } else {
                             // No response found

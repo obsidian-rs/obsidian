@@ -279,9 +279,7 @@ impl Context {
 
     pub fn cookie(&self, name: &str) -> Option<&Cookie> {
         if let Some(cookie_data) = self.get::<CookieParserData>() {
-            if let Some(ref cookie) = cookie_data.cookie_jar().get(name) {
-                return Some(*cookie);
-            }
+            return cookie_data.cookie_jar().get(name);
         }
 
         None
@@ -371,13 +369,23 @@ impl ResponseBuilder {
         self
     }
 
-    pub fn with_headers(mut self, headers: Vec<(HeaderName, &'static str)>) -> Self {
+    pub fn with_headers(mut self, headers: &[(HeaderName, &'static str)]) -> Self {
         self.response = self.response.set_headers(headers);
         self
     }
 
-    pub fn with_headers_str(mut self, headers: Vec<(&'static str, &'static str)>) -> Self {
+    pub fn with_headers_str(mut self, headers: &[(&'static str, &'static str)]) -> Self {
         self.response = self.response.set_headers_str(headers);
+        self
+    }
+
+    pub fn with_cookie(mut self, cookie: Cookie<'static>) -> Self {
+        self.response = self.response.set_cookie(cookie);
+        self
+    }
+
+    pub fn with_cookies(mut self, cookies: &[Cookie<'static>]) -> Self {
+        self.response = self.response.set_cookies(cookies);
         self
     }
 

@@ -5,7 +5,7 @@ use hyper::header;
 use crate::app::EndpointExecutor;
 use crate::context::Context;
 use crate::middleware::Middleware;
-use crate::{Body, Response};
+use crate::router::ContextResult;
 
 #[derive(Default)]
 pub struct CookieParserData {
@@ -43,19 +43,17 @@ impl Middleware for CookieParser {
         &'a self,
         mut context: Context,
         ep_executor: EndpointExecutor<'a>,
-    ) -> Response<Body> {
+    ) -> ContextResult {
         if let Some(cookie_header) = context.headers().get(header::COOKIE) {
             if let Ok(cookie_str) = cookie_header.to_str() {
                 let mut cookie_data = CookieParserData::new();
 
                 cookie_str
                     .split("; ")
-                    .map(|x| x.trim().splitn(2, '=').collect::<Vec<&str>>())
-                    .for_each(|x| {
-                        if let (2, Some(k), Some(v)) = (x.len(), x.first(), x.last()) {
-                            cookie_data
-                                .cookie_jar_mut()
-                                .add_original(Cookie::new((*k).to_string(), (*v).to_string()));
+                    .map(|cookie_str_part| Cookie::parse(cookie_str_part.to_owned()))
+                    .for_each(|cookie_result| {
+                        if let Ok(cookie) = cookie_result {
+                            cookie_data.cookie_jar_mut().add_original(cookie);
                         }
                     });
 

@@ -44,6 +44,10 @@ impl Response {
         &self.cookies
     }
 
+    pub fn cookies_mut(&mut self) -> &mut Option<Vec<Cookie<'static>>> {
+        &mut self.cookies
+    }
+
     pub fn headers_mut(&mut self) -> &mut Option<Vec<(header::HeaderName, String)>> {
         &mut self.headers
     }
@@ -95,7 +99,7 @@ impl Response {
         self.set_cookie(cookie)
     }
 
-    pub fn with_cookies(self, cookies: Vec<Cookie<'static>>) -> Self {
+    pub fn with_cookies(self, cookies: &[Cookie<'static>]) -> Self {
         self.set_cookies(cookies)
     }
 
@@ -111,15 +115,15 @@ impl Response {
         self
     }
 
-    pub fn set_cookies(mut self, mut cookies: Vec<Cookie<'static>>) -> Self {
+    pub fn set_cookies(mut self, mut cookies: &[Cookie<'static>]) -> Self {
         match self.cookies {
-            Some(ref mut x) => x.append(&mut cookies),
-            None => self.cookies = Some(cookies),
+            Some(ref mut x) => x.extend_from_slice(&mut cookies),
+            None => self.cookies = Some(cookies.to_vec()),
         }
         self
     }
 
-    pub fn set_headers(mut self, headers: Vec<(header::HeaderName, &str)>) -> Self {
+    pub fn set_headers(mut self, headers: &[(header::HeaderName, &str)]) -> Self {
         let headers: Vec<(header::HeaderName, String)> = headers
             .iter()
             .map(|(k, v)| (header::HeaderName::from(k), (*v).to_string()))
@@ -133,11 +137,11 @@ impl Response {
     }
 
     // Alias set_headers method
-    pub fn with_headers(self, headers: Vec<(header::HeaderName, &'static str)>) -> Self {
+    pub fn with_headers(self, headers: &[(header::HeaderName, &'static str)]) -> Self {
         self.set_headers(headers)
     }
 
-    pub fn set_headers_str(mut self, headers: Vec<(&'static str, &'static str)>) -> Self {
+    pub fn set_headers_str(mut self, headers: &[(&'static str, &'static str)]) -> Self {
         let values: Vec<(header::HeaderName, String)> = headers
             .iter()
             .map(|(k, v)| {
@@ -156,7 +160,7 @@ impl Response {
     }
 
     // Alias set_headers_str method
-    pub fn with_headers_str(self, headers: Vec<(&'static str, &'static str)>) -> Self {
+    pub fn with_headers_str(self, headers: &[(&'static str, &'static str)]) -> Self {
         self.set_headers_str(headers)
     }
 

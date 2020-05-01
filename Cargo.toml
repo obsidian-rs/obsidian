@@ -18,6 +18,10 @@ path = 'examples/json.rs'
 name = 'app_state'
 path = 'examples/app_state.rs'
 
+[[example]]
+name = 'cookies'
+path = 'examples/cookies.rs'
+
 [package]
 name = 'obsidian'
 version = '0.2.2'
