@@ -11,6 +11,7 @@ pub struct LoggerExample {}
 pub struct LoggerExampleData(pub String);
 
 impl LoggerExample {
+    #[allow(dead_code)]
     pub fn new() -> Self {
         LoggerExample {}
     }

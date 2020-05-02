@@ -18,6 +18,10 @@
     </a>
 </div>
 
+<div align="center">
+  <img alt="Obsidian serve" src="./screenshot/serve.png" >
+</div>
+
 ## Hello World
 
 ```rust
