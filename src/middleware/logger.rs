@@ -24,6 +24,7 @@ impl Middleware for Logger {
     ) -> ContextResult {
         let start = Instant::now();
         println!("[info] {} {}", context.method(), context.uri(),);
+        println!("{:#?}", context);
 
         match ep_executor.next(context).await {
             Ok(context_after) => {

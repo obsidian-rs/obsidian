@@ -140,7 +140,7 @@ where
         #[cfg(debug_assertions)]
         println!(
             " 🚧  {}: {} [{} + {}]",
-            "ENV".green().bold(),
+            "Mode".green().bold(),
             "dev",
             "unoptimized".red().bold(),
             "debuginfo".blue().bold()
@@ -149,7 +149,7 @@ where
         #[cfg(not(debug_assertions))]
         println!(
             " 🚀  {}: {} [{}]",
-            "ENV".green().bold(),
+            "Mode".green().bold(),
             "release",
             "optimized".green().bold(),
         );
