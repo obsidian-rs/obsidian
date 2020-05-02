@@ -27,14 +27,14 @@ pub struct Context {
 
 impl Context {
     pub fn new(request: Request<Body>, params_data: HashMap<String, String>) -> Self {
-        Context {
+        Self {
             request,
             params_data,
             response: None,
         }
     }
 
-    /// Access request header
+    /// Access request headers
     pub fn headers(&self) -> &HeaderMap<HeaderValue> {
         self.request.headers()
     }
@@ -128,7 +128,7 @@ impl Context {
     ///
     /// // Assume ctx contains string query with data {id=1&mode=edit}
     /// async fn get_handler(mut ctx: Context) -> ContextResult {
-    ///     let result: QueryString = ctx.uri_query()?;
+    ///     let result: QueryString = ctx.query_params()?;
     ///
     ///     assert_eq!(result.id, 1);
     ///     assert_eq!(result.mode, "edit".to_string());
@@ -136,7 +136,7 @@ impl Context {
     ///     ctx.build("").ok()
     /// }
     /// ```
-    pub fn uri_query<T: DeserializeOwned>(&mut self) -> Result<T, ObsidianError> {
+    pub fn query_params<T: DeserializeOwned>(&mut self) -> Result<T, ObsidianError> {
         let query = match self.uri().query() {
             Some(query) => query,
             _ => "",
