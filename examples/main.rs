@@ -91,15 +91,26 @@ ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut ic
     });
 
     app.get("/user", |mut ctx: Context| async {
-        #[derive(Serialize, Deserialize)]
-        struct User {
-            name: String,
-            age: i8,
+        #[derive(Serialize, Deserialize, Debug)]
+        struct QueryString {
+            id: String,
+            status: String,
         }
 
-        let user: User = ctx.json().await?;
+        let params = match ctx.query_params::<QueryString>() {
+            Ok(params) => params,
+            Err(error) => {
+                println!("error: {}", error);
+                QueryString {
+                    id: String::from(""),
+                    status: String::from(""),
+                }
+            }
+        };
 
-        ctx.build_json(user).ok()
+        println!("params: {:?}", params);
+
+        ctx.build("").ok()
     });
 
     app.patch("/patch-here", |ctx: Context| async {
@@ -280,8 +291,8 @@ ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut ic
     //     Ok(response::json(param_test, StatusCode::OK))
     // });
 
-    // let logger_example = middleware::logger_example::LoggerExample::new();
-    // app.use_service(logger_example);
+    let logger_example = middleware::logger_example::LoggerExample::new();
+    app.use_service(logger_example);
 
     param_router.get("/test-next-wild/*", |ctx: Context| async {
         ctx.build("<h1>test next wild</h1>".to_string()).ok()
