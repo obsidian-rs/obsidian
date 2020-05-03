@@ -6,7 +6,6 @@ use std::{fmt, fmt::Display};
 
 use obsidian::{
     context::Context,
-    middleware::logger::Logger,
     router::{header, Responder, Response, Router},
     App, ObsidianError, StatusCode,
 };
