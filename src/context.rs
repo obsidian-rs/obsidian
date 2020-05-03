@@ -440,7 +440,7 @@ mod test {
 
         let mut ctx = Context::new(request, params_map);
 
-        let actual_result: FormResult = ctx.uri_query()?;
+        let actual_result: FormResult = ctx.query_params()?;
         let expected_result = FormResult {
             id: 1,
             mode: "edit".to_string(),
