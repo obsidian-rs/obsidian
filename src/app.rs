@@ -1,6 +1,7 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 
+use colored::*;
 use hyper::{
     header,
     service::{make_service_fn, service_fn},
@@ -12,16 +13,33 @@ use crate::error::ObsidianError;
 use crate::middleware::Middleware;
 use crate::router::{ContextResult, Handler, RouteValueResult, Router};
 
+use crate::middleware::logger::Logger;
+
 #[derive(Clone)]
 pub struct DefaultAppState {}
 
-#[derive(Default)]
 pub struct App<T = DefaultAppState>
 where
     T: Clone + Send + Sync + 'static,
 {
     router: Router,
     app_state: Option<T>,
+}
+
+impl<T> Default for App<T>
+where
+    T: Clone + Send + Sync + 'static,
+{
+    /// create an `Obsidian` app with default middlwares: [`Logger`]
+    fn default() -> Self {
+        let mut app = App {
+            router: Router::new(),
+            app_state: None,
+        };
+        let logger = Logger::new();
+        app.use_service(logger);
+        app
+    }
 }
 
 impl<T> App<T>
@@ -121,6 +139,43 @@ where
         });
 
         let server = Server::bind(&addr).serve(service);
+
+        let logo = r#"
+
+      .oooooo.   oooooooooo.   .oooooo..o ooooo oooooooooo.   ooooo       .o.       ooooo      ooo 
+     d8P'  `Y8b  `888'   `Y8b d8P'    `Y8 `888' `888'   `Y8b  `888'      .888.      `888b.     `8' 
+    888      888  888     888 Y88bo.       888   888      888  888      .8"888.      8 `88b.    8  
+    888      888  888oooo888'  `"Y8888o.   888   888      888  888     .8' `888.     8   `88b.  8  
+    888      888  888    `88b      `"Y88b  888   888      888  888    .88ooo8888.    8     `88b.8  
+    `88b    d88'  888    .88P oo     .d8P  888   888     d88'  888   .8'     `888.   8       `888  
+     `Y8bood8P'  o888bood8P'  8""88888P'  o888o o888bood8P'   o888o o88o     o8888o o8o        `8  
+                                                                                               
+        "#;
+
+        println!("{}", logo);
+
+        #[cfg(debug_assertions)]
+        println!(
+            " 🚧  {}: dev [{} + {}]",
+            "Mode".green().bold(),
+            "unoptimized".red().bold(),
+            "debuginfo".blue().bold()
+        );
+
+        #[cfg(not(debug_assertions))]
+        println!(
+            " 🚀  {}: release [{}]",
+            "Mode".green().bold(),
+            "optimized".green().bold(),
+        );
+
+        println!(
+            " 🔧  {}: {}",
+            "Version".green().bold(),
+            env!("CARGO_PKG_VERSION")
+        );
+
+        println!(" 🎉  {}: http://{}\n", "Served at".green().bold(), addr);
 
         callback();
 
