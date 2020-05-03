@@ -13,16 +13,33 @@ use crate::error::ObsidianError;
 use crate::middleware::Middleware;
 use crate::router::{ContextResult, Handler, RouteValueResult, Router};
 
+use crate::middleware::logger::Logger;
+
 #[derive(Clone)]
 pub struct DefaultAppState {}
 
-#[derive(Default)]
 pub struct App<T = DefaultAppState>
 where
     T: Clone + Send + Sync + 'static,
 {
     router: Router,
     app_state: Option<T>,
+}
+
+impl<T> Default for App<T>
+where
+    T: Clone + Send + Sync + 'static,
+{
+    /// create an `Obsidian` app with default middlwares: [`Logger`]
+    fn default() -> Self {
+        let mut app = App {
+            router: Router::new(),
+            app_state: None,
+        };
+        let logger = Logger::new();
+        app.use_service(logger);
+        app
+    }
 }
 
 impl<T> App<T>

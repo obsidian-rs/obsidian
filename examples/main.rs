@@ -73,7 +73,7 @@ impl Display for JsonTest {
 
 #[tokio::main]
 async fn main() {
-    let mut app: App = App::new();
+    let mut app: App = App::default();
     let addr = ([127, 0, 0, 1], 3000).into();
 
     app.get("/", |ctx: Context| async {
@@ -271,8 +271,6 @@ ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut ic
     // });
 
     let mut param_router = Router::new();
-    let logger = Logger::new();
-    app.use_service(logger);
 
     // param_router.get("/paramtest/:id", |ctx: Context| async move {
     //     let param_test: i32 = ctx.param("id")?;
