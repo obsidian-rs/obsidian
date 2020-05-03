@@ -6,6 +6,8 @@ use crate::context::Context;
 use crate::middleware::Middleware;
 use crate::router::ContextResult;
 
+use colored::*;
+
 #[derive(Default)]
 pub struct Logger {}
 
@@ -24,7 +26,9 @@ impl Middleware for Logger {
     ) -> ContextResult {
         let start = Instant::now();
         println!("[info] {} {}", context.method(), context.uri(),);
-        println!("{:#?}", context);
+
+        #[cfg(debug_assertions)]
+        println!("{} {:#?}", "[debug]".cyan(), context);
 
         match ep_executor.next(context).await {
             Ok(context_after) => {
@@ -37,7 +41,7 @@ impl Middleware for Logger {
                 Ok(context_after)
             }
             Err(error) => {
-                println!("[error] {}", error);
+                println!("{} {}", "[error]".red(), error);
                 Err(error)
             }
         }
