@@ -3,7 +3,9 @@ use async_trait::async_trait;
 #[cfg(debug_assertions)]
 use colored::*;
 
-use obsidian::{context::Context, middleware::Middleware, ContextResult, EndpointExecutor};
+use obsidian::{
+    context::Context, handler::ContextResult, middleware::Middleware, EndpointExecutor,
+};
 
 #[derive(Default)]
 pub struct LoggerExample {}

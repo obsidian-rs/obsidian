@@ -9,7 +9,8 @@ use std::collections::HashMap;
 use std::convert::From;
 use std::str::FromStr;
 
-use crate::router::{from_cow_map, ContextResult, Responder, Response};
+use crate::handler::ContextResult;
+use crate::router::{from_cow_map, Responder, Response};
 use crate::ObsidianError;
 use crate::{
     header::{HeaderName, HeaderValue},

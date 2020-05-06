@@ -4,7 +4,7 @@ use async_trait::async_trait;
 
 use crate::app::EndpointExecutor;
 use crate::context::Context;
-use crate::router::ContextResult;
+use crate::handler::ContextResult;
 
 #[async_trait]
 pub trait Middleware: Send + Sync + 'static {

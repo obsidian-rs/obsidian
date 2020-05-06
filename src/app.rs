@@ -10,8 +10,9 @@ use hyper::{
 
 use crate::context::Context;
 use crate::error::ObsidianError;
+use crate::handler::{ContextResult, Handler};
 use crate::middleware::Middleware;
-use crate::router::{ContextResult, Handler, RouteValueResult, Router};
+use crate::router::{RouteValueResult, Router};
 
 use crate::middleware::logger::Logger;
 

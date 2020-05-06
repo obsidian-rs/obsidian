@@ -1,4 +1,4 @@
-use obsidian::{context::Context, App, ContextResult};
+use obsidian::{context::Context, handler::ContextResult, App};
 
 async fn hello_world(ctx: Context) -> ContextResult {
     ctx.build("Hello World").ok()

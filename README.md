@@ -43,7 +43,7 @@ async fn main() {
 ## Hello World (with handler function)
 
 ```rust
-use obsidian::{context::Context, App, ContextResult};
+use obsidian::{context::Context, handler::ContextResult, App};
 
 async fn hello_world(ctx: Context) -> ContextResult {
     ctx.build("Hello World").ok()
@@ -67,7 +67,7 @@ async fn main() {
 ## JSON Response
 
 ```rust
-use obsidian::{context::Context, App, ContextResult};
+use obsidian::{context::Context, handler::ContextResult, App};
 use serde::*;
 
 async fn get_user(ctx: Context) -> ContextResult {

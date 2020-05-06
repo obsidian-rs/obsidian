@@ -3,8 +3,8 @@ use std::time::Instant;
 
 use crate::app::EndpointExecutor;
 use crate::context::Context;
+use crate::handler::ContextResult;
 use crate::middleware::Middleware;
-use crate::router::ContextResult;
 
 use colored::*;
 
