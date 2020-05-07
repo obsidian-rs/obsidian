@@ -13,6 +13,7 @@ use crate::handler::ContextResult;
 ///
 /// ```
 /// use async_trait::async_trait;
+/// use obsidian::middleware::Middleware;
 ///
 /// #[async_trait]
 /// impl Middleware for ExampleMiddleware {
