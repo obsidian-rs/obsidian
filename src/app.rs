@@ -291,23 +291,23 @@ fn internal_server_error(err: impl std::error::Error) -> Response<Body> {
 
 pub struct EndpointExecutor<'a> {
     pub route_endpoint: &'a Arc<dyn Handler>,
-    pub middleware: &'a [Arc<dyn Middleware>],
+    pub middlewares: &'a [Arc<dyn Middleware>],
 }
 
 impl<'a> EndpointExecutor<'a> {
     pub fn new(
         route_endpoint: &'a Arc<dyn Handler>,
-        middleware: &'a [Arc<dyn Middleware>],
+        middlewares: &'a [Arc<dyn Middleware>],
     ) -> Self {
         EndpointExecutor {
             route_endpoint,
-            middleware,
+            middlewares,
         }
     }
 
     pub async fn next(mut self, context: Context) -> ContextResult {
-        if let Some((current, all_next)) = self.middleware.split_first() {
-            self.middleware = all_next;
+        if let Some((current, all_next)) = self.middlewares.split_first() {
+            self.middlewares = all_next;
             current.handle(context, self).await
         } else {
             self.route_endpoint.call(context).await
