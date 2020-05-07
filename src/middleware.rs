@@ -13,7 +13,12 @@ use crate::handler::ContextResult;
 ///
 /// ```
 /// use async_trait::async_trait;
-/// use obsidian::middleware::Middleware;
+/// use obsidian::{
+///     context::Context, handler::ContextResult, middleware::Middleware, EndpointExecutor,
+/// };
+///
+/// // Middleware struct
+/// pub struct ExampleMiddleware {}
 ///
 /// #[async_trait]
 /// impl Middleware for ExampleMiddleware {
@@ -23,11 +28,14 @@ use crate::handler::ContextResult;
 ///         ep_executor: EndpointExecutor<'a>,
 ///     ) -> ContextResult {
 ///
-///     // actions BEFORE handler processing
-///     let result = ep_executor.next(context).await?;
-///     // actions AFTER handler processing
+///         // actions BEFORE handler processing write here...
 ///
-///     Ok(result)
+///         let result = ep_executor.next(context).await?;
+///
+///         // actions AFTER handler processing write here...
+///
+///         Ok(result)
+///     }
 /// }
 /// ```
 #[async_trait]

@@ -87,7 +87,7 @@ impl Context {
     ///
     /// ```
     /// # use obsidian::StatusCode;
-    /// # use obsidian::ContextResult;
+    /// # use obsidian::handler::ContextResult;
     /// # use obsidian::context::Context;
     ///
     /// // Assumming ctx contains params for id and mode
@@ -119,7 +119,7 @@ impl Context {
     /// # use serde::*;
     ///
     /// # use obsidian::context::Context;
-    /// # use obsidian::{ContextResult, StatusCode};
+    /// # use obsidian::{handler::ContextResult, StatusCode};
     ///
     /// #[derive(Deserialize, Serialize, Debug)]
     /// struct QueryString {
@@ -156,7 +156,7 @@ impl Context {
     /// # use serde::*;
     ///
     /// # use obsidian::context::Context;
-    /// # use obsidian::{ContextResult, StatusCode};
+    /// # use obsidian::{handler::ContextResult, StatusCode};
     ///
     /// #[derive(Deserialize, Serialize, Debug)]
     /// struct FormResult {
@@ -203,7 +203,7 @@ impl Context {
     /// # use serde::*;
     ///
     /// # use obsidian::context::Context;
-    /// # use obsidian::{ContextResult, StatusCode};
+    /// # use obsidian::{handler::ContextResult, StatusCode};
     ///
     /// #[derive(Deserialize, Serialize, Debug)]
     /// struct JsonResult {
@@ -225,9 +225,7 @@ impl Context {
     /// ### Handle by dynamic map
     /// ```
     /// # use serde_json::Value;
-    ///
-    /// # use obsidian::context::Context;
-    /// # use obsidian::{ContextResult, StatusCode};
+    /// # use obsidian::{context::Context, handler::ContextResult, StatusCode};
     ///
     /// // Assume ctx contains json with data {id:1, mode:'edit'}
     /// async fn get_handler(mut ctx: Context) -> ContextResult {

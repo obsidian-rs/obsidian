@@ -1,4 +1,4 @@
-use obsidian::{context::Context, App, ContextResult};
+use obsidian::{context::Context, handler::ContextResult, App};
 use serde::*;
 
 async fn get_user(ctx: Context) -> ContextResult {
