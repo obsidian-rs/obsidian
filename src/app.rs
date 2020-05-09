@@ -1,4 +1,3 @@
-use std::net::SocketAddr;
 use std::sync::Arc;
 
 use colored::*;
@@ -142,7 +141,7 @@ where
         self.app_state = Some(app_state);
     }
 
-    pub async fn listen(self, addr: &SocketAddr, callback: impl Fn()) {
+    pub async fn listen(self, port: u16) {
         let app_server: AppServer = AppServer {
             router: self.router,
         };
@@ -161,6 +160,7 @@ where
             }
         });
 
+        let addr = ([127, 0, 0, 1], port).into();
         let server = Server::bind(&addr).serve(service);
 
         let logo = r#"
@@ -199,8 +199,6 @@ where
         );
 
         println!(" 🎉  {}: http://{}\n", "Served at".green().bold(), addr);
-
-        callback();
 
         server.await.map_err(|_| println!("Server error")).unwrap();
     }

@@ -66,14 +66,12 @@ impl Display for JsonTest {
 //         .header("X-Custom-Header", "custom-value")
 //         .header("X-Custom-Header-2", "custom-value-2")
 //         .header("X-Custom-Header-3", "custom-value-3")
-//         .set_headers(headers)
-//         .status(StatusCode::CREATED)
+//         .set_headers(headers) .status(StatusCode::CREATED)
 // }
 
 #[tokio::main]
 async fn main() {
     let mut app: App = App::default();
-    let addr = ([127, 0, 0, 1], 3000).into();
 
     app.get("/", |ctx: Context| async {
 ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut icon\" href=\"favicon.ico\" type=\"image/x-icon\" sizes=\"32x32\" /></head> <h1>Hello Obsidian</h1></html>")).ok()
@@ -316,5 +314,5 @@ ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut ic
 
     app.use_static_to("/files/", "/assets/");
 
-    app.listen(&addr, || {}).await;
+    app.listen(3000).await
 }
