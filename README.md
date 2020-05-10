@@ -30,9 +30,7 @@ use obsidian::{context::Context, App};
 #[tokio::main]
 async fn main() {
     let mut app: App = App::new();
-
     app.get("/", |ctx: Context| async { ctx.build("Hello World").ok() });
-
     app.listen(3000).await;
 }
 ```
@@ -50,10 +48,7 @@ async fn hello_world(ctx: Context) -> ContextResult {
 #[tokio::main]
 async fn main() {
     let mut app: App = App::new();
-    let addr = ([127, 0, 0, 1], 3000).into();
-
     app.get("/", hello_world);
-
     app.listen(3000).await;
 }
 ```
@@ -79,10 +74,7 @@ async fn get_user(ctx: Context) -> ContextResult {
 #[tokio::main]
 async fn main() {
     let mut app: App = App::new();
-    let addr = ([127, 0, 0, 1], 3000).into();
-
     app.get("/user", get_user);
-
     app.listen(3000).await;
 }
 
