@@ -44,12 +44,12 @@ impl Response {
         &self.cookies
     }
 
-    pub fn cookies_mut(&mut self) -> &mut Option<Vec<Cookie<'static>>> {
-        &mut self.cookies
+    pub fn cookies_mut(&mut self) -> Option<&mut Vec<Cookie<'static>>> {
+        self.cookies.as_mut()
     }
 
-    pub fn headers_mut(&mut self) -> &mut Option<Vec<(header::HeaderName, String)>> {
-        &mut self.headers
+    pub fn headers_mut(&mut self) -> Option<&mut Vec<(header::HeaderName, String)>> {
+        self.headers.as_mut()
     }
 
     pub fn with_status(self, status: StatusCode) -> Self {

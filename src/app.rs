@@ -160,7 +160,7 @@ impl AppServer {
                 let route_result = executor.next(context).await;
 
                 let route_response = match route_result {
-                    Ok(ctx) => {
+                    Ok(mut ctx) => {
                         let mut res = Response::builder();
                         if let Some(response) = ctx.take_response() {
                             if let Some(headers) = response.headers() {

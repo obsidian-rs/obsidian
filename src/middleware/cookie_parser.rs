@@ -1,32 +1,11 @@
 use async_trait::async_trait;
-use cookie::{Cookie, CookieJar};
+use cookie::Cookie;
 use hyper::header;
 
 use crate::app::EndpointExecutor;
-use crate::context::Context;
+use crate::context::{cookies::CookieParserData, Context};
 use crate::middleware::Middleware;
 use crate::router::ContextResult;
-
-#[derive(Default)]
-pub struct CookieParserData {
-    cookie_jar: CookieJar,
-}
-
-impl CookieParserData {
-    pub fn new() -> Self {
-        CookieParserData {
-            cookie_jar: CookieJar::new(),
-        }
-    }
-
-    pub fn cookie_jar(&self) -> &CookieJar {
-        &self.cookie_jar
-    }
-
-    pub fn cookie_jar_mut(&mut self) -> &mut CookieJar {
-        &mut self.cookie_jar
-    }
-}
 
 #[derive(Default)]
 pub struct CookieParser {}

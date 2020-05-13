@@ -1,3 +1,7 @@
+pub mod cookies;
+pub mod memory_session;
+pub mod session;
+
 use cookie::Cookie;
 use http::Extensions;
 use hyper::{body, body::Buf};
@@ -10,7 +14,8 @@ use std::collections::HashMap;
 use std::convert::From;
 use std::str::FromStr;
 
-use crate::middleware::cookie_parser::CookieParserData;
+use self::cookies::CookieParserData;
+use self::session::SessionData;
 use crate::router::{from_cow_map, ContextResult, Responder, Response};
 use crate::ObsidianError;
 use crate::{
@@ -285,14 +290,35 @@ impl Context {
         None
     }
 
+    pub fn session(&self) -> Option<&SessionData> {
+        self.get::<SessionData>()
+    }
+
+    pub fn session_mut(&mut self) -> Option<&mut SessionData> {
+        self.get_mut::<SessionData>()
+    }
+
+    pub fn session_set(&mut self, name: &str, value: &str) {
+        match self.get_mut::<SessionData>() {
+            Some(session) => {
+                session.set(name, value);
+            }
+            _ => {
+                let mut session = SessionData::new();
+                session.set(name, value);
+                self.add(session);
+            }
+        }
+    }
+
     /// Consumes body of the request and replace it with empty body.
     pub fn take_body(&mut self) -> Body {
         std::mem::replace(self.request.body_mut(), Body::empty())
     }
 
-    /// Take response
-    pub fn take_response(self) -> Option<Response> {
-        self.response
+    /// Consumes response
+    pub fn take_response(&mut self) -> Option<Response> {
+        std::mem::replace(&mut self.response, None)
     }
 
     pub fn response_mut(&mut self) -> &mut Option<Response> {

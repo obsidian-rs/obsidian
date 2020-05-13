@@ -22,6 +22,10 @@ path = 'examples/app_state.rs'
 name = 'cookies'
 path = 'examples/cookies.rs'
 
+[[example]]
+name = 'session'
+path = 'examples/session.rs'
+
 [package]
 name = 'obsidian'
 version = '0.2.2'
@@ -52,6 +56,9 @@ url = '2.1.0'
 async-std = '1.4.0'
 async-trait = '0.1.22'
 cookie = "0.13.3"
+chrono = "0.4.11"
+lazy_static = "1.4.0"
+rand = "0.7.3"
 
 [dependencies.serde]
 version = '1.0.104'
