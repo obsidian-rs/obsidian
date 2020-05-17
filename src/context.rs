@@ -89,7 +89,6 @@ impl Context {
     /// # use obsidian::StatusCode;
     /// # use obsidian::handler::ContextResult;
     /// # use obsidian::context::Context;
-    ///
     /// // Assumming ctx contains params for id and mode
     /// async fn get_handler(ctx: Context) -> ContextResult {
     ///     let id: i32 = ctx.param("id")?;
@@ -117,10 +116,8 @@ impl Context {
     /// # Example
     /// ```
     /// # use serde::*;
-    ///
     /// # use obsidian::context::Context;
     /// # use obsidian::{handler::ContextResult, StatusCode};
-    ///
     /// #[derive(Deserialize, Serialize, Debug)]
     /// struct QueryString {
     ///     id: i32,
@@ -154,10 +151,8 @@ impl Context {
     /// # Example
     /// ```
     /// # use serde::*;
-    ///
     /// # use obsidian::context::Context;
     /// # use obsidian::{handler::ContextResult, StatusCode};
-    ///
     /// #[derive(Deserialize, Serialize, Debug)]
     /// struct FormResult {
     ///     id: i32,
@@ -201,10 +196,8 @@ impl Context {
     /// ### Handle by static type
     /// ```
     /// # use serde::*;
-    ///
     /// # use obsidian::context::Context;
     /// # use obsidian::{handler::ContextResult, StatusCode};
-    ///
     /// #[derive(Deserialize, Serialize, Debug)]
     /// struct JsonResult {
     ///     id: i32,
@@ -226,7 +219,6 @@ impl Context {
     /// ```
     /// # use serde_json::Value;
     /// # use obsidian::{context::Context, handler::ContextResult, StatusCode};
-    ///
     /// // Assume ctx contains json with data {id:1, mode:'edit'}
     /// async fn get_handler(mut ctx: Context) -> ContextResult {
     ///     let result: serde_json::Value = ctx.json().await?;
