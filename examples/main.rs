@@ -6,7 +6,6 @@ use std::{fmt, fmt::Display};
 
 use obsidian::{
     context::Context,
-    middleware::logger::Logger,
     router::{header, Responder, Response, Router},
     App, ObsidianError, StatusCode,
 };
@@ -73,7 +72,7 @@ impl Display for JsonTest {
 
 #[tokio::main]
 async fn main() {
-    let mut app: App = App::new();
+    let mut app: App = App::default();
     let addr = ([127, 0, 0, 1], 3000).into();
 
     app.get("/", |ctx: Context| async {
@@ -88,6 +87,29 @@ ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut ic
             .with_header(header::AUTHORIZATION, "token")
             .with_header_str("X-Custom-Header", "Custom header value")
             .ok()
+    });
+
+    app.get("/user", |mut ctx: Context| async {
+        #[derive(Serialize, Deserialize, Debug)]
+        struct QueryString {
+            id: String,
+            status: String,
+        }
+
+        let params = match ctx.query_params::<QueryString>() {
+            Ok(params) => params,
+            Err(error) => {
+                println!("error: {}", error);
+                QueryString {
+                    id: String::from(""),
+                    status: String::from(""),
+                }
+            }
+        };
+
+        println!("params: {:?}", params);
+
+        ctx.build("").ok()
     });
 
     app.patch("/patch-here", |ctx: Context| async {
@@ -248,8 +270,6 @@ ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut ic
     // });
 
     let mut param_router = Router::new();
-    let logger = Logger::new();
-    app.use_service(logger);
 
     // param_router.get("/paramtest/:id", |ctx: Context| async move {
     //     let param_test: i32 = ctx.param("id")?;
@@ -288,8 +308,5 @@ ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut ic
     app.use_router("/forms/", form_router);
     app.use_static_to("/files/", "/assets/");
 
-    app.listen(&addr, || {
-        println!("server is listening to {}", &addr);
-    })
-    .await;
+    app.listen(&addr, || {}).await;
 }

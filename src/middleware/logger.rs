@@ -1,9 +1,12 @@
 use async_trait::async_trait;
+use std::time::Instant;
 
 use crate::app::EndpointExecutor;
 use crate::context::Context;
 use crate::middleware::Middleware;
 use crate::router::ContextResult;
+
+use colored::*;
 
 #[derive(Default)]
 pub struct Logger {}
@@ -21,13 +24,26 @@ impl Middleware for Logger {
         context: Context,
         ep_executor: EndpointExecutor<'a>,
     ) -> ContextResult {
-        println!(
-            "{} {} \n{}",
-            context.method(),
-            context.uri(),
-            context.headers().get("host").unwrap().to_str().unwrap()
-        );
+        let start = Instant::now();
+        println!("[info] {} {}", context.method(), context.uri(),);
 
-        ep_executor.next(context).await
+        #[cfg(debug_assertions)]
+        println!("{} {:#?}", "[debug]".cyan(), context);
+
+        match ep_executor.next(context).await {
+            Ok(context_after) => {
+                let duration = start.elapsed();
+                println!(
+                    "[info] Sent {} in {:?}",
+                    context_after.response().as_ref().unwrap().status(),
+                    duration
+                );
+                Ok(context_after)
+            }
+            Err(error) => {
+                println!("{} {}", "[error]".red(), error);
+                Err(error)
+            }
+        }
     }
 }
