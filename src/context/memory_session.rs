@@ -9,6 +9,7 @@ lazy_static! {
     static ref STORAGE: Mutex<HashMap<String, SessionData>> = Mutex::new(HashMap::default());
 }
 
+#[derive(Default)]
 pub struct MemorySessionStorage {}
 
 impl MemorySessionStorage {
@@ -19,11 +20,7 @@ impl MemorySessionStorage {
 
 impl SessionStorage for MemorySessionStorage {
     fn get_session(&self, id: &str) -> Option<SessionData> {
-        STORAGE
-            .lock()
-            .unwrap()
-            .get(id)
-            .and_then(|x| Some((*x).clone()))
+        STORAGE.lock().unwrap().get(id).map(|x| (*x).clone())
     }
 
     fn set_session(&self, id: &str, session: SessionData) {

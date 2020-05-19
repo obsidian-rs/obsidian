@@ -10,7 +10,7 @@ pub trait SessionStorage: Send + Sync {
 }
 
 /// Session data to be consumed by context
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct SessionData {
     data: HashMap<String, String>,
     max_age: Option<DateTime<Local>>,
@@ -39,11 +39,8 @@ impl SessionData {
     }
 
     pub fn refresh_session(&mut self) {
-        match self.timeout {
-            Some(timeout) => {
-                self.max_age = Some(Local::now().add(timeout));
-            }
-            None => {}
+        if let Some(timeout) = self.timeout {
+            self.max_age = Some(Local::now().add(timeout));
         }
     }
 

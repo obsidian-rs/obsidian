@@ -115,9 +115,9 @@ impl Response {
         self
     }
 
-    pub fn set_cookies(mut self, mut cookies: &[Cookie<'static>]) -> Self {
+    pub fn set_cookies(mut self, cookies: &[Cookie<'static>]) -> Self {
         match self.cookies {
-            Some(ref mut x) => x.extend_from_slice(&mut cookies),
+            Some(ref mut x) => x.extend_from_slice(cookies),
             None => self.cookies = Some(cookies.to_vec()),
         }
         self
