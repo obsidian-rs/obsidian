@@ -5,6 +5,7 @@ use crate::error::ObsidianError;
 use async_trait::async_trait;
 use std::future::Future;
 
+/// `Result` with the error type `ObsidianError`.
 pub type ContextResult<T = ObsidianError> = Result<Context, T>;
 
 #[async_trait]

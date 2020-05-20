@@ -108,6 +108,7 @@ impl Context {
             .ok_or(ObsidianError::NoneError)?
             .parse()
             .map_err(|_err| ObsidianError::ParamError(format!("Failed to parse param {}", key)))
+        // The error will never happen
     }
 
     /// Method to get the string query data from the request url.

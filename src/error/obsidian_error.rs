@@ -16,6 +16,16 @@ pub enum ObsidianError {
     NoneError,
 }
 
+impl std::error::Error for ObsidianError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            ObsidianError::JsonError(ref error) => Some(error),
+            ObsidianError::FormError(ref error) => Some(error),
+            _ => None,
+        }
+    }
+}
+
 impl Display for ObsidianError {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         let error_msg = match *self {
@@ -39,11 +49,5 @@ impl From<FormError> for ObsidianError {
 impl From<JsonError> for ObsidianError {
     fn from(error: JsonError) -> Self {
         ObsidianError::JsonError(error)
-    }
-}
-
-impl Error for ObsidianError {
-    fn description(&self) -> &str {
-        "Obsidian Error"
     }
 }
