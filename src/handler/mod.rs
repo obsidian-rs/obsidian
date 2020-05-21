@@ -6,7 +6,7 @@ use async_trait::async_trait;
 use std::future::Future;
 
 /// `Result` with the error type `ObsidianError`.
-pub type ContextResult<T = ObsidianError> = Result<Context, T>;
+pub type ContextResult = Result<Context, dyn Into<dyn std::error::Error>>;
 
 #[async_trait]
 pub trait Handler: Send + Sync + 'static {

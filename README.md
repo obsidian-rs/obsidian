@@ -22,6 +22,14 @@
   <img alt="Obsidian serve" src="./screenshot/serve.png" >
 </div>
 
+A fully asynchronous web framework built on [Hyper](https://hyper.rs).
+
+## Get Started
+```toml
+obsidian = "0.2.2"
+tokio = "0.2.21"
+```
+
 ## Hello World
 
 ```rust
@@ -92,4 +100,4 @@ cargo run --example example
 
 ## Current State
 
-NOT READY FOR PRODUCTION YET!
+Under active development and **NOT READY FOR PRODUCTION YET!**
