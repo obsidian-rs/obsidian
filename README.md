@@ -88,9 +88,9 @@ async fn main() {
 
 ```
 
-## More Example
+## More Examples
 
-Example are located in `example` folder. You can run these examples by using:
+Examples are located in `example` folder. You can run these examples by using:
 ```bash
 cargo run --example [name]
 
