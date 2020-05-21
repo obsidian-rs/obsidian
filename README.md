@@ -52,7 +52,6 @@ async fn hello_world(ctx: Context) -> ContextResult {
     ctx.build("Hello World").ok()
 }
 
-
 #[tokio::main]
 async fn main() {
     let mut app: App = App::new();
