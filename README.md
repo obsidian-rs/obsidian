@@ -22,10 +22,10 @@
   <img alt="Obsidian serve" src="./screenshot/serve.png" >
 </div>
 
-A fully asynchronous web framework built on [Hyper](https://hyper.rs).
-
 ## Get Started
 ```toml
+[dependencies]
+# add these 2 dependencies in Cargo.toml file
 obsidian = "0.2.2"
 tokio = "0.2.21"
 ```
@@ -90,11 +90,15 @@ async fn main() {
 
 ## Example Files
 
-Example are located in `example/main.rs`.
-
-## Run Example
-
+Example are located in `example` folder. You can run them by using
 ```
+// command
+cargo run --example [name]
+
+// show a list of available examples
+cargo run --example 
+
+// run the example
 cargo run --example example
 ```
 
