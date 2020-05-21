@@ -88,10 +88,10 @@ async fn main() {
 
 ```
 
-## Example Files
+## More Example
 
 Example are located in `example` folder. You can run them by using
-```
+```bash
 // command
 cargo run --example [name]
 
