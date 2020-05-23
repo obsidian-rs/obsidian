@@ -101,7 +101,7 @@ cargo run --example example
 ```
 
 ## App Lifecycle
-![app lifecycle](./screenshot/serve.png)
+![app lifecycle](./screenshot/lifecycle.png)
 
 ## Current State
 
