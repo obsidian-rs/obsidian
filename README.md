@@ -100,6 +100,9 @@ cargo run --example
 cargo run --example example
 ```
 
+## App Lifecycle
+![app lifecycle](./screenshot/serve.png)
+
 ## Current State
 
 Under active development and **NOT READY FOR PRODUCTION YET!**
