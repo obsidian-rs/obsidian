@@ -1,12 +1,13 @@
 #[warn(missing_debug_implementations, rust_2018_idioms, missing_docs)]
 use crate::context::Context;
+use crate::error::IntoErrorResponse;
 use crate::error::ObsidianError;
 
 use async_trait::async_trait;
 use std::future::Future;
 
 /// `Result` with the error type `ObsidianError`.
-pub type ContextResult = Result<Context, dyn Into<dyn std::error::Error>>;
+pub type ContextResult = Result<Context, ObsidianError>;
 
 #[async_trait]
 pub trait Handler: Send + Sync + 'static {

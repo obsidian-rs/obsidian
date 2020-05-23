@@ -253,21 +253,17 @@ impl AppServer {
                             res.status(StatusCode::OK).body(Body::from(""))
                         }
                     }
-                    Err(err) => {
-                        let body = Body::from(err.to_string());
-                        Response::builder()
-                            .status(StatusCode::INTERNAL_SERVER_ERROR)
-                            .body(body)
-                    }
+                    Err(err) => err.into_error_response(),
                 };
 
-                Ok::<_, hyper::Error>(route_response.unwrap_or_else(|_| {
-                    internal_server_error(ObsidianError::GeneralError(
-                        "Error while constructing response body".to_string(),
-                    ))
-                }))
+                // Ok::<_, hyper::Error>(route_response.unwrap_or_else(|_| {
+                //     internal_server_error(ObsidianError::GeneralError(
+                //         "Error while constructing response body".to_string(),
+                //     ))
+                // }))
+                Ok::<_, hyper::Error>(route_response.unwrap())
             }
-            _ => Ok::<_, hyper::Error>(page_not_found()),
+            None => Ok::<_, hyper::Error>(page_not_found()),
         }
     }
 }

@@ -9,9 +9,9 @@ use std::collections::HashMap;
 use std::convert::From;
 use std::str::FromStr;
 
+use crate::error::{InternalError, ObsidianError};
 use crate::handler::ContextResult;
 use crate::router::{from_cow_map, Responder, Response};
-use crate::ObsidianError;
 use crate::{
     header::{HeaderName, HeaderValue},
     Body, HeaderMap, Method, Request, StatusCode, Uri,
@@ -102,12 +102,15 @@ impl Context {
     ///
     /// ```
     ///
-    pub fn param<T: FromStr>(&self, key: &str) -> Result<T, ObsidianError> {
+    pub fn param<T: FromStr>(&self, key: &str) -> Result<T, InternalError> {
         self.params_data
             .get(key)
-            .ok_or(ObsidianError::NoneError)?
+            .ok_or(InternalError::NoneError(format!(
+                "The key [{}] not found",
+                key
+            )))?
             .parse()
-            .map_err(|_err| ObsidianError::ParamError(format!("Failed to parse param {}", key)))
+            .map_err(|_err| InternalError::ParamError(format!("Failed to parse param {}", key)))
         // The error will never happen
     }
 
@@ -173,12 +176,7 @@ impl Context {
     pub async fn form<T: DeserializeOwned>(&mut self) -> Result<T, ObsidianError> {
         let body = self.take_body();
 
-        let buf = match body::aggregate(body).await {
-            Ok(buf) => buf,
-            _ => {
-                return Err(ObsidianError::NoneError);
-            }
-        };
+        let buf = body::aggregate(body).await?;
 
         Self::parse_queries(buf.bytes())
     }
@@ -233,12 +231,7 @@ impl Context {
     pub async fn json<T: DeserializeOwned>(&mut self) -> Result<T, ObsidianError> {
         let body = self.take_body();
 
-        let buf = match body::aggregate(body).await {
-            Ok(buf) => buf,
-            _ => {
-                return Err(ObsidianError::NoneError);
-            }
-        };
+        let buf = body::aggregate(body).await?;
 
         Ok(serde_json::from_slice(buf.bytes())?)
     }
