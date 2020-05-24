@@ -21,6 +21,14 @@ impl Response {
         }
     }
 
+    pub fn new_with_body(body: Body) -> Self {
+        Response {
+            body,
+            status: StatusCode::OK,
+            headers: None,
+        }
+    }
+
     pub fn status(&self) -> StatusCode {
         self.status
     }

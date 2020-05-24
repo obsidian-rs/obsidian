@@ -253,7 +253,19 @@ impl AppServer {
                             res.status(StatusCode::OK).body(Body::from(""))
                         }
                     }
-                    Err(err) => err.into_error_response(),
+                    Err(err) => {
+                        let response = err.into_error_response();
+                        let mut res = Response::builder();
+                        if let Some(headers) = response.headers() {
+                            if let Some(response_headers) = res.headers_mut() {
+                                headers.iter().for_each(move |(key, value)| {
+                                    response_headers
+                                        .insert(key, header::HeaderValue::from_static(value));
+                                });
+                            }
+                        }
+                        res.status(response.status()).body(response.body())
+                    }
                 };
 
                 // Ok::<_, hyper::Error>(route_response.unwrap_or_else(|_| {

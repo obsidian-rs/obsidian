@@ -1,6 +1,7 @@
 use crate::router::FormError;
+use crate::router::Response;
 use http;
-use hyper::{Body, Response, StatusCode};
+use hyper::{Body, StatusCode};
 use serde_json::error::Error as JsonError;
 use std::fmt;
 
@@ -29,7 +30,7 @@ impl fmt::Display for InternalError {
 }
 
 impl ObsidianError {
-    pub fn into_error_response(&self) -> Result<Response<Body>, http::Error> {
+    pub fn into_error_response(&self) -> Response {
         self.inner.into_error_response()
     }
 }
@@ -42,9 +43,9 @@ impl fmt::Display for ObsidianError {
 
 pub trait IntoErrorResponse: fmt::Debug + fmt::Display {
     /// convert Error into error response
-    fn into_error_response(&self) -> Result<Response<Body>, http::Error> {
+    fn into_error_response(&self) -> Response {
         let body = Body::from(self.to_string());
-        Response::builder().status(self.status_code()).body(body)
+        Response::new_with_body(body).set_status(self.status_code())
     }
 
     /// status code for this error response
@@ -68,9 +69,9 @@ impl IntoErrorResponse for hyper::error::Error {}
 impl IntoErrorResponse for String {}
 impl IntoErrorResponse for InternalError {
     /// convert Error into error response
-    fn into_error_response(&self) -> Result<Response<Body>, http::Error> {
+    fn into_error_response(&self) -> Response {
         let body = Body::from(self.to_string());
-        Response::builder().status(self.status_code()).body(body)
+        Response::new_with_body(body).set_status(self.status_code())
     }
 
     /// status code for this error response
