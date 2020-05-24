@@ -5,6 +5,7 @@ use crate::app::EndpointExecutor;
 use crate::context::Context;
 use crate::handler::ContextResult;
 use crate::middleware::Middleware;
+use crate::StatusCode;
 
 use colored::*;
 
@@ -33,11 +34,11 @@ impl Middleware for Logger {
         match ep_executor.next(context).await {
             Ok(context_after) => {
                 let duration = start.elapsed();
-                println!(
-                    "[info] Sent {} in {:?}",
-                    context_after.response().as_ref().unwrap().status(),
-                    duration
-                );
+                let status = match context_after.response() {
+                    Some(response) => response.status(),
+                    None => StatusCode::OK,
+                };
+                println!("[info] Sent {} in {:?}", status, duration);
                 Ok(context_after)
             }
             Err(error) => {
