@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use hyper::Method;
 
-use crate::error::{InternalError, IntoErrorResponse, ObsidianError};
+use crate::error::InternalError;
 use crate::middleware::Middleware;
 use crate::router::Resource;
 use crate::router::Route;

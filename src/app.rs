@@ -8,7 +8,6 @@ use hyper::{
 };
 
 use crate::context::Context;
-use crate::error::ObsidianError;
 use crate::handler::{ContextResult, Handler};
 use crate::middleware::Middleware;
 use crate::router::{RouteValueResult, Router};
@@ -287,13 +286,13 @@ fn page_not_found() -> Response<Body> {
     server_response
 }
 
-fn internal_server_error(err: impl std::error::Error) -> Response<Body> {
-    let body = Body::from(err.to_string());
-    Response::builder()
-        .status(StatusCode::INTERNAL_SERVER_ERROR)
-        .body(body)
-        .unwrap()
-}
+// fn internal_server_error(err: impl std::error::Error) -> Response<Body> {
+//     let body = Body::from(err.to_string());
+//     Response::builder()
+//         .status(StatusCode::INTERNAL_SERVER_ERROR)
+//         .body(body)
+//         .unwrap()
+// }
 
 pub struct EndpointExecutor<'a> {
     pub route_endpoint: &'a Arc<dyn Handler>,

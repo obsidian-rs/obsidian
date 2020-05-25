@@ -1,6 +1,5 @@
 #[warn(missing_debug_implementations, rust_2018_idioms, missing_docs)]
 use crate::context::Context;
-use crate::error::IntoErrorResponse;
 use crate::error::ObsidianError;
 
 use async_trait::async_trait;

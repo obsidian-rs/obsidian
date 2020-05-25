@@ -1,6 +1,5 @@
 use crate::router::FormError;
 use crate::router::Response;
-use http;
 use hyper::{Body, StatusCode};
 use serde_json::error::Error as JsonError;
 use std::fmt;
