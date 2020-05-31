@@ -1,5 +1,7 @@
 use super::Response;
 use super::ResponseBody;
+use crate::error::IntoErrorResponse;
+use crate::ObsidianError;
 use hyper::{header, StatusCode};
 
 pub trait Responder {
@@ -108,6 +110,52 @@ impl Responder for Option<&'static str> {
                 .to_string()
                 .with_status(StatusCode::NOT_FOUND)
                 .respond_to(),
+        }
+    }
+}
+
+impl<T, E> Responder for Result<T, E>
+where
+    T: Responder + ResponseBody,
+    E: IntoErrorResponse,
+{
+    fn respond_to(self) -> Response {
+        match self {
+            Ok(resp) => resp.respond_to(),
+            Err(err) => err.into_error_response(),
+        }
+    }
+}
+
+impl Responder for Result<Response, ObsidianError> {
+    fn respond_to(self) -> Response {
+        match self {
+            Ok(resp) => resp.respond_to(),
+            Err(err) => err.to_string().respond_to(),
+        }
+    }
+}
+
+impl<E> Responder for Result<Response, E>
+where
+    E: IntoErrorResponse,
+{
+    fn respond_to(self) -> Response {
+        match self {
+            Ok(resp) => resp,
+            Err(err) => err.into_error_response(),
+        }
+    }
+}
+
+impl<T> Responder for Result<T, ObsidianError>
+where
+    T: Responder + ResponseBody,
+{
+    fn respond_to(self) -> Response {
+        match self {
+            Ok(resp) => resp.respond_to(),
+            Err(err) => err.into_error_response(),
         }
     }
 }

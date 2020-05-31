@@ -235,22 +235,17 @@ impl AppServer {
                 let route_result = executor.next(context).await;
 
                 let route_response = match route_result {
-                    Ok(ctx) => {
+                    Ok(response) => {
                         let mut res = Response::builder();
-                        if let Some(response) = ctx.take_response() {
-                            if let Some(headers) = response.headers() {
-                                if let Some(response_headers) = res.headers_mut() {
-                                    headers.iter().for_each(move |(key, value)| {
-                                        response_headers
-                                            .insert(key, header::HeaderValue::from_static(value));
-                                    });
-                                }
+                        if let Some(headers) = response.headers() {
+                            if let Some(response_headers) = res.headers_mut() {
+                                headers.iter().for_each(move |(key, value)| {
+                                    response_headers
+                                        .insert(key, header::HeaderValue::from_static(value));
+                                });
                             }
-                            res.status(response.status()).body(response.body())
-                        } else {
-                            // No response found
-                            res.status(StatusCode::OK).body(Body::from(""))
                         }
+                        res.status(response.status()).body(response.body())
                     }
                     Err(err) => {
                         let response = err.into_error_response();

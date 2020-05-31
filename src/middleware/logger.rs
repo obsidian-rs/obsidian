@@ -32,14 +32,11 @@ impl Middleware for Logger {
         println!("{} {:#?}", "[debug]".cyan(), context);
 
         match ep_executor.next(context).await {
-            Ok(context_after) => {
+            Ok(response) => {
                 let duration = start.elapsed();
-                let status = match context_after.response() {
-                    Some(response) => response.status(),
-                    None => StatusCode::OK,
-                };
+                let status = response.status();
                 println!("[info] Sent {} in {:?}", status, duration);
-                Ok(context_after)
+                Ok(response)
             }
             Err(error) => {
                 println!("{} {}", "[error]".red(), error);

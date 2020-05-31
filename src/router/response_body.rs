@@ -1,3 +1,5 @@
+use super::Responder;
+use crate::ObsidianError;
 use hyper::Body;
 
 pub trait ResponseBody {

@@ -339,10 +339,10 @@ impl ResponseBuilder {
         self
     }
 
-    pub fn ok(mut self) -> ContextResult {
-        *self.ctx.response_mut() = Some(self.response);
-        Ok(self.ctx)
-    }
+    // pub fn ok(mut self) -> ContextResult {
+    //     *self.ctx.response_mut() = Some(self.response);
+    //     Ok(self.ctx)
+    // }
 }
 
 #[cfg(test)]
