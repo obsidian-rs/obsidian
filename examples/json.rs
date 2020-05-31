@@ -1,4 +1,4 @@
-use obsidian::{context::Context, handler::ContextResult, App};
+use obsidian::{context::Context, handler::ContextResult, router::Response, App};
 use serde::*;
 
 async fn get_user(mut ctx: Context) -> ContextResult {
@@ -20,7 +20,7 @@ async fn get_user(mut ctx: Context) -> ContextResult {
         name: String::from("Obsidian"),
     };
 
-    ctx.build_json(user).ok()
+    Ok(Response::ok().json(user))
 }
 
 #[tokio::main]
