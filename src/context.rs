@@ -260,18 +260,18 @@ impl Context {
     }
 
     /// Build any kind of response which implemented Responder trait
-    pub fn build(self, res: impl Responder) -> ResponseBuilder {
-        ResponseBuilder::new(self, res.respond_to())
+    pub fn build(&self, res: impl Responder) -> ResponseBuilder {
+        ResponseBuilder::new(res.respond_to())
     }
 
     /// Build data into json format. The data must implement Serialize trait
-    pub fn build_json(self, body: impl Serialize) -> ResponseBuilder {
-        ResponseBuilder::new(self, Response::ok().json(body))
+    pub fn build_json(&self, body: impl Serialize) -> ResponseBuilder {
+        ResponseBuilder::new(Response::ok().json(body))
     }
 
     /// Build response from static file.
-    pub async fn build_file(self, file_path: &str) -> ResponseBuilder {
-        ResponseBuilder::new(self, Response::ok().file(file_path).await)
+    pub async fn build_file(&self, file_path: &str) -> ResponseBuilder {
+        ResponseBuilder::new(Response::ok().file(file_path).await)
     }
 
     fn parse_queries<T: DeserializeOwned>(query: &[u8]) -> Result<T, ObsidianError> {
@@ -302,13 +302,12 @@ impl Context {
 }
 
 pub struct ResponseBuilder {
-    ctx: Context,
     response: Response,
 }
 
 impl ResponseBuilder {
-    pub fn new(ctx: Context, response: Response) -> Self {
-        ResponseBuilder { ctx, response }
+    pub fn new(response: Response) -> Self {
+        ResponseBuilder { response }
     }
 
     /// set http status code for response
@@ -339,10 +338,10 @@ impl ResponseBuilder {
         self
     }
 
-    // pub fn ok(mut self) -> ContextResult {
-    //     *self.ctx.response_mut() = Some(self.response);
-    //     Ok(self.ctx)
-    // }
+    pub fn ok(mut self) -> ContextResult {
+        // *self.ctx.response_mut() = Some(self.response);
+        Ok(self.response)
+    }
 }
 
 #[cfg(test)]
