@@ -1,9 +1,7 @@
-use obsidian::{
-    context::Context, error::ObsidianError, handler::ContextResult, router::Response, App,
-};
+use obsidian::{context::Context, handler::ContextResult, App};
 use serde::*;
 
-async fn get_user(mut ctx: Context) -> Result<Response, ObsidianError> {
+async fn get_user(mut ctx: Context) -> ContextResult {
     #[derive(Serialize, Deserialize, Debug)]
     struct User {
         name: String,
