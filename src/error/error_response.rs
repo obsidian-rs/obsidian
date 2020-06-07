@@ -91,11 +91,3 @@ impl From<std::convert::Infallible> for ObsidianError {
         unreachable!()
     }
 }
-
-// impl From<InternalError> for ObsidianError {
-//     fn from(err: InternalError) -> Self {
-//         ObsidianError {
-//             inner: Box::new(err),
-//         }
-//     }
-// }

@@ -14,11 +14,6 @@ async fn get_user(mut ctx: Context) -> ContextResult {
     };
 
     let user: UserParam = ctx.json().await?;
-    println!("user: {:?}", user);
-
-    let user = User {
-        name: String::from("Obsidian"),
-    };
 
     Ok(Response::ok().json(user))
 }

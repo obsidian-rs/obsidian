@@ -1,5 +1,6 @@
 use obsidian::{context::Context, handler::ContextResult, App};
 
+// this is handler function
 async fn hello_world(ctx: Context) -> ContextResult {
     ctx.build("Hello World").ok()
 }

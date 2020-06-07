@@ -26,4 +26,4 @@ where
 }
 
 /// `Result` with the error type `ObsidianError`.
-pub type ContextResult = Result<Response, ObsidianError>;
+pub type ContextResult<E = ObsidianError> = Result<Response, E>;

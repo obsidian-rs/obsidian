@@ -114,9 +114,8 @@ impl Responder for Option<&'static str> {
     }
 }
 
-impl<T, E> Responder for Result<T, E>
+impl<E> Responder for Result<Response, E>
 where
-    T: Responder + ResponseBody,
     E: IntoErrorResponse,
 {
     fn respond_to(self) -> Response {
@@ -132,30 +131,6 @@ impl Responder for Result<Response, ObsidianError> {
         match self {
             Ok(resp) => resp.respond_to(),
             Err(err) => err.to_string().respond_to(),
-        }
-    }
-}
-
-impl<E> Responder for Result<Response, E>
-where
-    E: IntoErrorResponse,
-{
-    fn respond_to(self) -> Response {
-        match self {
-            Ok(resp) => resp,
-            Err(err) => err.into_error_response(),
-        }
-    }
-}
-
-impl<T> Responder for Result<T, ObsidianError>
-where
-    T: Responder + ResponseBody,
-{
-    fn respond_to(self) -> Response {
-        match self {
-            Ok(resp) => resp.respond_to(),
-            Err(err) => err.into_error_response(),
         }
     }
 }
