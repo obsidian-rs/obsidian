@@ -6,8 +6,8 @@ use std::{fmt, fmt::Display};
 
 use obsidian::{
     context::Context,
-    router::{header, Responder, Response, Router},
-    App, ObsidianError, StatusCode,
+    router::{header, Response, Router},
+    App, StatusCode,
 };
 
 // Testing example
@@ -73,11 +73,11 @@ impl Display for JsonTest {
 async fn main() {
     let mut app: App = App::default();
 
-    app.get("/", |ctx: Context| async {
+    app.get("/", |ctx: Context| async move {
 ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut icon\" href=\"favicon.ico\" type=\"image/x-icon\" sizes=\"32x32\" /></head> <h1>Hello Obsidian</h1></html>")).ok()
     });
 
-    app.get("/json", |ctx: Context| async {
+    app.get("/json", |ctx: Context| async move {
         let point = Point { x: 1, y: 2 };
 
         ctx.build_json(point)
@@ -87,7 +87,7 @@ ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut ic
             .ok()
     });
 
-    app.get("/user", |mut ctx: Context| async {
+    app.get("/user", |mut ctx: Context| async move {
         #[derive(Serialize, Deserialize, Debug)]
         struct QueryString {
             id: String,
@@ -110,11 +110,11 @@ ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut ic
         ctx.build("").ok()
     });
 
-    app.patch("/patch-here", |ctx: Context| async {
+    app.patch("/patch-here", |ctx: Context| async move {
         ctx.build("Here is patch request").ok()
     });
 
-    app.get("/json-with-headers", |ctx: Context| async {
+    app.get("/json-with-headers", |ctx: Context| async move {
         let point = Point { x: 1, y: 2 };
 
         let custom_headers = vec![
@@ -137,7 +137,7 @@ ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut ic
         .ok()
     });
 
-    app.get("/string-with-headers", |ctx: Context| async {
+    app.get("/string-with-headers", |ctx: Context| async move {
         let custom_headers = vec![
             ("X-Custom-Header-1", "Custom header 1"),
             ("X-Custom-Header-2", "Custom header 2"),
@@ -155,37 +155,37 @@ ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut ic
             .ok()
     });
 
-    app.get("/empty-body", |ctx: Context| async {
+    app.get("/empty-body", |ctx: Context| async move {
         ctx.build(StatusCode::OK).ok()
     });
 
-    app.get("/vec", |ctx: Context| async {
+    app.get("/vec", |ctx: Context| async move {
         ctx.build(vec![1, 2, 3])
             .with_status(StatusCode::CREATED)
             .ok()
     });
 
-    app.get("/String", |ctx: Context| async {
+    app.get("/String", |ctx: Context| async move {
         ctx.build("<h1>This is a String</h1>".to_string()).ok()
     });
 
-    app.get("/test/radix", |ctx: Context| async {
+    app.get("/test/radix", |ctx: Context| async move {
         ctx.build("<h1>Test radix</h1>".to_string()).ok()
     });
 
-    app.get("/team/radix", |ctx: Context| async {
+    app.get("/team/radix", |ctx: Context| async move {
         ctx.build("Team radix".to_string()).ok()
     });
 
-    app.get("/test/radix2", |ctx: Context| async {
+    app.get("/test/radix2", |ctx: Context| async move {
         ctx.build("<h1>Test radix2</h1>".to_string()).ok()
     });
 
-    app.get("/jsontest", |ctx: Context| async {
+    app.get("/jsontest", |ctx: Context| async move {
         ctx.build_file("./testjson.html").await.ok()
     });
 
-    app.get("/jsan", |ctx: Context| async {
+    app.get("/jsan", |ctx: Context| async move {
         ctx.build("<h1>jsan</h1>".to_string()).ok()
     });
 
@@ -200,10 +200,7 @@ ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut ic
     });
 
     app.get("router/test", |ctx: Context| async move {
-        let result = ctx
-            .extensions()
-            .get::<LoggerExampleData>()
-            .ok_or(ObsidianError::NoneError)?;
+        let result = ctx.extensions().get::<LoggerExampleData>().unwrap();
 
         dbg!(&result.0);
 
