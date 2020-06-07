@@ -1,4 +1,4 @@
-use obsidian::{context::Context, App, ObsidianError};
+use obsidian::{context::Context, App};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -8,20 +8,19 @@ pub struct AppState {
 #[tokio::main]
 async fn main() {
     let mut app: App<AppState> = App::new();
-    let addr = ([127, 0, 0, 1], 3000).into();
 
     app.set_app_state(AppState {
         db_connection_string: "localhost:1433".to_string(),
     });
 
-    app.get("/", |ctx: Context| async {
-        let app_state = ctx.get::<AppState>().ok_or(ObsidianError::NoneError)?;
+    app.get("/", |ctx: Context| async move {
+        let app_state = ctx.get::<AppState>().unwrap();
         let res = Some(format!(
             "connection string: {}",
             &app_state.db_connection_string
         ));
 
-        ctx.build(res).ok()
+        res
     });
 
     app.listen(3000).await;
