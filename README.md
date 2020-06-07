@@ -103,6 +103,11 @@ cargo run --example example
 ## App Lifecycle
 ![app lifecycle](./screenshot/lifecycle.png)
 
+## Contributors
+<a href="https://github.com/obsidian-rs/obsidian/graphs/contributors">
+  <img src="https://contributors-img.web.app/image?repo=obsidian-rs/obsidian" />
+</a>
+
 ## Current State
 
 Under active development and **NOT READY FOR PRODUCTION YET!**
