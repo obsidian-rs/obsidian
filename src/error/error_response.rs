@@ -84,6 +84,8 @@ impl IntoErrorResponse for InternalError {
     }
 }
 
+impl std::error::Error for InternalError {}
+
 impl From<std::convert::Infallible> for ObsidianError {
     fn from(_: std::convert::Infallible) -> Self {
         // `std::convert::Infallible` indicates an error
