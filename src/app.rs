@@ -374,18 +374,4 @@ mod test {
             assert_eq!(actual_res_body.unwrap(), expected_res_body.unwrap());
         })
     }
-
-    #[test]
-    fn test_nested_router() {
-        task::block_on(async {
-            let mut app: App = App::new();
-
-            app.scope("admin", |router: &mut Router| {
-                router.get("list", |ctx: Context| async move {
-                    assert_eq!(ctx.uri().path(), "/admin//list");
-                    ctx.build("return here").ok()
-                });
-            });
-        })
-    }
 }
