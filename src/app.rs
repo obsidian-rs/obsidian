@@ -73,6 +73,21 @@ where
         self.router.delete(path, handler);
     }
 
+    /// Register a nested router for the app
+    ///
+    /// Example:
+    /// ```
+    /// use obsidian::{App, router::Router, context::Context};
+    ///
+    /// let mut app: App = App::new();
+    ///
+    /// app.scope("admin", |router: &mut Router| {
+    ///     router.get("list", |ctx: Context| async move {
+    ///         ctx.build("Admin list here").ok()
+    ///     });
+    /// });
+    /// ```
+    ///
     pub fn scope(&mut self, name: &str, scoped_routes: impl Fn(&mut Router)) {
         let mut new_router = Router::new();
 
@@ -302,6 +317,7 @@ impl<'a> EndpointExecutor<'a> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::context::Context;
     use async_std::task;
     use hyper::{body, body::Buf, StatusCode};
 
@@ -356,6 +372,20 @@ mod test {
             };
 
             assert_eq!(actual_res_body.unwrap(), expected_res_body.unwrap());
+        })
+    }
+
+    #[test]
+    fn test_nested_router() {
+        task::block_on(async {
+            let mut app: App = App::new();
+
+            app.scope("admin", |router: &mut Router| {
+                router.get("list", |ctx: Context| async move {
+                    assert_eq!(ctx.uri().path(), "/admin//list");
+                    ctx.build("return here").ok()
+                });
+            });
         })
     }
 }
