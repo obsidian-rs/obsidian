@@ -29,7 +29,7 @@ impl fmt::Display for InternalError {
 }
 
 impl ObsidianError {
-    pub fn into_error_response(&self) -> Response {
+    pub fn into_error_response(self) -> Response {
         self.inner.into_error_response()
     }
 }

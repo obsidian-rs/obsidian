@@ -4,6 +4,7 @@ use async_std::fs;
 use http::StatusCode;
 use hyper::{header, Body};
 use serde::ser::Serialize;
+use std::fmt::Debug;
 
 #[derive(Debug)]
 pub struct Response {
