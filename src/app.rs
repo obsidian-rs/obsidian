@@ -73,6 +73,13 @@ where
         self.router.delete(path, handler);
     }
 
+    pub fn scope(&mut self, name: &str, scoped_routes: impl Fn(&mut Router)) {
+        let mut new_router = Router::new();
+
+        scoped_routes(&mut new_router);
+        self.use_router(format!("/{}", name).as_ref(), new_router);
+    }
+
     /// Apply middleware in the provided route
     pub fn use_service_to(&mut self, path: &str, middleware: impl Middleware) {
         self.router.use_service_to(path, middleware);
