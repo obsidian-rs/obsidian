@@ -640,7 +640,7 @@ mod tests {
                 .push(2);
             expected_result
                 .entry("field2".to_string())
-                .or_insert_with(|| vec![])
+                .or_insert_with(Vec::new)
                 .push(3);
             assert_eq!(actual_result, expected_result);
         })
