@@ -300,7 +300,7 @@ impl Context {
                 if !val.is_empty() {
                     parsed_form_map
                         .entry(key)
-                        .or_insert_with(|| vec![])
+                        .or_insert_with(Vec::new)
                         .push(val);
                 }
             });

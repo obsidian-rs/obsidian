@@ -73,6 +73,28 @@ where
         self.router.delete(path, handler);
     }
 
+    /// Register a nested router for the app
+    ///
+    /// Example:
+    /// ```
+    /// use obsidian::{App, router::Router, context::Context};
+    ///
+    /// let mut app: App = App::new();
+    ///
+    /// app.scope("admin", |router: &mut Router| {
+    ///     router.get("list", |ctx: Context| async move {
+    ///         ctx.build("Admin list here").ok()
+    ///     });
+    /// });
+    /// ```
+    ///
+    pub fn scope(&mut self, name: &str, scoped_routes: impl Fn(&mut Router)) {
+        let mut new_router = Router::new();
+
+        scoped_routes(&mut new_router);
+        self.use_router(format!("/{}", name).as_ref(), new_router);
+    }
+
     /// Apply middleware in the provided route
     pub fn use_service_to(&mut self, path: &str, middleware: impl Middleware) {
         self.router.use_service_to(path, middleware);
@@ -295,6 +317,7 @@ impl<'a> EndpointExecutor<'a> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::context::Context;
     use async_std::task;
     use hyper::{body, body::Buf, StatusCode};
 

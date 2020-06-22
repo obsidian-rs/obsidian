@@ -475,7 +475,7 @@ mod tests {
                 .for_each(|(key, val)| {
                     parsed_form_map
                         .entry(key)
-                        .or_insert_with(|| vec![])
+                        .or_insert_with(Vec::new)
                         .push(val);
                 });
             // Wrap vec with cow pointer
@@ -512,7 +512,7 @@ mod tests {
                 .for_each(|(key, val)| {
                     parsed_form_map
                         .entry(key)
-                        .or_insert_with(|| vec![])
+                        .or_insert_with(Vec::new)
                         .push(val);
                 });
             // Wrap vec with cow pointer
@@ -546,7 +546,7 @@ mod tests {
                 .for_each(|(key, val)| {
                     parsed_form_map
                         .entry(key)
-                        .or_insert_with(|| vec![])
+                        .or_insert_with(Vec::new)
                         .push(val);
                 });
             // Wrap vec with cow pointer
@@ -580,7 +580,7 @@ mod tests {
                 .for_each(|(key, val)| {
                     parsed_form_map
                         .entry(key)
-                        .or_insert_with(|| vec![])
+                        .or_insert_with(Vec::new)
                         .push(val);
                 });
             // Wrap vec with cow pointer
@@ -617,7 +617,7 @@ mod tests {
                 .for_each(|(key, val)| {
                     parsed_form_map
                         .entry(key)
-                        .or_insert_with(|| vec![])
+                        .or_insert_with(Vec::new)
                         .push(val);
                 });
             // Wrap vec with cow pointer
@@ -632,15 +632,15 @@ mod tests {
 
             expected_result
                 .entry("field1".to_string())
-                .or_insert_with(|| vec![])
+                .or_insert_with(Vec::new)
                 .push(1);
             expected_result
                 .entry("field1".to_string())
-                .or_insert_with(|| vec![])
+                .or_insert_with(Vec::new)
                 .push(2);
             expected_result
                 .entry("field2".to_string())
-                .or_insert_with(|| vec![])
+                .or_insert_with(Vec::new)
                 .push(3);
             assert_eq!(actual_result, expected_result);
         })
