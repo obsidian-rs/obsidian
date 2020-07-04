@@ -1,3 +1,3 @@
-mod obsidian_error;
+mod error_response;
 
-pub use obsidian_error::ObsidianError;
+pub use error_response::{InternalError, IntoErrorResponse, ObsidianError};

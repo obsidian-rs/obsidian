@@ -3,8 +3,8 @@ use std::time::Instant;
 
 use crate::app::EndpointExecutor;
 use crate::context::Context;
+use crate::handler::ContextResult;
 use crate::middleware::Middleware;
-use crate::router::ContextResult;
 
 use colored::*;
 
@@ -31,14 +31,11 @@ impl Middleware for Logger {
         println!("{} {:#?}", "[debug]".cyan(), context);
 
         match ep_executor.next(context).await {
-            Ok(context_after) => {
+            Ok(response) => {
                 let duration = start.elapsed();
-                println!(
-                    "[info] Sent {} in {:?}",
-                    context_after.response().as_ref().unwrap().status(),
-                    duration
-                );
-                Ok(context_after)
+                let status = response.status();
+                println!("[info] Sent {} in {:?}", status, duration);
+                Ok(response)
             }
             Err(error) => {
                 println!("{} {}", "[error]".red(), error);

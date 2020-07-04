@@ -1,4 +1,3 @@
-use std::net::SocketAddr;
 use std::sync::Arc;
 
 use colored::*;
@@ -9,9 +8,9 @@ use hyper::{
 };
 
 use crate::context::Context;
-use crate::error::ObsidianError;
+use crate::handler::{ContextResult, Handler};
 use crate::middleware::Middleware;
-use crate::router::{ContextResult, Handler, RouteValueResult, Router};
+use crate::router::{RouteValueResult, Router};
 
 use crate::middleware::logger::Logger;
 
@@ -141,7 +140,7 @@ where
         self.app_state = Some(app_state);
     }
 
-    pub async fn listen(self, addr: &SocketAddr, callback: impl Fn()) {
+    pub async fn listen(self, port: u16) {
         let app_server: AppServer = AppServer {
             router: self.router,
         };
@@ -160,6 +159,7 @@ where
             }
         });
 
+        let addr = ([127, 0, 0, 1], port).into();
         let server = Server::bind(&addr).serve(service);
 
         let logo = r#"
@@ -199,8 +199,6 @@ where
 
         println!(" 🎉  {}: http://{}\n", "Served at".green().bold(), addr);
 
-        callback();
-
         server.await.map_err(|_| println!("Server error")).unwrap();
     }
 }
@@ -237,38 +235,41 @@ impl AppServer {
                 let route_result = executor.next(context).await;
 
                 let route_response = match route_result {
-                    Ok(ctx) => {
+                    Ok(response) => {
                         let mut res = Response::builder();
-                        if let Some(response) = ctx.take_response() {
-                            if let Some(headers) = response.headers() {
-                                if let Some(response_headers) = res.headers_mut() {
-                                    headers.iter().for_each(move |(key, value)| {
-                                        response_headers
-                                            .insert(key, header::HeaderValue::from_static(value));
-                                    });
-                                }
+                        if let Some(headers) = response.headers() {
+                            if let Some(response_headers) = res.headers_mut() {
+                                headers.iter().for_each(move |(key, value)| {
+                                    response_headers
+                                        .insert(key, header::HeaderValue::from_static(value));
+                                });
                             }
-                            res.status(response.status()).body(response.body())
-                        } else {
-                            // No response found
-                            res.status(StatusCode::OK).body(Body::from(""))
                         }
+                        res.status(response.status()).body(response.body())
                     }
                     Err(err) => {
-                        let body = Body::from(err.to_string());
-                        Response::builder()
-                            .status(StatusCode::INTERNAL_SERVER_ERROR)
-                            .body(body)
+                        let response = err.into_error_response();
+                        let mut res = Response::builder();
+                        if let Some(headers) = response.headers() {
+                            if let Some(response_headers) = res.headers_mut() {
+                                headers.iter().for_each(move |(key, value)| {
+                                    response_headers
+                                        .insert(key, header::HeaderValue::from_static(value));
+                                });
+                            }
+                        }
+                        res.status(response.status()).body(response.body())
                     }
                 };
 
-                Ok::<_, hyper::Error>(route_response.unwrap_or_else(|_| {
-                    internal_server_error(ObsidianError::GeneralError(
-                        "Error while constructing response body".to_string(),
-                    ))
-                }))
+                // Ok::<_, hyper::Error>(route_response.unwrap_or_else(|_| {
+                //     internal_server_error(ObsidianError::GeneralError(
+                //         "Error while constructing response body".to_string(),
+                //     ))
+                // }))
+                Ok::<_, hyper::Error>(route_response.unwrap())
             }
-            _ => Ok::<_, hyper::Error>(page_not_found()),
+            None => Ok::<_, hyper::Error>(page_not_found()),
         }
     }
 }
@@ -280,33 +281,33 @@ fn page_not_found() -> Response<Body> {
     server_response
 }
 
-fn internal_server_error(err: impl std::error::Error) -> Response<Body> {
-    let body = Body::from(err.to_string());
-    Response::builder()
-        .status(StatusCode::INTERNAL_SERVER_ERROR)
-        .body(body)
-        .unwrap()
-}
+// fn internal_server_error(err: impl std::error::Error) -> Response<Body> {
+//     let body = Body::from(err.to_string());
+//     Response::builder()
+//         .status(StatusCode::INTERNAL_SERVER_ERROR)
+//         .body(body)
+//         .unwrap()
+// }
 
 pub struct EndpointExecutor<'a> {
     pub route_endpoint: &'a Arc<dyn Handler>,
-    pub middleware: &'a [Arc<dyn Middleware>],
+    pub middlewares: &'a [Arc<dyn Middleware>],
 }
 
 impl<'a> EndpointExecutor<'a> {
     pub fn new(
         route_endpoint: &'a Arc<dyn Handler>,
-        middleware: &'a [Arc<dyn Middleware>],
+        middlewares: &'a [Arc<dyn Middleware>],
     ) -> Self {
         EndpointExecutor {
             route_endpoint,
-            middleware,
+            middlewares,
         }
     }
 
     pub async fn next(mut self, context: Context) -> ContextResult {
-        if let Some((current, all_next)) = self.middleware.split_first() {
-            self.middleware = all_next;
+        if let Some((current, all_next)) = self.middlewares.split_first() {
+            self.middlewares = all_next;
             current.handle(context, self).await
         } else {
             self.route_endpoint.call(context).await

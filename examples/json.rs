@@ -1,27 +1,28 @@
-use obsidian::{context::Context, App, ContextResult};
+use obsidian::{context::Context, handler::ContextResult, router::Response, App};
 use serde::*;
 
-async fn get_user(ctx: Context) -> ContextResult {
-    #[derive(Serialize, Deserialize)]
+async fn get_user(mut ctx: Context) -> ContextResult {
+    #[derive(Serialize, Deserialize, Debug)]
     struct User {
         name: String,
     };
 
-    let user = User {
-        name: String::from("Obsidian"),
+    #[derive(Serialize, Deserialize, Debug)]
+    struct UserParam {
+        name: String,
+        age: i8,
     };
-    ctx.build_json(user).ok()
+
+    let user: UserParam = ctx.json().await?;
+
+    Ok(Response::ok().json(user))
 }
 
 #[tokio::main]
 async fn main() {
-    let mut app: App = App::new();
-    let addr = ([127, 0, 0, 1], 3000).into();
+    let mut app: App = App::default();
 
     app.get("/user", get_user);
 
-    app.listen(&addr, || {
-        println!("server is listening to {}", &addr);
-    })
-    .await;
+    app.listen(3000).await;
 }

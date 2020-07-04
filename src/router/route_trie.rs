@@ -4,10 +4,10 @@ use std::sync::Arc;
 
 use hyper::Method;
 
+use crate::error::InternalError;
 use crate::middleware::Middleware;
 use crate::router::Resource;
 use crate::router::Route;
-use crate::ObsidianError;
 
 #[derive(Clone, Default)]
 pub struct RouteValue {
@@ -324,7 +324,7 @@ impl Node {
     }
 
     /// Process the side effects of node insertion
-    fn process_insertion(&mut self, key: &str) -> Result<&mut Self, ObsidianError> {
+    fn process_insertion(&mut self, key: &str) -> Result<&mut Self, InternalError> {
         let action = self.get_insertion_action(key);
 
         match action.name {
@@ -388,7 +388,7 @@ impl Node {
             }
             ActionName::Error => {
                 if let Some(node) = self.child_nodes.get(action.payload.node_index) {
-                    return Err(ObsidianError::GeneralError(format!(
+                    return Err(InternalError::GeneralError(format!(
                         "ERROR: Ambigous definition between {} and {}",
                         key, node.key
                     )));

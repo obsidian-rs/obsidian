@@ -4,6 +4,7 @@ use async_std::fs;
 use http::StatusCode;
 use hyper::{header, Body};
 use serde::ser::Serialize;
+use std::fmt::Debug;
 
 #[derive(Debug)]
 pub struct Response {
@@ -16,6 +17,14 @@ impl Response {
     pub fn new(body: impl ResponseBody) -> Self {
         Response {
             body: body.into_body(),
+            status: StatusCode::OK,
+            headers: None,
+        }
+    }
+
+    pub fn new_with_body(body: Body) -> Self {
+        Response {
+            body,
             status: StatusCode::OK,
             headers: None,
         }

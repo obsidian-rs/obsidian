@@ -9,8 +9,9 @@ use std::collections::HashMap;
 use std::convert::From;
 use std::str::FromStr;
 
-use crate::router::{from_cow_map, ContextResult, Responder, Response};
-use crate::ObsidianError;
+use crate::error::{InternalError, ObsidianError};
+use crate::handler::ContextResult;
+use crate::router::{from_cow_map, Responder, Response};
 use crate::{
     header::{HeaderName, HeaderValue},
     Body, HeaderMap, Method, Request, StatusCode, Uri,
@@ -86,9 +87,8 @@ impl Context {
     ///
     /// ```
     /// # use obsidian::StatusCode;
-    /// # use obsidian::ContextResult;
+    /// # use obsidian::handler::ContextResult;
     /// # use obsidian::context::Context;
-    ///
     /// // Assumming ctx contains params for id and mode
     /// async fn get_handler(ctx: Context) -> ContextResult {
     ///     let id: i32 = ctx.param("id")?;
@@ -102,12 +102,16 @@ impl Context {
     ///
     /// ```
     ///
-    pub fn param<T: FromStr>(&self, key: &str) -> Result<T, ObsidianError> {
+    pub fn param<T: FromStr>(&self, key: &str) -> Result<T, InternalError> {
         self.params_data
             .get(key)
-            .ok_or(ObsidianError::NoneError)?
+            .ok_or(InternalError::NoneError(format!(
+                "The key [{}] not found",
+                key
+            )))?
             .parse()
-            .map_err(|_err| ObsidianError::ParamError(format!("Failed to parse param {}", key)))
+            .map_err(|_err| InternalError::ParamError(format!("Failed to parse param {}", key)))
+        // The error will never happen
     }
 
     /// Method to get the string query data from the request url.
@@ -116,10 +120,8 @@ impl Context {
     /// # Example
     /// ```
     /// # use serde::*;
-    ///
     /// # use obsidian::context::Context;
-    /// # use obsidian::{ContextResult, StatusCode};
-    ///
+    /// # use obsidian::{handler::ContextResult, StatusCode};
     /// #[derive(Deserialize, Serialize, Debug)]
     /// struct QueryString {
     ///     id: i32,
@@ -153,10 +155,8 @@ impl Context {
     /// # Example
     /// ```
     /// # use serde::*;
-    ///
     /// # use obsidian::context::Context;
-    /// # use obsidian::{ContextResult, StatusCode};
-    ///
+    /// # use obsidian::{handler::ContextResult, StatusCode};
     /// #[derive(Deserialize, Serialize, Debug)]
     /// struct FormResult {
     ///     id: i32,
@@ -176,12 +176,7 @@ impl Context {
     pub async fn form<T: DeserializeOwned>(&mut self) -> Result<T, ObsidianError> {
         let body = self.take_body();
 
-        let buf = match body::aggregate(body).await {
-            Ok(buf) => buf,
-            _ => {
-                return Err(ObsidianError::NoneError);
-            }
-        };
+        let buf = body::aggregate(body).await?;
 
         Self::parse_queries(buf.bytes())
     }
@@ -200,10 +195,8 @@ impl Context {
     /// ### Handle by static type
     /// ```
     /// # use serde::*;
-    ///
     /// # use obsidian::context::Context;
-    /// # use obsidian::{ContextResult, StatusCode};
-    ///
+    /// # use obsidian::{handler::ContextResult, StatusCode};
     /// #[derive(Deserialize, Serialize, Debug)]
     /// struct JsonResult {
     ///     id: i32,
@@ -224,10 +217,7 @@ impl Context {
     /// ### Handle by dynamic map
     /// ```
     /// # use serde_json::Value;
-    ///
-    /// # use obsidian::context::Context;
-    /// # use obsidian::{ContextResult, StatusCode};
-    ///
+    /// # use obsidian::{context::Context, handler::ContextResult, StatusCode};
     /// // Assume ctx contains json with data {id:1, mode:'edit'}
     /// async fn get_handler(mut ctx: Context) -> ContextResult {
     ///     let result: serde_json::Value = ctx.json().await?;
@@ -241,12 +231,7 @@ impl Context {
     pub async fn json<T: DeserializeOwned>(&mut self) -> Result<T, ObsidianError> {
         let body = self.take_body();
 
-        let buf = match body::aggregate(body).await {
-            Ok(buf) => buf,
-            _ => {
-                return Err(ObsidianError::NoneError);
-            }
-        };
+        let buf = body::aggregate(body).await?;
 
         Ok(serde_json::from_slice(buf.bytes())?)
     }
@@ -275,18 +260,18 @@ impl Context {
     }
 
     /// Build any kind of response which implemented Responder trait
-    pub fn build(self, res: impl Responder) -> ResponseBuilder {
-        ResponseBuilder::new(self, res.respond_to())
+    pub fn build(&self, res: impl Responder) -> ResponseBuilder {
+        ResponseBuilder::new(res.respond_to())
     }
 
     /// Build data into json format. The data must implement Serialize trait
-    pub fn build_json(self, body: impl Serialize) -> ResponseBuilder {
-        ResponseBuilder::new(self, Response::ok().json(body))
+    pub fn build_json(&self, body: impl Serialize) -> ResponseBuilder {
+        ResponseBuilder::new(Response::ok().json(body))
     }
 
     /// Build response from static file.
-    pub async fn build_file(self, file_path: &str) -> ResponseBuilder {
-        ResponseBuilder::new(self, Response::ok().file(file_path).await)
+    pub async fn build_file(&self, file_path: &str) -> ResponseBuilder {
+        ResponseBuilder::new(Response::ok().file(file_path).await)
     }
 
     fn parse_queries<T: DeserializeOwned>(query: &[u8]) -> Result<T, ObsidianError> {
@@ -317,13 +302,12 @@ impl Context {
 }
 
 pub struct ResponseBuilder {
-    ctx: Context,
     response: Response,
 }
 
 impl ResponseBuilder {
-    pub fn new(ctx: Context, response: Response) -> Self {
-        ResponseBuilder { ctx, response }
+    pub fn new(response: Response) -> Self {
+        ResponseBuilder { response }
     }
 
     /// set http status code for response
@@ -354,9 +338,9 @@ impl ResponseBuilder {
         self
     }
 
-    pub fn ok(mut self) -> ContextResult {
-        *self.ctx.response_mut() = Some(self.response);
-        Ok(self.ctx)
+    pub fn ok(self) -> ContextResult {
+        // *self.ctx.response_mut() = Some(self.response);
+        Ok(self.response)
     }
 }
 

@@ -22,6 +22,14 @@
   <img alt="Obsidian serve" src="./screenshot/serve.png" >
 </div>
 
+## Get Started
+```toml
+[dependencies]
+# add these 2 dependencies in Cargo.toml file
+obsidian = "0.2.2"
+tokio = "0.2.21"
+```
+
 ## Hello World
 
 ```rust
@@ -30,44 +38,32 @@ use obsidian::{context::Context, App};
 #[tokio::main]
 async fn main() {
     let mut app: App = App::new();
-    let addr = ([127, 0, 0, 1], 3000).into();
-
     app.get("/", |ctx: Context| async { ctx.build("Hello World").ok() });
-
-    app.listen(&addr, || {
-        println!("server is listening to {}", &addr);
-    }).await;
+    app.listen(3000).await;
 }
 ```
 
 ## Hello World (with handler function)
 
 ```rust
-use obsidian::{context::Context, App, ContextResult};
+use obsidian::{context::Context, handler::ContextResult, App};
 
 async fn hello_world(ctx: Context) -> ContextResult {
     ctx.build("Hello World").ok()
 }
 
-
 #[tokio::main]
 async fn main() {
     let mut app: App = App::new();
-    let addr = ([127, 0, 0, 1], 3000).into();
-
     app.get("/", hello_world);
-
-    app.listen(&addr, || {
-        println!("server is listening to {}", &addr);
-    })
-    .await;
+    app.listen(3000).await;
 }
 ```
 
 ## JSON Response
 
 ```rust
-use obsidian::{context::Context, App, ContextResult};
+use obsidian::{context::Context, handler::ContextResult, App};
 use serde::*;
 
 async fn get_user(ctx: Context) -> ContextResult {
@@ -85,28 +81,33 @@ async fn get_user(ctx: Context) -> ContextResult {
 #[tokio::main]
 async fn main() {
     let mut app: App = App::new();
-    let addr = ([127, 0, 0, 1], 3000).into();
-
     app.get("/user", get_user);
-
-    app.listen(&addr, || {
-        println!("server is listening to {}", &addr);
-    })
-    .await;
+    app.listen(3000).await;
 }
 
 ```
 
-## Example Files
+## More Examples
 
-Example are located in `example/main.rs`.
+Examples are located in `example` folder. You can run these examples by using:
+```bash
+cargo run --example [name]
 
-## Run Example
+// show a list of available examples
+cargo run --example 
 
-```
+// run the example
 cargo run --example example
 ```
 
+## App Lifecycle
+![app lifecycle](./screenshot/lifecycle.png)
+
+## Contributors
+<a href="https://github.com/obsidian-rs/obsidian/graphs/contributors">
+  <img src="https://contributors-img.web.app/image?repo=obsidian-rs/obsidian" />
+</a>
+
 ## Current State
 
-NOT READY FOR PRODUCTION YET!
+Under active development and **NOT READY FOR PRODUCTION YET!**

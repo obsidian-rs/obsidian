@@ -1,4 +1,3 @@
-mod handler;
 mod req_deserializer;
 mod resource;
 mod responder;
@@ -9,11 +8,11 @@ mod route_trie;
 
 use self::route_trie::RouteTrie;
 use crate::context::Context;
+use crate::handler::{ContextResult, Handler};
 use crate::middleware::Middleware;
 use crate::Method;
 pub use hyper::header;
 
-pub use self::handler::{ContextResult, Handler};
 pub use self::req_deserializer::{from_cow_map, Error as FormError};
 pub use self::resource::Resource;
 pub use self::responder::Responder;
@@ -137,10 +136,7 @@ impl Router {
 
             dir_path.append(&mut relative_path);
 
-            Box::pin(async move {
-                ctx.build(Response::ok().file(&dir_path.join("/")).await)
-                    .ok()
-            })
+            Box::pin(async move { Response::ok().file(&dir_path.join("/")).await })
         }
     }
 
@@ -153,8 +149,7 @@ impl Router {
             .map(|x| x.to_string())
             .collect::<Vec<String>>();
 
-        ctx.build(Response::ok().file(&relative_path.join("/")).await)
-            .ok()
+        Ok(Response::ok().file(&relative_path.join("/")).await)
     }
 }
 
