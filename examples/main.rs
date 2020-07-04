@@ -6,7 +6,7 @@ use std::{fmt, fmt::Display};
 
 use obsidian::{
     context::Context,
-    router::{header, Response, Router},
+    router::{header, Responder, Response, Router},
     App, StatusCode,
 };
 
@@ -295,11 +295,11 @@ ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut ic
     app.use_service(logger_example);
 
     app.scope("params", |router: &mut Router| {
-        router.get("/test-next-wild/*", |ctx: Context| async {
+        router.get("/test-next-wild/*", |ctx: Context| async move {
             ctx.build("<h1>test next wild</h1>".to_string()).ok()
         });
 
-        router.get("/*", |ctx: Context| async {
+        router.get("/*", |ctx: Context| async move {
             ctx.build(
                 "<h1>404 Not Found</h1>"
                     .to_string()
