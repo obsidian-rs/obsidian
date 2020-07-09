@@ -132,8 +132,8 @@ ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut ic
 
         ctx.build(
             Response::created()
-                .with_headers(standard_headers)
-                .with_headers_str(custom_headers)
+                .with_headers(&standard_headers)
+                .with_headers_str(&custom_headers)
                 .json(point),
         )
         .ok()
@@ -152,8 +152,8 @@ ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut ic
         ];
 
         ctx.build("Hello World")
-            .with_headers(standard_headers)
-            .with_headers_str(custom_headers)
+            .with_headers(&standard_headers)
+            .with_headers_str(&custom_headers)
             .ok()
     });
 

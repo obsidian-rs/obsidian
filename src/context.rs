@@ -1,3 +1,8 @@
+pub mod cookies;
+pub mod memory_session;
+pub mod session;
+
+use cookie::Cookie;
 use http::Extensions;
 use hyper::{body, body::Buf};
 use serde::de::DeserializeOwned;
@@ -9,6 +14,8 @@ use std::collections::HashMap;
 use std::convert::From;
 use std::str::FromStr;
 
+use self::cookies::CookieParserData;
+use self::session::SessionData;
 use crate::router::{from_cow_map, ContextResult, Responder, Response};
 use crate::ObsidianError;
 use crate::{
@@ -256,14 +263,43 @@ impl Context {
         unimplemented!()
     }
 
+    pub fn cookie(&self, name: &str) -> Option<&Cookie> {
+        if let Some(cookie_data) = self.get::<CookieParserData>() {
+            return cookie_data.cookie_jar().get(name);
+        }
+
+        None
+    }
+
+    pub fn session(&self) -> Option<&SessionData> {
+        self.get::<SessionData>()
+    }
+
+    pub fn session_mut(&mut self) -> Option<&mut SessionData> {
+        self.get_mut::<SessionData>()
+    }
+
+    pub fn session_set(&mut self, name: &str, value: &str) {
+        match self.get_mut::<SessionData>() {
+            Some(session) => {
+                session.set(name, value);
+            }
+            _ => {
+                let mut session = SessionData::new();
+                session.set(name, value);
+                self.add(session);
+            }
+        }
+    }
+
     /// Consumes body of the request and replace it with empty body.
     pub fn take_body(&mut self) -> Body {
         std::mem::replace(self.request.body_mut(), Body::empty())
     }
 
-    /// Take response
-    pub fn take_response(self) -> Option<Response> {
-        self.response
+    /// Consumes response
+    pub fn take_response(&mut self) -> Option<Response> {
+        std::mem::replace(&mut self.response, None)
     }
 
     pub fn response(&self) -> &Option<Response> {
@@ -344,13 +380,23 @@ impl ResponseBuilder {
         self
     }
 
-    pub fn with_headers(mut self, headers: Vec<(HeaderName, &'static str)>) -> Self {
+    pub fn with_headers(mut self, headers: &[(HeaderName, &'static str)]) -> Self {
         self.response = self.response.set_headers(headers);
         self
     }
 
-    pub fn with_headers_str(mut self, headers: Vec<(&'static str, &'static str)>) -> Self {
+    pub fn with_headers_str(mut self, headers: &[(&'static str, &'static str)]) -> Self {
         self.response = self.response.set_headers_str(headers);
+        self
+    }
+
+    pub fn with_cookie(mut self, cookie: Cookie<'static>) -> Self {
+        self.response = self.response.set_cookie(cookie);
+        self
+    }
+
+    pub fn with_cookies(mut self, cookies: &[Cookie<'static>]) -> Self {
+        self.response = self.response.set_cookies(cookies);
         self
     }
 

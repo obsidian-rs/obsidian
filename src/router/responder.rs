@@ -1,5 +1,6 @@
 use super::Response;
 use super::ResponseBody;
+use cookie::Cookie;
 use hyper::{header, StatusCode};
 
 pub trait Responder {
@@ -18,18 +19,39 @@ pub trait Responder {
         Response::new(self).set_header(key, value)
     }
 
-    fn with_headers(self, headers: Vec<(header::HeaderName, &'static str)>) -> Response
+    fn with_headers(self, headers: &[(header::HeaderName, &'static str)]) -> Response
     where
         Self: Responder + ResponseBody + Sized,
     {
         Response::new(self).set_headers(headers)
     }
 
-    fn with_headers_str(self, headers: Vec<(&'static str, &'static str)>) -> Response
+    fn with_headers_str(self, headers: &[(&'static str, &'static str)]) -> Response
     where
         Self: Responder + ResponseBody + Sized,
     {
         Response::new(self).set_headers_str(headers)
+    }
+
+    fn with_cookie(self, cookie: Cookie<'static>) -> Response
+    where
+        Self: Responder + ResponseBody + Sized,
+    {
+        Response::new(self).set_cookie(cookie)
+    }
+
+    fn with_cookies(self, cookies: &[Cookie<'static>]) -> Response
+    where
+        Self: Responder + ResponseBody + Sized,
+    {
+        Response::new(self).set_cookies(cookies)
+    }
+
+    fn with_cookie_raw(self, cookie: &str) -> Response
+    where
+        Self: Responder + ResponseBody + Sized,
+    {
+        Response::new(self).set_header(header::SET_COOKIE, cookie)
     }
 }
 
@@ -177,6 +199,6 @@ mod test {
             .headers()
             .as_ref()
             .unwrap()
-            .contains(&(header::CONTENT_TYPE, "application/json")));
+            .contains(&(header::CONTENT_TYPE, "application/json".to_string())));
     }
 }
