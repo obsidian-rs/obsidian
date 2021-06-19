@@ -183,7 +183,7 @@ impl Context {
             }
         };
 
-        Self::parse_queries(buf.bytes())
+        Self::parse_queries(buf.chunk())
     }
 
     /// Form value merge with Params
@@ -248,7 +248,7 @@ impl Context {
             }
         };
 
-        Ok(serde_json::from_slice(buf.bytes())?)
+        Ok(serde_json::from_slice(buf.chunk())?)
     }
 
     /// Json value merged with Params

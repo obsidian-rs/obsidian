@@ -5,7 +5,7 @@ async fn get_user(ctx: Context) -> ContextResult {
     #[derive(Serialize, Deserialize)]
     struct User {
         name: String,
-    };
+    }
 
     let user = User {
         name: String::from("Obsidian"),
@@ -16,12 +16,8 @@ async fn get_user(ctx: Context) -> ContextResult {
 #[tokio::main]
 async fn main() {
     let mut app: App = App::new();
-    let addr = ([127, 0, 0, 1], 3000).into();
 
     app.get("/user", get_user);
 
-    app.listen(&addr, || {
-        println!("server is listening to {}", &addr);
-    })
-    .await;
+    app.listen(3000).await;
 }
