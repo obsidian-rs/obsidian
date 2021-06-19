@@ -328,7 +328,7 @@ mod test {
                 let body = ctx.take_body();
 
                 let request_body = match body::aggregate(body).await {
-                    Ok(buf) => String::from_utf8(buf.bytes().to_vec()),
+                    Ok(buf) => String::from_utf8(buf.chunk().to_vec()),
                     _ => {
                         panic!();
                     }
@@ -360,12 +360,12 @@ mod test {
             assert_eq!(actual_response.status(), expected_response.status());
 
             let actual_res_body = match body::aggregate(actual_response).await {
-                Ok(buf) => String::from_utf8(buf.bytes().to_vec()),
+                Ok(buf) => String::from_utf8(buf.chunk().to_vec()),
                 _ => panic!(),
             };
 
             let expected_res_body = match body::aggregate(expected_response).await {
-                Ok(buf) => String::from_utf8(buf.bytes().to_vec()),
+                Ok(buf) => String::from_utf8(buf.chunk().to_vec()),
                 _ => panic!(),
             };
 

@@ -43,7 +43,7 @@ use std::fmt::Display;
 ///     let mut cow_form_map = HashMap::<Cow<str>, Cow<[String]>>::default();
 ///         
 ///     // Parse and merge chunks with same name key
-///     form_urlencoded::parse(buf.bytes())
+///     form_urlencoded::parse(buf.chunk())
 ///         .into_owned()
 ///         .for_each(|(key, val)| {
 ///             parsed_form_map.entry(key).or_insert(vec![]).push(val);
@@ -470,7 +470,7 @@ mod tests {
             let mut parsed_form_map: HashMap<String, Vec<String>> = HashMap::default();
             let mut cow_form_map = HashMap::<Cow<str>, Cow<[String]>>::default();
             // Parse and merge chunks with same name key
-            form_urlencoded::parse(buf.bytes())
+            form_urlencoded::parse(buf.chunk())
                 .into_owned()
                 .for_each(|(key, val)| {
                     parsed_form_map
@@ -507,7 +507,7 @@ mod tests {
             let mut parsed_form_map: HashMap<String, Vec<String>> = HashMap::default();
             let mut cow_form_map = HashMap::<Cow<str>, Cow<[String]>>::default();
             // Parse and merge chunks with same name key
-            form_urlencoded::parse(buf.bytes())
+            form_urlencoded::parse(buf.chunk())
                 .into_owned()
                 .for_each(|(key, val)| {
                     parsed_form_map
@@ -541,7 +541,7 @@ mod tests {
             let mut parsed_form_map: HashMap<String, Vec<String>> = HashMap::default();
             let mut cow_form_map = HashMap::<Cow<str>, Cow<[String]>>::default();
             // Parse and merge chunks with same name key
-            form_urlencoded::parse(buf.bytes())
+            form_urlencoded::parse(buf.chunk())
                 .into_owned()
                 .for_each(|(key, val)| {
                     parsed_form_map
@@ -575,7 +575,7 @@ mod tests {
             let mut parsed_form_map: HashMap<String, Vec<String>> = HashMap::default();
             let mut cow_form_map = HashMap::<Cow<str>, Cow<[String]>>::default();
             // Parse and merge chunks with same name key
-            form_urlencoded::parse(buf.bytes())
+            form_urlencoded::parse(buf.chunk())
                 .into_owned()
                 .for_each(|(key, val)| {
                     parsed_form_map
@@ -612,7 +612,7 @@ mod tests {
             let mut parsed_form_map: HashMap<String, Vec<String>> = HashMap::default();
             let mut cow_form_map = HashMap::<Cow<str>, Cow<[String]>>::default();
             // Parse and merge chunks with same name key
-            form_urlencoded::parse(buf.bytes())
+            form_urlencoded::parse(buf.chunk())
                 .into_owned()
                 .for_each(|(key, val)| {
                     parsed_form_map
