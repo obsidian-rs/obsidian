@@ -72,8 +72,7 @@ impl Display for JsonTest {
 
 #[tokio::main]
 async fn main() {
-    let mut app: App = App::default();
-    let addr = ([127, 0, 0, 1], 3000).into();
+    let mut app: App = App::new();
 
     app.get("/", |ctx: Context| async {
 ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut icon\" href=\"favicon.ico\" type=\"image/x-icon\" sizes=\"32x32\" /></head> <h1>Hello Obsidian</h1></html>")).ok()
@@ -316,5 +315,5 @@ ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut ic
 
     app.use_static_to("/files/", "/assets/");
 
-    app.listen(&addr, || {}).await;
+    app.listen(3000).await;
 }
