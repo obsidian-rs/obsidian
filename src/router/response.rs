@@ -183,7 +183,7 @@ mod test {
         struct Person {
             name: String,
             age: i8,
-        };
+        }
 
         let person = Person {
             name: String::from("Jun Kai"),

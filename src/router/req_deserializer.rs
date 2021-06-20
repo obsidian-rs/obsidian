@@ -266,10 +266,9 @@ impl<'de> de::Deserializer<'de> for &mut FormValueDeserializer<'de> {
     {
         if self.input.starts_with(&[String::default()]) {
             self.input = &self.input[1..];
-            visitor.visit_unit()
-        } else {
-            visitor.visit_unit()
         }
+
+        visitor.visit_unit()
     }
 
     fn deserialize_unit_struct<V>(self, _name: &'static str, visitor: V) -> Result<V::Value, Error>

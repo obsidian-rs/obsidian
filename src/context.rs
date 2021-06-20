@@ -187,7 +187,7 @@ impl Context {
     }
 
     /// Form value merge with Params
-    pub fn form_with_param<T: DeserializeOwned>(&mut self) -> Result<T, ()> {
+    pub fn form_with_param<T: DeserializeOwned>(&mut self) -> Result<T, ObsidianError> {
         unimplemented!()
     }
 
