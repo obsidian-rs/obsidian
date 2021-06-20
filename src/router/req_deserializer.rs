@@ -43,7 +43,7 @@ use std::fmt::Display;
 ///     let mut cow_form_map = HashMap::<Cow<str>, Cow<[String]>>::default();
 ///         
 ///     // Parse and merge chunks with same name key
-///     form_urlencoded::parse(buf.bytes())
+///     form_urlencoded::parse(buf.chunk())
 ///         .into_owned()
 ///         .for_each(|(key, val)| {
 ///             parsed_form_map.entry(key).or_insert(vec![]).push(val);
@@ -266,10 +266,9 @@ impl<'de> de::Deserializer<'de> for &mut FormValueDeserializer<'de> {
     {
         if self.input.starts_with(&[String::default()]) {
             self.input = &self.input[1..];
-            visitor.visit_unit()
-        } else {
-            visitor.visit_unit()
         }
+
+        visitor.visit_unit()
     }
 
     fn deserialize_unit_struct<V>(self, _name: &'static str, visitor: V) -> Result<V::Value, Error>
@@ -470,12 +469,12 @@ mod tests {
             let mut parsed_form_map: HashMap<String, Vec<String>> = HashMap::default();
             let mut cow_form_map = HashMap::<Cow<str>, Cow<[String]>>::default();
             // Parse and merge chunks with same name key
-            form_urlencoded::parse(buf.bytes())
+            form_urlencoded::parse(buf.chunk())
                 .into_owned()
                 .for_each(|(key, val)| {
                     parsed_form_map
                         .entry(key)
-                        .or_insert_with(|| vec![])
+                        .or_insert_with(Vec::new)
                         .push(val);
                 });
             // Wrap vec with cow pointer
@@ -507,12 +506,12 @@ mod tests {
             let mut parsed_form_map: HashMap<String, Vec<String>> = HashMap::default();
             let mut cow_form_map = HashMap::<Cow<str>, Cow<[String]>>::default();
             // Parse and merge chunks with same name key
-            form_urlencoded::parse(buf.bytes())
+            form_urlencoded::parse(buf.chunk())
                 .into_owned()
                 .for_each(|(key, val)| {
                     parsed_form_map
                         .entry(key)
-                        .or_insert_with(|| vec![])
+                        .or_insert_with(Vec::new)
                         .push(val);
                 });
             // Wrap vec with cow pointer
@@ -541,12 +540,12 @@ mod tests {
             let mut parsed_form_map: HashMap<String, Vec<String>> = HashMap::default();
             let mut cow_form_map = HashMap::<Cow<str>, Cow<[String]>>::default();
             // Parse and merge chunks with same name key
-            form_urlencoded::parse(buf.bytes())
+            form_urlencoded::parse(buf.chunk())
                 .into_owned()
                 .for_each(|(key, val)| {
                     parsed_form_map
                         .entry(key)
-                        .or_insert_with(|| vec![])
+                        .or_insert_with(Vec::new)
                         .push(val);
                 });
             // Wrap vec with cow pointer
@@ -575,12 +574,12 @@ mod tests {
             let mut parsed_form_map: HashMap<String, Vec<String>> = HashMap::default();
             let mut cow_form_map = HashMap::<Cow<str>, Cow<[String]>>::default();
             // Parse and merge chunks with same name key
-            form_urlencoded::parse(buf.bytes())
+            form_urlencoded::parse(buf.chunk())
                 .into_owned()
                 .for_each(|(key, val)| {
                     parsed_form_map
                         .entry(key)
-                        .or_insert_with(|| vec![])
+                        .or_insert_with(Vec::new)
                         .push(val);
                 });
             // Wrap vec with cow pointer
@@ -612,12 +611,12 @@ mod tests {
             let mut parsed_form_map: HashMap<String, Vec<String>> = HashMap::default();
             let mut cow_form_map = HashMap::<Cow<str>, Cow<[String]>>::default();
             // Parse and merge chunks with same name key
-            form_urlencoded::parse(buf.bytes())
+            form_urlencoded::parse(buf.chunk())
                 .into_owned()
                 .for_each(|(key, val)| {
                     parsed_form_map
                         .entry(key)
-                        .or_insert_with(|| vec![])
+                        .or_insert_with(Vec::new)
                         .push(val);
                 });
             // Wrap vec with cow pointer
@@ -632,15 +631,15 @@ mod tests {
 
             expected_result
                 .entry("field1".to_string())
-                .or_insert_with(|| vec![])
+                .or_insert_with(Vec::new)
                 .push(1);
             expected_result
                 .entry("field1".to_string())
-                .or_insert_with(|| vec![])
+                .or_insert_with(Vec::new)
                 .push(2);
             expected_result
                 .entry("field2".to_string())
-                .or_insert_with(|| vec![])
+                .or_insert_with(Vec::new)
                 .push(3);
             assert_eq!(actual_result, expected_result);
         })

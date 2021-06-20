@@ -123,6 +123,7 @@ impl Response {
         match serde_json::to_string(&body) {
             Ok(val) => self.set_content_type("application/json").set_body(val),
             Err(err) => self
+                .set_content_type("application/json")
                 .set_body(err.to_string())
                 .set_status(StatusCode::INTERNAL_SERVER_ERROR),
         }
@@ -182,7 +183,7 @@ mod test {
         struct Person {
             name: String,
             age: i8,
-        };
+        }
 
         let person = Person {
             name: String::from("Jun Kai"),

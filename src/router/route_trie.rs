@@ -368,7 +368,7 @@ impl Node {
                     let mut inter_node = Self::new(child_key, None);
 
                     // Move out the previous child and transfer to intermediate node
-                    inter_node.child_nodes = std::mem::replace(&mut node.child_nodes, vec![]);
+                    inter_node.child_nodes = std::mem::take(&mut node.child_nodes);
                     inter_node.value = std::mem::replace(&mut node.value, None);
 
                     node.child_nodes.insert(0, inter_node);

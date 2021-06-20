@@ -1,6 +1,6 @@
-use std::net::SocketAddr;
 use std::sync::Arc;
 
+use colored::*;
 use hyper::{
     header,
     service::{make_service_fn, service_fn},
@@ -12,16 +12,33 @@ use crate::error::ObsidianError;
 use crate::middleware::Middleware;
 use crate::router::{ContextResult, Handler, RouteValueResult, Router};
 
+use crate::middleware::logger::Logger;
+
 #[derive(Clone)]
 pub struct DefaultAppState {}
 
-#[derive(Default)]
 pub struct App<T = DefaultAppState>
 where
     T: Clone + Send + Sync + 'static,
 {
     router: Router,
     app_state: Option<T>,
+}
+
+impl<T> Default for App<T>
+where
+    T: Clone + Send + Sync + 'static,
+{
+    /// create an `Obsidian` app with default middlwares: [`Logger`]
+    fn default() -> Self {
+        let mut app = App {
+            router: Router::new(),
+            app_state: None,
+        };
+        let logger = Logger::new();
+        app.use_service(logger);
+        app
+    }
 }
 
 impl<T> App<T>
@@ -53,6 +70,28 @@ where
 
     pub fn delete(&mut self, path: &str, handler: impl Handler) {
         self.router.delete(path, handler);
+    }
+
+    /// Register a nested router for the app
+    ///
+    /// Example:
+    /// ```
+    /// use obsidian::{App, router::Router, context::Context};
+    ///
+    /// let mut app: App = App::new();
+    ///
+    /// app.scope("admin", |router: &mut Router| {
+    ///     router.get("list", |ctx: Context| async move {
+    ///         ctx.build("Admin list here").ok()
+    ///     });
+    /// });
+    /// ```
+    ///
+    pub fn scope(&mut self, name: &str, scoped_routes: impl Fn(&mut Router)) {
+        let mut new_router = Router::new();
+
+        scoped_routes(&mut new_router);
+        self.use_router(format!("/{}", name).as_ref(), new_router);
     }
 
     /// Apply middleware in the provided route
@@ -101,7 +140,7 @@ where
         self.app_state = Some(app_state);
     }
 
-    pub async fn listen(self, addr: &SocketAddr, callback: impl Fn()) {
+    pub async fn listen(self, port: u16) {
         let app_server: AppServer = AppServer {
             router: self.router,
         };
@@ -120,9 +159,45 @@ where
             }
         });
 
+        let addr = ([127, 0, 0, 1], port).into();
         let server = Server::bind(&addr).serve(service);
 
-        callback();
+        let logo = r#"
+
+      .oooooo.   oooooooooo.   .oooooo..o ooooo oooooooooo.   ooooo       .o.       ooooo      ooo 
+     d8P'  `Y8b  `888'   `Y8b d8P'    `Y8 `888' `888'   `Y8b  `888'      .888.      `888b.     `8' 
+    888      888  888     888 Y88bo.       888   888      888  888      .8"888.      8 `88b.    8  
+    888      888  888oooo888'  `"Y8888o.   888   888      888  888     .8' `888.     8   `88b.  8  
+    888      888  888    `88b      `"Y88b  888   888      888  888    .88ooo8888.    8     `88b.8  
+    `88b    d88'  888    .88P oo     .d8P  888   888     d88'  888   .8'     `888.   8       `888  
+     `Y8bood8P'  o888bood8P'  8""88888P'  o888o o888bood8P'   o888o o88o     o8888o o8o        `8  
+                                                                                               
+        "#;
+
+        println!("{}", logo);
+
+        #[cfg(debug_assertions)]
+        println!(
+            " 🚧  {}: dev [{} + {}]",
+            "Mode".green().bold(),
+            "unoptimized".red().bold(),
+            "debuginfo".blue().bold()
+        );
+
+        #[cfg(not(debug_assertions))]
+        println!(
+            " 🚀  {}: release [{}]",
+            "Mode".green().bold(),
+            "optimized".green().bold(),
+        );
+
+        println!(
+            " 🔧  {}: {}",
+            "Version".green().bold(),
+            env!("CARGO_PKG_VERSION")
+        );
+
+        println!(" 🎉  {}: http://{}\n", "Served at".green().bold(), addr);
 
         server.await.map_err(|_| println!("Server error")).unwrap();
     }
@@ -240,6 +315,7 @@ impl<'a> EndpointExecutor<'a> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::context::Context;
     use async_std::task;
     use hyper::{body, body::Buf, StatusCode};
 
@@ -252,7 +328,7 @@ mod test {
                 let body = ctx.take_body();
 
                 let request_body = match body::aggregate(body).await {
-                    Ok(buf) => String::from_utf8(buf.bytes().to_vec()),
+                    Ok(buf) => String::from_utf8(buf.chunk().to_vec()),
                     _ => {
                         panic!();
                     }
@@ -284,12 +360,12 @@ mod test {
             assert_eq!(actual_response.status(), expected_response.status());
 
             let actual_res_body = match body::aggregate(actual_response).await {
-                Ok(buf) => String::from_utf8(buf.bytes().to_vec()),
+                Ok(buf) => String::from_utf8(buf.chunk().to_vec()),
                 _ => panic!(),
             };
 
             let expected_res_body = match body::aggregate(expected_response).await {
-                Ok(buf) => String::from_utf8(buf.bytes().to_vec()),
+                Ok(buf) => String::from_utf8(buf.chunk().to_vec()),
                 _ => panic!(),
             };
 

@@ -1,3 +1,25 @@
+[package]
+name = 'obsidian'
+version = '0.3.0-dev'
+authors = [
+    'Gan Jun Kai <junkai@hey.com>',
+    'Wai Pai Lee <pailee.wai@gmail.com>',
+]
+edition = '2018'
+description = 'Ergonomic async http framework for amazing, reliable and efficient web'
+readme = "README.md"
+homepage = "https://obsidian-rs.github.io"
+repository = 'https://github.com/obsidian-rs/obsidian'
+license = 'MIT'
+keywords = [
+    'obsidian',
+    'async',
+    'http',
+    'web',
+    'framework'
+]
+categories = ["asynchronous", "web-programming::http-server", "network-programming"]
+
 [[example]]
 name = 'example'
 path = 'examples/main.rs'
@@ -18,40 +40,13 @@ path = 'examples/json.rs'
 name = 'app_state'
 path = 'examples/app_state.rs'
 
-[package]
-name = 'obsidian'
-version = '0.2.2'
-authors = [
-    'Gan Jun Kai <kuhn96@gmail.com>',
-    'Wai Pai Lee <pailee.wai@gmail.com>',
-]
-edition = '2018'
-description = 'Ergonomic async http framework for amazing, reliable and efficient web'
-readme = "README.md"
-homepage = "https://obsidian-rs.github.io"
-repository = 'https://github.com/obsidian-rs/obsidian'
-license = 'MIT'
-keywords = [
-    'obsidian',
-    'async',
-    'http',
-    'web',
-    'framework'
-]
-categories = ["asynchronous", "web-programming::http-server", "network-programming"]
-
 [dependencies]
-hyper = '0.13.1'
-http = '0.2.0'
-serde_json = '1.0.44'
-url = '2.1.0'
-async-std = '1.4.0'
-async-trait = '0.1.22'
-
-[dependencies.serde]
-version = '1.0.104'
-features = ['derive']
-
-[dependencies.tokio]
-version = '0.2.6'
-features = ['macros']
+hyper = { version = "0.14.9", features = [ "full" ] }
+http = "0.2.4"
+serde = { version = "1.0.126", features = [ "derive" ] }
+serde_json = "1.0.64"
+url = "2.2.2"
+async-std = "1.9.0"
+tokio = { version = "1.7.0", features = [ "macros", "rt-multi-thread" ] }
+async-trait = "0.1.50"
+colored = "2.0.0"

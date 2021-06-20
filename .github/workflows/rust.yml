@@ -14,7 +14,7 @@ on:
 jobs:
   build_stable:
     name: Stable
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macOS-latest]
@@ -24,11 +24,14 @@ jobs:
       - uses: hecrj/setup-rust-action@v1
         with:
           rust-version: ${{ matrix.rust }}
-      - uses: actions/checkout@v1
+          components: rustfmt
+      - uses: actions/checkout@v2
       - name: Build
         run: cargo build --verbose
       - name: Install clippy
         run: rustup component add clippy
+      - name: Check code format
+        run: cargo fmt --all -- --check
       - name: Run clippy
         run: cargo clippy --all-targets --all-features -- -D warnings
       - name: Run tests
@@ -46,7 +49,7 @@ jobs:
       - uses: hecrj/setup-rust-action@v1
         with:
           rust-version: ${{ matrix.rust }}
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
       - name: Build
         run: cargo +nightly build --verbose
       #    - name: Install clippy

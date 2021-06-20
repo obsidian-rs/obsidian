@@ -6,7 +6,6 @@ use std::{fmt, fmt::Display};
 
 use obsidian::{
     context::Context,
-    middleware::logger::Logger,
     router::{header, Responder, Response, Router},
     App, ObsidianError, StatusCode,
 };
@@ -74,7 +73,6 @@ impl Display for JsonTest {
 #[tokio::main]
 async fn main() {
     let mut app: App = App::new();
-    let addr = ([127, 0, 0, 1], 3000).into();
 
     app.get("/", |ctx: Context| async {
 ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut icon\" href=\"favicon.ico\" type=\"image/x-icon\" sizes=\"32x32\" /></head> <h1>Hello Obsidian</h1></html>")).ok()
@@ -88,6 +86,29 @@ ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut ic
             .with_header(header::AUTHORIZATION, "token")
             .with_header_str("X-Custom-Header", "Custom header value")
             .ok()
+    });
+
+    app.get("/user", |mut ctx: Context| async {
+        #[derive(Serialize, Deserialize, Debug)]
+        struct QueryString {
+            id: String,
+            status: String,
+        }
+
+        let params = match ctx.query_params::<QueryString>() {
+            Ok(params) => params,
+            Err(error) => {
+                println!("error: {}", error);
+                QueryString {
+                    id: String::from(""),
+                    status: String::from(""),
+                }
+            }
+        };
+
+        println!("params: {:?}", params);
+
+        ctx.build("").ok()
     });
 
     app.patch("/patch-here", |ctx: Context| async {
@@ -233,10 +254,20 @@ ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut ic
         ctx.build(res).ok()
     });
 
-    let mut form_router = Router::new();
+    app.scope("admin", |router: &mut Router| {
+        router.get("test", |ctx: Context| async move {
+            ctx.build("Hello admin test").ok()
+        });
 
-    form_router.get("/formtest", |ctx: Context| async move {
-        ctx.build_file("./test.html").await.ok()
+        router.get("test2", |ctx: Context| async move {
+            ctx.build("Hello admin test 2").ok()
+        });
+    });
+
+    app.scope("form", |router: &mut Router| {
+        router.get("/formtest", |ctx: Context| async move {
+            ctx.build_file("/.test.html").await.ok()
+        });
     });
 
     // form_router.post("/formtest", |mut ctx: Context| async move{
@@ -246,10 +277,6 @@ ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut ic
 
     //     Ok(response::json(param_test, StatusCode::OK))
     // });
-
-    let mut param_router = Router::new();
-    let logger = Logger::new();
-    app.use_service(logger);
 
     // param_router.get("/paramtest/:id", |ctx: Context| async move {
     //     let param_test: i32 = ctx.param("id")?;
@@ -271,25 +298,22 @@ ctx.build(Response::ok().html("<!DOCTYPE html><html><head><link rel=\"shotcut ic
     let logger_example = middleware::logger_example::LoggerExample::new();
     app.use_service(logger_example);
 
-    param_router.get("/test-next-wild/*", |ctx: Context| async {
-        ctx.build("<h1>test next wild</h1>".to_string()).ok()
+    app.scope("params", |router: &mut Router| {
+        router.get("/test-next-wild/*", |ctx: Context| async {
+            ctx.build("<h1>test next wild</h1>".to_string()).ok()
+        });
+
+        router.get("/*", |ctx: Context| async {
+            ctx.build(
+                "<h1>404 Not Found</h1>"
+                    .to_string()
+                    .with_status(StatusCode::NOT_FOUND),
+            )
+            .ok()
+        });
     });
 
-    param_router.get("/*", |ctx: Context| async {
-        ctx.build(
-            "<h1>404 Not Found</h1>"
-                .to_string()
-                .with_status(StatusCode::NOT_FOUND),
-        )
-        .ok()
-    });
-
-    app.use_router("/params/", param_router);
-    app.use_router("/forms/", form_router);
     app.use_static_to("/files/", "/assets/");
 
-    app.listen(&addr, || {
-        println!("server is listening to {}", &addr);
-    })
-    .await;
+    app.listen(3000).await;
 }
